@@ -1,0 +1,18 @@
+# PymePilot Backend - Dependencias Python
+# Instalar con: pip install -r requirements.txt
+
+# --- Base de datos ---
+psycopg[binary]==3.2.6        # Conector PostgreSQL moderno (reemplaza psycopg2)
+psycopg_pool==3.2.6           # Connection pooling para PostgreSQL
+
+# --- IA / LLM ---
+anthropic==0.43.0             # SDK oficial de Anthropic para Claude API
+
+# --- Analisis de datos ---
+pandas==2.2.3                 # Manipulacion y analisis de datos tabulares
+
+# --- Configuracion ---
+python-dotenv==1.1.0          # Lee variables de entorno desde archivos .env
+
+# --- HTTP (para conectores ERP) ---
+requests==2.32.3              # Cliente HTTP para llamadas a APIs externas

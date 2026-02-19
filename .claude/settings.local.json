@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3:*)",
+      "Bash(npx skills add:*)",
+      "Bash(npx:*)",
+      "Bash(docker ps:*)",
+      "Bash(docker exec:*)",
+      "Bash(git init:*)",
+      "Bash(docker port:*)",
+      "Bash(/home/pato/projects/pymepilot/backend/venv/bin/python:*)",
+      "Bash(git add:*)"
+    ]
+  }
+}

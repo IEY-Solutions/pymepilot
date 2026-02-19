@@ -1,0 +1,54 @@
+# =============================================
+# PymePilot .gitignore
+# =============================================
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+venv/
+.venv/
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# --- Node.js / Next.js ---
+node_modules/
+.next/
+out/
+.turbo/
+
+# --- Variables de entorno (NUNCA commitear secrets) ---
+.env
+.env.*
+!.env.example
+
+# --- IDEs y editores ---
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+
+# --- Logs ---
+*.log
+logs/
+
+# --- Base de datos ---
+*.sql.gz
+*.dump
+
+# --- Archivos temporales ---
+tmp/
+temp/
+*.tmp
+
+# --- Claude Code (memoria y plans son locales) ---
+.claude/agent-memory/
+.claude/plans/
