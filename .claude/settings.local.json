@@ -9,7 +9,15 @@
       "Bash(git init:*)",
       "Bash(docker port:*)",
       "Bash(/home/pato/projects/pymepilot/backend/venv/bin/python:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git config:*)",
+      "WebSearch",
+      "WebFetch(domain:ayuda.contabilium.com)",
+      "WebFetch(domain:developers.nb.com.ar)",
+      "WebFetch(domain:documenter.getpostman.com)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)"
     ]
   }
 }
