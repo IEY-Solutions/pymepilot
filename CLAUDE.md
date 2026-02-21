@@ -103,7 +103,27 @@ No se llama ExitPlanMode hasta completar este checklist:
 3. Por cada celda de la matriz de seguridad: senalar la linea exacta del codigo documentado que garantiza esa proteccion. Si no existe → la celda no es OK
 4. Verificar consistencia global: buscar inconsistencias que cambios de esta iteracion hayan introducido
 5. Verificacion aritmetica: contar tests, riesgos, celdas de matriz
-6. Solo si los 5 pasos anteriores estan completos → llamar ExitPlanMode
+6. Para cada bloque de pseudocodigo NUEVO o MODIFICADO en esta sesion,
+   cambiar de perspectiva: dejar de ser el autor y pensar como un
+   reviewer externo que conoce todas las reglas del sistema pero lee
+   este codigo por primera vez.
+
+   Proceso por cada bloque:
+   a. Derivar el conjunto COMPLETO de reglas que aplican a este tipo
+      de codigo — buscando en el plan, CLAUDE.md y patrones existentes,
+      no solo las que recuerdo. Verificar cada una.
+   b. Identificar todo input que este codigo recibe pero no controla
+      (datos de APIs, headers HTTP, respuestas de DB, valores de config).
+      Para cada uno: ¿que pasa si viene vacio, null, en formato inesperado,
+      o en el valor limite exacto? ¿Falla de forma segura?
+   c. Si no existe un test o instruccion que valide este bloque,
+      el bloque no esta terminado.
+
+   La pregunta guia NO es "¿es consistente con lo que cambie?"
+   La pregunta guia ES "¿un reviewer que conoce las reglas del sistema
+   pero nunca vio mis cambios encontraria una omision?"
+
+7. Solo si los 6 pasos anteriores estan completos → llamar ExitPlanMode
 
 La pregunta correcta por cada celda NO es "el diseno protege este dato?" — es "puedo senalar la linea exacta del codigo documentado que lo garantiza?"
 

@@ -2,7 +2,7 @@
 
 **Fecha:** 2026-02-21
 **Ultimo commit:** este commit
-**Sesiones completadas:** 3 (auditoria manual + agentes ronda 1 + agentes ronda 2 + correcciones)
+**Sesiones completadas:** 4 (manual + ronda 1 + ronda 2 + ronda 3 + correcciones)
 
 ---
 
@@ -10,11 +10,12 @@
 
 El plan de Fase 1 paso por:
 - 13 iteraciones de auditoria manual por Pato
-- 2 rondas de auditoria automatizada con 4 agentes internos
+- 3 rondas de auditoria automatizada con 4 agentes internos
 - 2 migraciones ejecutadas en DB (011 + 012)
-- 6 fixes de ronda 1 + 9 correcciones de ronda 2 + 2 fixes aritmeticos
+- 6 fixes de ronda 1 + 9 correcciones de ronda 2 + 9 correcciones de ronda 3 + 2 fixes aritmeticos
 - 20/20 tests de regresion pasaron
-- Revision global final completada (GATE obligatorio de CLAUDE.md)
+- 2 revisiones globales GATE completadas (la segunda con Check 6 nuevo)
+- CLAUDE.md mejorado con Check 6 (scan de codigo nuevo como reviewer externo)
 
 **Estado del plan: LISTO PARA IMPLEMENTAR.**
 
@@ -52,55 +53,87 @@ El plan de Fase 1 paso por:
 
 **0 hallazgos CRITICOS en ronda 2.** Los 11 hallazgos IMPORTANTES se consolidaron en 9 correcciones.
 
-### 9 correcciones aplicadas al plan (todas aprobadas por Pato con ✅)
+### 9 correcciones de ronda 2 (todas aprobadas por Pato)
 
 | # | Hallazgo | Que se hizo | Lineas plan |
 |---|----------|-------------|-------------|
 | 1 | Campos derivados SQL | Reemplazo descripcion vaga por UPDATE...FROM completo | 722-749 |
-| 2 | encrypt_secret firma | str → str\|bytes\|bytearray + pseudocodigo + limitacion documentada | 832-854 |
+| 2 | encrypt_secret firma | str -> str\|bytes\|bytearray + pseudocodigo + limitacion documentada | 832-854 |
 | 3 | _get() + _get_paginated() | Pseudocodigo completo: retry, re-auth, Content-Type, JSONDecodeError, paginacion | 429-544 |
 | 4 | conn.transaction() + tenant context | get_db_connection(tenant_id) obligatorio en pasos 3, 10, 12, 13. conn.transaction() en FASE 2 | 662, 700-710, 756, 777 |
-| 5 | load_dotenv a entry points | Orden obligatorio: load_dotenv → umask → imports proyecto. Quitar de settings.py y connection.py | 1001-1022, 1059, 1096 |
+| 5 | load_dotenv a entry points | Orden obligatorio: load_dotenv -> umask -> imports proyecto. Quitar de settings.py y connection.py | 1001-1022, 1059, 1096 |
 | 6 | Reset tenant context pool | Callback reset en ConnectionPool: RESET app.tenant_id al devolver conexion | 1096-1120 |
 | 7 | Migracion 013 GRANT DELETE | GRANT DELETE ON order_items (estrategia DELETE+INSERT documentada) | 714-719, 1059-1080 |
 | 8 | Paso 12.5 password | Instrucciones manuales para Pato: generar password, ALTER USER, actualizar .env | 1152, 1160-1179 |
-| 9 | Test 12 Parte D | Verificar RLS con pymepilot_app: sin context → 0 rows, con context → datos | 1324-1339 |
-
-### Hallazgos adicionales encontrados durante correcciones
-
-| Hallazgo | Donde | Resolucion |
-|----------|-------|------------|
-| Pasos 3 y 13 acceden a sync_log sin especificar conexion | sync.py pasos 3, 13 | Incorporado en Correccion #4: ambos usan get_db_connection(tenant_id) |
-| Paso 12 (POST-SYNC) tambien accede a sync_log | sync.py paso 12 | Documentado: usa misma conn del paso 10 |
-| 504 faltaba en tabla de retry | Tabla de reintentos | Agregado: "500, 502, 503, 504" |
-
-### Revision global final (Correccion #10)
-
-Completado el GATE obligatorio de CLAUDE.md:
-1. ✅ 9/9 items prometidos verificados en el plan
-2. ✅ 35/35 celdas de matriz de seguridad con contrato verificable
-3. ✅ 0 inconsistencias entre las 9 correcciones
-4. ✅ Verificacion aritmetica: 2 errores encontrados y corregidos
-   - Matriz: OK(a) 7→6, N/A 7→8 (pre-existente)
-   - Archivos a crear: 10→11 (introducido por Correccion #7)
-
-### CLAUDE.md actualizado
-
-Se agrego la seccion "SESIONES DE AUDITORIA MULTIPASO — PROTOCOLO DE COMPACTACION"
-(lineas 124-154) para proteger contra perdida de contexto en sesiones largas.
+| 9 | Test 12 Parte D | Verificar RLS con pymepilot_app: sin context -> 0 rows, con context -> datos | 1324-1339 |
 
 ---
 
-## Archivos modificados en este commit
+## Sesion 4 (2026-02-21): Auditoria con agentes — Ronda 3 + Correcciones
 
-```
-CLAUDE.md                                          (MODIFICADO — +protocolo compactacion)
-docs/HANDOFF_AUDIT_SESSION.md                      (REESCRITO — handoff completo)
-~/.claude/plans/gentle-riding-dijkstra.md           (MODIFICADO — 9 correcciones + 2 fixes)
-```
+### Ronda 3 — Resultados
 
-Nota: migraciones 011+012, test_regression_012.py y plan original ya fueron
-commiteados en sesion anterior (commits d767bc7 y 965344c).
+| Agente | Criticos | Importantes | Sugerencias | Veredicto |
+|--------|----------|-------------|-------------|-----------|
+| @security-guardian | 0 | 0 | 4 | Aprobar |
+| @db-architect | 0 | 3 | 4 | Aprobar con condiciones |
+| @python-engine | 0 | 4 | 3 | Aprobar con condiciones |
+| @api-integrations | 0 | 4 | 3 | Aprobar con condiciones |
+
+**0 hallazgos CRITICOS en ronda 3.** Los 11 hallazgos IMPORTANTES se deduplicaron a 9 unicos.
+
+### 9 correcciones de ronda 3 (todas aprobadas por Pato)
+
+| # | Hallazgo | Que se hizo |
+|---|----------|-------------|
+| 1 | DELETE order_items sin tenant_id | Agregado AND tenant_id = %(tenant_id)s como defensa en profundidad |
+| 2 | rotate_encryption_key conexion | Cambiado a get_db_connection_no_tenant() (tenants sin FORCE RLS) |
+| 3 | RESET produce empty string | Documentado comportamiento fail-closed: '' cast a uuid falla |
+| 4 | Retry-After explota con fechas HTTP | Envuelto int() en try/except (ValueError, TypeError) con fallback 30s |
+| 5 | max_pages off-by-one tira datos | Cambiado RuntimeError a warning + retorno datos parciales |
+| 5b | max_pages sin requires_review | truncated flag propagado: fetch_* -> sync.py paso 11 -> requires_review |
+| 6 | connection.py except demasiado amplio | Documentado cambio a except psycopg.Error en seccion "modificar" |
+| 7 | Sin test remocion CLIENT_SECRET | Agregada verificacion grep post-paso-11 en settings.py |
+| 8 | SYNC_RATE_LIMIT_DELAY no usado | Agregado time.sleep(SYNC_RATE_LIMIT_DELAY) entre paginas |
+| 9 | Sin validacion campos pre-upsert | Agregado _validate_records() en fetch_* con required_fields=["Id"] |
+
+### Hallazgo del Check 6 (encontrado durante GATE)
+
+| Hallazgo | Resolucion |
+|----------|------------|
+| Correccion #5 no conectaba truncated con requires_review en sync_log | Incorporado como Correccion #5b |
+
+### Inconsistencia encontrada durante GATE
+
+| Inconsistencia | Resolucion |
+|----------------|------------|
+| _get_paginated cambio firma a tuple pero fetch_* no desempacaban | 3 fixes: firma en header, en pseudocodigo, y fetch_* desempaquetan (raw, truncated) |
+
+### GATE obligatorio (7 pasos) — Resultado
+
+1. 10/10 items prometidos listados
+2. 10/10 verificados con grep en el plan
+3. 35/35 celdas de matriz: 0 debilitadas
+4. 1 inconsistencia encontrada y corregida (firma _get_paginated)
+5. Aritmetica: 11 archivos, 3 modificar, 35 celdas — todo cierra
+6. Check 6 (nuevo): 0 hallazgos sin resolver (C5b ya capturado en Paso 4)
+7. GATE PASADO
+
+### CLAUDE.md actualizado
+
+- Nuevo Check 6 en GATE OBLIGATORIO: proceso de razonamiento general para codigo nuevo
+  (cambio de perspectiva autor -> reviewer externo, 3 sub-pasos: reglas, inputs, tests)
+- Paso 7 actualizado (antes era paso 6)
+
+---
+
+## Progresion entre rondas
+
+| Ronda | Criticos | Importantes | Sugerencias |
+|-------|----------|-------------|-------------|
+| 1 | 3 | 15 | 19 |
+| 2 | 0 | 11 | 8 |
+| 3 | 0 | 9 | 7 |
 
 ---
 
@@ -124,4 +157,11 @@ Todo lo de sesiones anteriores +
 - GRANT DELETE solo en order_items (minimo privilegio)
 - Paso 12.5 manual para password de pymepilot_app
 - Test 12 Parte D con usuario no-superuser
-- Orden en entry points: stdlib → load_dotenv → umask → imports proyecto
+- Orden en entry points: stdlib -> load_dotenv -> umask -> imports proyecto
+- _get_paginated retorna tuple[list[dict], bool] (items, truncated)
+- fetch_* propagan truncated al caller
+- truncated=True -> sync_log status='requires_review'
+- _validate_records filtra registros sin campos obligatorios pre-upsert
+- DELETE order_items incluye AND tenant_id (defensa en profundidad)
+- rotate_encryption_key usa get_db_connection_no_tenant()
+- except psycopg.Error (no bare Exception) en get_db_connection()
