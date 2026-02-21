@@ -121,6 +121,38 @@ La pregunta correcta por cada celda NO es "el diseno protege este dato?" — es 
 
 **Protocolo de traspaso:** Generar documento .md con decisiones tomadas, estado actual, proximos pasos, puntos pendientes. Al iniciar sesion nueva: leer el traspaso completo ANTES de cualquier accion.
 
+## SESIONES DE AUDITORIA MULTIPASO — PROTOCOLO DE COMPACTACION
+
+**Contexto:** Cuando Claude Code opera en sesiones de correccion secuencial
+con protocolo de aprobacion del usuario (ej: auditorias de N hallazgos),
+una compactacion automatica puede silenciosamente eliminar el protocolo
+activo sin que el usuario lo note.
+
+**Ante cualquier compactacion durante una sesion de auditoria multipaso:**
+
+1. RELEER CLAUDE.md completo antes de continuar
+2. RECONSTRUIR tabla de estado de correcciones:
+   - Correcciones aprobadas (con ✅ explicito del usuario)
+   - Correccion en curso (editada pero pendiente ✅)
+   - Correcciones pendientes (no iniciadas)
+3. RECONFIRMAR protocolo activo explicitamente:
+   - BEFORE/AFTER literal antes de cada ✅
+   - Verificacion con 3 escenarios (Regla Ejecucion Mental)
+   - Revision global de inconsistencias (Regla Parche Local)
+   - Esperar ✅ explicito del usuario antes de avanzar
+4. PRESENTAR el resumen al usuario y esperar aprobacion
+   explicita para reanudar — NO continuar automaticamente
+
+**Criterio para NO cambiar de sesion:**
+Si hay implementacion activa con estado acumulado
+(correcciones parcialmente aplicadas), mantener la sesion
+actual y aplicar los 4 pasos anteriores en su lugar.
+
+**Criterio para SI recomendar sesion nueva:**
+Si la compactacion ocurrio ANTES de iniciar cualquier
+correccion, o si todas las correcciones ya tienen ✅,
+recomendar sesion nueva es seguro.
+
 ---
 
 # REGLAS DE SEGURIDAD CRITICAS
