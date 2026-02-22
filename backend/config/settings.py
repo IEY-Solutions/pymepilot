@@ -9,13 +9,13 @@ CONCEPTO CLAVE - Variables de entorno:
 En vez de escribir passwords y API keys directamente en el codigo
 (lo cual seria un riesgo de seguridad enorme), los ponemos en un archivo .env
 que NUNCA se sube a Git. Este archivo lee esas variables.
+
+NOTA: load_dotenv() se ejecuta en los ENTRY POINTS (scripts), NO aca.
+Los modulos del proyecto leen os.environ al importarse (module-level).
+Si load_dotenv() no se ejecuto primero en el script, leen strings vacios.
 """
 
 import os
-from dotenv import load_dotenv
-
-# Cargar variables de entorno
-load_dotenv()
 
 
 # --- Entorno ---
@@ -35,6 +35,16 @@ CLAUDE_MODEL = os.getenv("CLAUDE_MODEL", "claude-sonnet-4-20250514")
 CLAUDE_MAX_TOKENS = int(os.getenv("CLAUDE_MAX_TOKENS", "1024"))
 
 # --- Contabilium API ---
+# Solo la URL base. Las credenciales de cada tenant van encriptadas en la DB
+# (tabla tenants.erp_config). Ver backend/engine/connectors/crypto.py
 CONTABILIUM_API_URL = os.getenv("CONTABILIUM_API_URL", "https://rest.contabilium.com/api")
-CONTABILIUM_CLIENT_ID = os.getenv("CONTABILIUM_CLIENT_ID", "")
-CONTABILIUM_CLIENT_SECRET = os.getenv("CONTABILIUM_CLIENT_SECRET", "")
+
+# --- Encriptacion ERP ---
+# NUNCA loguear esta variable. SanitizingFormatter la captura por nombre exacto,
+# pero la regla debe estar documentada en el codigo fuente tambien.
+ERP_ENCRYPTION_KEY = os.getenv("ERP_ENCRYPTION_KEY", "")
+
+# --- Sync ERP ---
+SYNC_PAGE_SIZE = 50           # Registros por pagina en paginacion de API
+SYNC_MAX_RETRIES = 3          # Maximo reintentos en errores temporales
+SYNC_RATE_LIMIT_DELAY = 0.5   # Segundos de espera entre requests (rate limiting respetuoso)

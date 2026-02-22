@@ -17,6 +17,8 @@ CONCEPTO CLAVE - Tenant Context:
 Antes de hacer cualquier consulta, le decimos a PostgreSQL "estoy trabajando
 con el tenant X". Asi, las politicas RLS filtran automaticamente los datos
 y solo vemos los del tenant correcto.
+
+NOTA: load_dotenv() se ejecuta en los ENTRY POINTS (scripts), NO aca.
 """
 
 import os
@@ -26,10 +28,6 @@ from uuid import UUID
 
 import psycopg
 from psycopg_pool import ConnectionPool
-from dotenv import load_dotenv
-
-# Cargar variables de entorno desde .env
-load_dotenv()
 
 logger = logging.getLogger(__name__)
 
@@ -53,6 +51,20 @@ def _build_conninfo() -> str:
     return f"host={host} port={port} dbname={dbname} user={user} password={password}"
 
 
+def _reset_connection(conn: psycopg.Connection) -> None:
+    """Limpia tenant context cuando una conexion se devuelve al pool.
+
+    RESET produce empty string (''), no NULL. La policy RLS hace:
+        current_setting('app.tenant_id')::uuid
+    Cast de '' a uuid FALLA → query denegada. Comportamiento FAIL-CLOSED:
+    si el reset funciono, ninguna query pasa sin set_tenant_context() nuevo.
+
+    Si el RESET falla (conexion rota), psycopg_pool descarta la conexion
+    automaticamente y crea una nueva. No hay riesgo de leak.
+    """
+    conn.execute("RESET app.tenant_id")
+
+
 def get_pool() -> ConnectionPool:
     """
     Obtiene el pool de conexiones (lo crea si no existe).
@@ -72,6 +84,7 @@ def get_pool() -> ConnectionPool:
             timeout=30.0,     # Esperar max 30 seg para obtener conexion
             max_idle=300.0,   # Cerrar conexion si esta ociosa >5 minutos
             num_workers=3,    # Workers internos para mantenimiento del pool
+            reset=_reset_connection,  # Limpiar tenant context al devolver al pool
         )
 
         logger.info("Database connection pool created")
@@ -116,9 +129,6 @@ def get_db_connection(tenant_id: UUID | str):
 
     except psycopg.OperationalError as e:
         logger.error(f"Database connection error: {e}", exc_info=True)
-        raise
-    except Exception as e:
-        logger.error(f"Unexpected database error: {e}", exc_info=True)
         raise
 
 

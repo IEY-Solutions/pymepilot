@@ -16,3 +16,9 @@ python-dotenv==1.1.0          # Lee variables de entorno desde archivos .env
 
 # --- HTTP (para conectores ERP) ---
 requests==2.32.3              # Cliente HTTP para llamadas a APIs externas
+
+# --- Seguridad / Encriptacion ---
+cryptography>=42.0.0          # Fernet (AES-128-CBC + HMAC) para encriptar credenciales ERP
+
+# --- Excel (conector alternativo) ---
+openpyxl>=3.1.0               # Lectura de archivos Excel (.xlsx) en modo read-only
