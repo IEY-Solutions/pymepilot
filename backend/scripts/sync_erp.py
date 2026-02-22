@@ -14,10 +14,11 @@ argparse convierte los argumentos del comando en variables Python:
   --test-only        → args.test_only = True
 
 USO:
-  python backend/scripts/sync_erp.py --tenant-slug iey                    # Sync full
+  python backend/scripts/sync_erp.py --tenant-slug iey                    # Sync full (usa config del tenant)
   python backend/scripts/sync_erp.py --tenant-slug iey --test-only        # Solo test conexion
   python backend/scripts/sync_erp.py --tenant-slug iey --limit 5          # Sync limitado (5 por entidad)
   python backend/scripts/sync_erp.py --tenant-slug iey --since 2026-01-01 # Incremental
+  python backend/scripts/sync_erp.py --tenant-slug iey --connector excel --file datos.xlsx  # Excel override
 
 ORDEN DE IMPORTS (obligatorio para entry points):
 1. Imports de stdlib
@@ -76,8 +77,29 @@ def main() -> None:
         default=None,
         help='Sync incremental desde fecha (formato: YYYY-MM-DD). Solo filtra ordenes.'
     )
+    parser.add_argument(
+        '--connector',
+        type=str,
+        choices=['excel'],
+        default=None,
+        help='Forzar tipo de conector (ignora erp_type del tenant). Solo para testing.'
+    )
+    parser.add_argument(
+        '--file',
+        type=str,
+        default=None,
+        help='Ruta al archivo Excel (.xlsx). Requiere --connector excel.'
+    )
 
     args = parser.parse_args()
+
+    # Validar que --file requiere --connector excel
+    if args.file and not args.connector:
+        print("ERROR: --file requiere --connector excel")
+        sys.exit(1)
+    if args.connector == 'excel' and not args.file:
+        print("ERROR: --connector excel requiere --file <ruta.xlsx>")
+        sys.exit(1)
 
     # Parsear --since como date
     since_date = None
@@ -88,6 +110,15 @@ def main() -> None:
             print(f"ERROR: Formato de fecha invalido: '{args.since}'. Usar YYYY-MM-DD")
             sys.exit(1)
 
+    # Crear conector override si se pidio --connector
+    connector_override = None
+    source_override = None
+    if args.connector == 'excel':
+        from backend.engine.connectors.excel import ExcelConnector
+        connector_override = ExcelConnector(args.file)
+        source_override = 'excel'
+        logger.info(f"Usando conector Excel override: {args.file}")
+
     # Ejecutar sync
     engine = SyncEngine()
 
@@ -97,6 +128,8 @@ def main() -> None:
             since_date=since_date,
             limit=args.limit,
             test_only=args.test_only,
+            connector_override=connector_override,
+            source_override=source_override,
         )
     except Exception as e:
         logger.error(f"Sync fallido: {e}")

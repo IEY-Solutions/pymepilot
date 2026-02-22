@@ -55,6 +55,8 @@ class SyncEngine:
         since_date: date | None = None,
         limit: int | None = None,
         test_only: bool = False,
+        connector_override: ERPConnector | None = None,
+        source_override: str | None = None,
     ) -> None:
         """Ejecuta sincronizacion completa para un tenant.
 
@@ -63,9 +65,16 @@ class SyncEngine:
             since_date: Si se provee, solo trae ordenes desde esa fecha.
             limit: Si se provee, limita a N registros POR ENTIDAD.
             test_only: Si True, solo prueba la conexion (no sincroniza).
+            connector_override: Si se provee, usa este conector en vez de
+                crear uno desde la config del tenant en la DB. Util para
+                testing con Excel sin cambiar la config real del tenant.
+            source_override: Nombre de la fuente para sync_log (ej: 'excel').
+                Solo se usa si connector_override esta presente.
         """
-        # Paso 1: Validar ERP_ENCRYPTION_KEY
-        if not validate_fernet_key(ERP_ENCRYPTION_KEY):
+        # Paso 1: Validar ERP_ENCRYPTION_KEY (solo si no hay conector externo)
+        # Cuando se pasa connector_override, no se necesitan credenciales
+        # encriptadas — el conector ya viene listo para usar.
+        if connector_override is None and not validate_fernet_key(ERP_ENCRYPTION_KEY):
             raise ValueError(
                 "ERP_ENCRYPTION_KEY no configurada o invalida. "
                 "Ejecutar: python backend/scripts/setup_credentials.py --init"
@@ -103,7 +112,7 @@ class SyncEngine:
                 {
                     'tenant_id': tenant_id,
                     'sync_type': sync_type,
-                    'source': erp_type or 'unknown',
+                    'source': source_override or erp_type or 'unknown',
                 },
             ).fetchone()
             sync_id = result[0]
@@ -117,27 +126,17 @@ class SyncEngine:
         try:
 
             # === FASE 1: FETCH EXTERNO (fuera de transaccion DB) ===
-            with TenantCredentials.load(tenant_slug) as creds:
-                # Paso 5: Crear conector apropiado
-                if erp_type == 'contabilium':
-                    connector = ContabiliumConnector(creds)
-                elif erp_type == 'excel':
-                    # Excel no usa TenantCredentials, pero el with sigue
-                    # manejando limpieza por consistencia
-                    file_path = creds.client_id  # Para Excel, client_id tiene la ruta
-                    connector = ExcelConnector(file_path)
-                else:
-                    raise ValueError(f"Tipo de ERP no soportado: {erp_type}")
 
-                # Paso 6: test_connection
-                if erp_type == 'contabilium':
-                    connector.authenticate()
+            if connector_override is not None:
+                # --- PATH ALTERNATIVO: conector provisto externamente ---
+                # Se usa para testing (ej: --connector excel --file datos.xlsx)
+                # No necesita TenantCredentials ni authenticate().
+                connector = connector_override
                 connector.test_connection()
                 logger.info("test_connection(): OK")
 
                 if test_only:
                     logger.info("--test-only: conexion verificada, sin sincronizar")
-                    # Actualizar sync_log como completado (test exitoso)
                     with get_db_connection(tenant_id) as conn:
                         conn.execute(
                             """
@@ -149,25 +148,74 @@ class SyncEngine:
                         conn.commit()
                     return
 
-                # Pasos 7-9: Fetch datos con rate limiting entre entidades
                 customers_data, c_truncated = connector.fetch_customers()
                 if limit:
                     customers_data = customers_data[:limit]
                 logger.info(f"Clientes obtenidos: {len(customers_data)}")
-                time.sleep(SYNC_RATE_LIMIT_DELAY)
 
                 products_data, p_truncated = connector.fetch_products()
                 if limit:
                     products_data = products_data[:limit]
                 logger.info(f"Productos obtenidos: {len(products_data)}")
-                time.sleep(SYNC_RATE_LIMIT_DELAY)
 
                 orders_data, o_truncated = connector.fetch_orders(since_date)
                 if limit:
                     orders_data = orders_data[:limit]
                 logger.info(f"Ordenes obtenidas: {len(orders_data)}")
 
-            # Al salir del with, credenciales se limpian automaticamente
+            else:
+                # --- PATH NORMAL: crear conector desde config del tenant ---
+                with TenantCredentials.load(tenant_slug) as creds:
+                    # Paso 5: Crear conector apropiado
+                    if erp_type == 'contabilium':
+                        connector = ContabiliumConnector(creds)
+                    elif erp_type == 'excel':
+                        # Excel no usa TenantCredentials, pero el with sigue
+                        # manejando limpieza por consistencia
+                        file_path = creds.client_id  # Para Excel, client_id tiene la ruta
+                        connector = ExcelConnector(file_path)
+                    else:
+                        raise ValueError(f"Tipo de ERP no soportado: {erp_type}")
+
+                    # Paso 6: test_connection
+                    if erp_type == 'contabilium':
+                        connector.authenticate()
+                    connector.test_connection()
+                    logger.info("test_connection(): OK")
+
+                    if test_only:
+                        logger.info("--test-only: conexion verificada, sin sincronizar")
+                        # Actualizar sync_log como completado (test exitoso)
+                        with get_db_connection(tenant_id) as conn:
+                            conn.execute(
+                                """
+                                UPDATE sync_log SET status = 'completed', completed_at = NOW()
+                                WHERE id = %(sync_id)s
+                                """,
+                                {'sync_id': sync_id},
+                            )
+                            conn.commit()
+                        return
+
+                    # Pasos 7-9: Fetch datos con rate limiting entre entidades
+                    customers_data, c_truncated = connector.fetch_customers()
+                    if limit:
+                        customers_data = customers_data[:limit]
+                    logger.info(f"Clientes obtenidos: {len(customers_data)}")
+                    time.sleep(SYNC_RATE_LIMIT_DELAY)
+
+                    products_data, p_truncated = connector.fetch_products()
+                    if limit:
+                        products_data = products_data[:limit]
+                    logger.info(f"Productos obtenidos: {len(products_data)}")
+                    time.sleep(SYNC_RATE_LIMIT_DELAY)
+
+                    orders_data, o_truncated = connector.fetch_orders(since_date)
+                    if limit:
+                        orders_data = orders_data[:limit]
+                    logger.info(f"Ordenes obtenidas: {len(orders_data)}")
+
+                # Al salir del with, credenciales se limpian automaticamente
             any_truncated = c_truncated or p_truncated or o_truncated
 
             # === FASE 2: UPSERT (dentro de una unica transaccion DB) ===
@@ -477,8 +525,8 @@ class SyncEngine:
                     COUNT(*)           AS order_count,
                     COALESCE(SUM(o.total_amount), 0) AS total_amount,
                     CASE WHEN COUNT(*) > 1 THEN
-                        EXTRACT(EPOCH FROM (MAX(o.order_date) - MIN(o.order_date)))
-                        / (86400.0 * (COUNT(*) - 1))
+                        (MAX(o.order_date) - MIN(o.order_date))::numeric
+                        / (COUNT(*) - 1)
                     ELSE NULL END AS avg_days
                 FROM orders o
                 WHERE o.tenant_id = %(tenant_id)s
