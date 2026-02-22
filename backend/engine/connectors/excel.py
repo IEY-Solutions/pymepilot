@@ -47,6 +47,7 @@ _REQUIRED_COLUMNS = {
 # Solo los campos que difieren. Los que ya coinciden (Id, Nombre,
 # Email, Telefono, Fecha, Total, Cliente) no necesitan traduccion.
 _FIELD_MAP_CUSTOMERS = {
+    "Nombre": "RazonSocial",
     "Direccion": "Domicilio",
     "Ciudad": "Localidad",
     "Notas": "Observaciones",
