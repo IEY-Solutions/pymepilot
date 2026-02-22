@@ -34,7 +34,7 @@ from backend.engine.connectors.base import ERPConnector
 from backend.engine.connectors.contabilium import ContabiliumConnector
 from backend.engine.connectors.crypto import TenantCredentials, validate_fernet_key
 from backend.engine.connectors.excel import ExcelConnector
-from backend.engine.core.logger import audit_logs_for_secrets, get_logger, _LOG_FILE
+from backend.engine.core.logger import audit_logs_for_secrets, get_logger, sanitize_text, _LOG_FILE
 from backend.engine.db.connection import get_db_connection, get_tenant_id_by_slug
 
 logger = get_logger(__name__)
@@ -292,7 +292,7 @@ class SyncEngine:
                         ).fetchone()
 
                         if current_status and current_status[0] == 'started':
-                            error_msg = str(original_exception) if original_exception else 'Error desconocido'
+                            error_msg = sanitize_text(str(original_exception)) if original_exception else 'Error desconocido'
                             conn.execute(
                                 """
                                 UPDATE sync_log SET
@@ -494,9 +494,9 @@ class SyncEngine:
                             'order_id': order_id,
                             'product_id': product_id,
                             'product_name': product_name,
-                            'quantity': item.get('Cantidad'),
-                            'unit_price': item.get('PrecioUnitario'),
-                            'total_price': item.get('Total'),
+                            'quantity': item.get('Cantidad') or 0,
+                            'unit_price': item.get('PrecioUnitario') or 0,
+                            'total_price': item.get('Total') or 0,
                         },
                     )
 

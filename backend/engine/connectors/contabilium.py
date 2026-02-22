@@ -172,7 +172,7 @@ class ContabiliumConnector(ERPConnector):
                 if _retries > SYNC_MAX_RETRIES:
                     raise RateLimitError(f"Rate limit excedido tras {SYNC_MAX_RETRIES} reintentos")
                 try:
-                    retry_after = min(int(response.headers.get("Retry-After", "30")), 60)
+                    retry_after = max(1, min(int(response.headers.get("Retry-After", "30")), 60))
                 except (ValueError, TypeError):
                     retry_after = 30  # Fallback si header es fecha HTTP o formato inesperado
                 logger.warning(f"GET {endpoint} -> 429. Esperando {retry_after}s")
@@ -258,39 +258,6 @@ class ContabiliumConnector(ERPConnector):
             )
 
         return all_items, truncated
-
-    @staticmethod
-    def _validate_records(
-        records: list[dict],
-        entity: str,
-        required_fields: list[str],
-    ) -> list[dict]:
-        """Filtra registros que no tienen los campos obligatorios para el upsert.
-
-        Un registro con Id=null de la API causa constraint violation en el upsert,
-        que dispara ROLLBACK de TODA la transaccion. Con validacion previa, el
-        registro malo se descarta y se loguea, el resto del sync continua normal.
-        """
-        valid = []
-        for record in records:
-            missing = [f for f in required_fields if not record.get(f)]
-            if missing:
-                eid = record.get('Id', record.get('id', 'desconocido'))
-                logger.warning(
-                    f"_validate_records: {entity} descartado "
-                    f"(external_id={eid}, campos faltantes: {missing})"
-                )
-                continue
-            valid.append(record)
-
-        discarded = len(records) - len(valid)
-        if discarded > 0:
-            logger.info(
-                f"_validate_records: {entity} — {len(valid)} validos, "
-                f"{discarded} descartados de {len(records)} totales"
-            )
-
-        return valid
 
     def fetch_customers(self) -> tuple[list[dict], bool]:
         """Obtiene clientes de Contabilium.

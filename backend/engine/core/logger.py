@@ -191,6 +191,27 @@ def get_logger(name: str) -> logging.Logger:
     return logger
 
 
+# --- Sanitizacion reutilizable fuera de logging ---
+
+# Instancia singleton para sanitizar texto fuera del sistema de logging.
+# Caso de uso: limpiar str(exception) ANTES de escribir a la DB,
+# donde SanitizingFormatter no llega (solo cubre log output).
+_sanitizer = SanitizingFormatter()
+
+
+def sanitize_text(text: str) -> str:
+    """Sanitiza un string usando los mismos patrones que SanitizingFormatter.
+
+    Util para sanitizar datos ANTES de escribirlos a DB u otros destinos
+    que no pasan por el sistema de logging.
+
+    Ejemplo:
+        error_msg = sanitize_text(str(exception))
+        conn.execute("UPDATE sync_log SET error_message = %s", (error_msg,))
+    """
+    return _sanitizer._sanitize(text)
+
+
 def audit_logs_for_secrets(log_file: str) -> int:
     """Segunda linea de defensa. Escanea un archivo de log buscando patrones
     sensibles que NO deberian estar ahi (si SanitizingFormatter funciono bien,
@@ -219,7 +240,7 @@ def audit_logs_for_secrets(log_file: str) -> int:
         re.compile(r'[?&](token|access_token|api_key|client_secret)=[^&\s]+'),
     ]
 
-    logger = logging.getLogger('pymepilot.audit')
+    logger = get_logger('pymepilot.audit')
     count = 0
 
     try:

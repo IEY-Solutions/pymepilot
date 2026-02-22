@@ -40,6 +40,14 @@ Thumbs.db
 *.log
 logs/
 
+# --- Certificados y credenciales ---
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+*.credentials.json
+
 # --- Base de datos ---
 *.sql.gz
 *.dump

@@ -44,6 +44,41 @@ class ERPConnector(ABC):
         Lanza excepcion con detalle si falla.
         """
 
+    @staticmethod
+    def _validate_records(
+        records: list[dict],
+        entity: str,
+        required_fields: list[str],
+    ) -> list[dict]:
+        """Filtra registros que no tienen los campos obligatorios para el upsert.
+
+        Un registro con Id=None o Id='' causa constraint violation en el upsert,
+        que dispara ROLLBACK de TODA la transaccion. Con validacion previa, el
+        registro malo se descarta y se loguea, el resto del sync continua normal.
+
+        Usa 'is None or == ""' (no truthiness) para no descartar valores como 0.
+        """
+        valid = []
+        for record in records:
+            missing = [f for f in required_fields if record.get(f) is None or record.get(f) == '']
+            if missing:
+                eid = record.get('Id', record.get('id', 'desconocido'))
+                logger.warning(
+                    f"_validate_records: {entity} descartado "
+                    f"(external_id={eid}, campos faltantes: {missing})"
+                )
+                continue
+            valid.append(record)
+
+        discarded = len(records) - len(valid)
+        if discarded > 0:
+            logger.info(
+                f"_validate_records: {entity} — {len(valid)} validos, "
+                f"{discarded} descartados de {len(records)} totales"
+            )
+
+        return valid
+
     @abstractmethod
     def fetch_customers(self) -> tuple[list[dict], bool]:
         """Obtiene todos los clientes del ERP.

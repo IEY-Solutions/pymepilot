@@ -196,14 +196,16 @@ class ExcelConnector(ERPConnector):
         """Lee hoja 'Clientes' y mapea campos al formato SyncEngine."""
         records = self._read_sheet("Clientes")
         records = self._apply_field_map(records, _FIELD_MAP_CUSTOMERS)
-        logger.info(f"fetch_customers(): {len(records)} clientes leidos de Excel")
+        records = self._validate_records(records, "clientes", ["Id", "RazonSocial"])
+        logger.info(f"fetch_customers(): {len(records)} clientes validos de Excel")
         return records, False
 
     def fetch_products(self) -> tuple[list[dict], bool]:
         """Lee hoja 'Productos' y mapea campos al formato SyncEngine."""
         records = self._read_sheet("Productos")
         records = self._apply_field_map(records, _FIELD_MAP_PRODUCTS)
-        logger.info(f"fetch_products(): {len(records)} productos leidos de Excel")
+        records = self._validate_records(records, "productos", ["Id", "Nombre"])
+        logger.info(f"fetch_products(): {len(records)} productos validos de Excel")
         return records, False
 
     def fetch_orders(self, since_date: date | None = None) -> tuple[list[dict], bool]:
@@ -240,6 +242,9 @@ class ExcelConnector(ERPConnector):
                     record["Items"] = items_by_order[order_id]
 
             logger.info(f"fetch_orders(): {len(items_raw)} items leidos de hoja 'Items'")
+
+        # Validar campos obligatorios antes de filtrar
+        records = self._validate_records(records, "ordenes", ["Id", "Fecha"])
 
         # Filtrar por fecha si se pidio
         if since_date is not None:

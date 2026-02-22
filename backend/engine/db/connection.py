@@ -22,14 +22,15 @@ NOTA: load_dotenv() se ejecuta en los ENTRY POINTS (scripts), NO aca.
 """
 
 import os
-import logging
 from contextlib import contextmanager
 from uuid import UUID
 
 import psycopg
 from psycopg_pool import ConnectionPool
 
-logger = logging.getLogger(__name__)
+from backend.engine.core.logger import get_logger
+
+logger = get_logger(__name__)
 
 # Pool global de conexiones (singleton)
 _pool: ConnectionPool | None = None
