@@ -17,6 +17,39 @@ Pato esta aprendiendo a programar (1-2 hs/dia). En CADA interaccion:
 
 ---
 
+# CONTEXT7 MCP — USO PROACTIVO OBLIGATORIO
+
+> **Origen:** Sesion 2026-02-23. Se instalo el MCP de Context7 para consultar
+> documentacion actualizada de cualquier libreria directamente desde Claude Code.
+> El objetivo es que Claude use documentacion real y vigente en vez de confiar
+> solo en su conocimiento interno (que puede estar desactualizado o incompleto).
+
+**REGLA:** Usar Context7 MCP de forma PROACTIVA (sin esperar que Pato lo pida)
+cada vez que la tarea involucre cualquiera de estos escenarios:
+
+1. **Documentacion de librerias/APIs:** Antes de escribir codigo que use una
+   libreria (Next.js, shadcn/ui, Supabase, psycopg3, Anthropic SDK, etc.),
+   consultar Context7 para obtener la sintaxis y patrones actuales.
+2. **Generacion de codigo:** Cuando se va a generar codigo que depende de una
+   API externa o libreria de terceros, verificar en Context7 que la API no
+   haya cambiado (metodos deprecados, nuevos parametros, breaking changes).
+3. **Setup o configuracion:** Para pasos de instalacion, configuracion inicial,
+   o integracion de herramientas, consultar Context7 en vez de confiar en
+   memoria — los pasos cambian entre versiones.
+4. **Dudas sobre version o compatibilidad:** Si hay incertidumbre sobre si un
+   patron o metodo es valido para la version que usa el proyecto, Context7
+   es la fuente de verdad.
+
+**Workflow:**
+1. Llamar `resolve-library-id` para obtener el ID de la libreria
+2. Llamar `query-docs` con una pregunta especifica sobre lo que se necesita
+3. Usar la respuesta para escribir codigo basado en documentacion real
+
+**NO aplica a:** Logica de negocio propia de PymePilot, SQL puro sin ORM,
+scripts internos sin dependencias externas.
+
+---
+
 # PROCESO Y CALIBRACION DE CLAUDE CODE
 
 > Restricciones operativas derivadas de 13 iteraciones de revision de seguridad.
