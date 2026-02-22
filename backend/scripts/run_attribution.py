@@ -177,6 +177,7 @@ def main() -> None:
                 else:
                     update_prediction_attribution(
                         conn,
+                        tenant_id=tenant_id,
                         prediction_id=pred_id,
                         order_id=str(match['order_id']),
                         order_amount=order_amount,

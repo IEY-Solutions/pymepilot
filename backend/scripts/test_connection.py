@@ -19,10 +19,17 @@ Si todo imprime OK, la conexion esta funcionando correctamente.
 import sys
 import os
 
-# Agregar el directorio padre al path para poder importar nuestros modulos
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from psycopg import sql
 
-from engine.db.connection import (
+# Agregar la raiz del proyecto al path para que encuentre el paquete "backend".
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+
+from dotenv import load_dotenv
+
+load_dotenv()
+os.umask(0o077)
+
+from backend.engine.db.connection import (
     get_pool,
     get_db_connection,
     get_db_connection_no_tenant,
@@ -94,7 +101,8 @@ def main():
         with get_db_connection(tenant_id) as conn:
             for table in ["customers", "products", "orders", "predictions"]:
                 # Nota: con RLS activo, solo cuenta registros de este tenant
-                result = conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()
+                query = sql.SQL("SELECT COUNT(*) FROM {}").format(sql.Identifier(table))
+                result = conn.execute(query).fetchone()
                 print(f"  {table}: {result[0]} registros")
     except Exception as e:
         print(f"  FALLO - {e}")

@@ -66,6 +66,7 @@ def _reset_connection(conn: psycopg.Connection) -> None:
     Si el RESET falla (conexion rota), psycopg_pool descarta la conexion
     automaticamente y crea una nueva. No hay riesgo de leak.
     """
+    conn.rollback()
     conn.execute("RESET app.tenant_id")
     conn.commit()
 

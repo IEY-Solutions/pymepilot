@@ -185,8 +185,12 @@ def get_logger(name: str) -> logging.Logger:
         # al menos el logger de consola sigue funcionando
         logger.warning("No se pudo configurar file handler para logs")
 
-    # Nivel por defecto (se sobreescribe desde settings en los entry points)
-    logger.setLevel(logging.DEBUG)
+    # Nivel de log: lee de la variable de entorno LOG_LEVEL.
+    # En desarrollo (default): DEBUG. En produccion: configurar LOG_LEVEL=INFO en .env.
+    # Se lee de os.getenv (no de settings.py) para evitar dependencia circular.
+    level_name = os.getenv("LOG_LEVEL", "DEBUG").upper()
+    level = getattr(logging, level_name, logging.DEBUG)
+    logger.setLevel(level)
 
     return logger
 

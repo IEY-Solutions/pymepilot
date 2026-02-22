@@ -490,6 +490,7 @@ def get_predictions_for_attribution(
 
 def update_prediction_attribution(
     conn,
+    tenant_id: str,
     prediction_id: str,
     order_id: str,
     order_amount: Decimal,
@@ -505,6 +506,7 @@ def update_prediction_attribution(
 
     Args:
         conn: Conexion con tenant context.
+        tenant_id: UUID del tenant (filtro explicito sobre RLS).
         prediction_id: UUID de la prediccion.
         order_id: UUID de la orden que la convirtio.
         order_amount: Monto de la orden.
@@ -521,8 +523,10 @@ def update_prediction_attribution(
                     'attributed_automatically', true
                 )
             WHERE id = %(prediction_id)s
+              AND tenant_id = %(tenant_id)s
             """,
             {
+                'tenant_id': tenant_id,
                 'prediction_id': prediction_id,
                 'order_id': order_id,
                 'order_amount': float(order_amount),
