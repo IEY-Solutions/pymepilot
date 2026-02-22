@@ -2,7 +2,7 @@
 
 **Proyecto:** PymePilot - Seguimiento Inteligente para Distribuidores B2B
 **Servidor:** Contabo VPS | **Usuario:** pato | **Directorio:** `/home/pato/projects/pymepilot/`
-**Ultima actualizacion:** 2026-02-20
+**Ultima actualizacion:** 2026-02-22
 
 ---
 
@@ -54,6 +54,51 @@ Cuando se corrige un punto del plan, el comportamiento default es arreglar ese p
 
 ---
 
+## PROTOCOLO POST-MODIFICACION DE CODIGO (OBLIGATORIO)
+
+> **Origen:** Sesion 2026-02-22. Durante debugging en vivo se parchearon 5 bugs
+> sin verificacion cruzada entre archivos. Funciono por suerte, no por protocolo.
+> Pato: "30 segundos mas por output nos sale mas barato que ir rompiendo cosas."
+
+**TRIGGER:** Cada vez que se usa Edit o Write sobre un archivo de codigo
+(.py, .sql, .ts, .js, .tsx, .jsx), este protocolo se activa ANTES de
+responder al usuario. Sin excepciones. Ni en debugging en vivo.
+Ni cuando "es un cambio chiquito". Ni cuando "estamos apurados".
+
+**Checklist post-modificacion (TODOS los puntos, SIEMPRE):**
+
+1. **Identificar dependencias:** ¿Que otros archivos importan, llaman,
+   o dependen del archivo que acabo de modificar?
+   Listarlos explicitamente en el razonamiento interno.
+
+2. **Verificar consistencia:** Por cada archivo dependiente, verificar
+   que el cambio no rompe: imports, firmas de funciones, nombres de
+   variables, tipos de retorno, columnas de DB, o contratos.
+
+3. **Ejecucion mental 3 escenarios** (sobre el codigo MODIFICADO):
+   - (A) Happy path
+   - (B) Excepcion/error en la primera linea modificada
+   - (C) Excepcion/error en la ultima linea modificada
+
+4. **Seguridad express:** ¿El cambio toca datos sensibles, credenciales,
+   queries SQL, o logs? Si si → verificar que no se introdujo un leak,
+   una inyeccion, o un dato sin sanitizar.
+
+5. **Declarar resultado:** Incluir en la respuesta al usuario una linea:
+   "Verificacion post-mod: [archivos revisados] — sin inconsistencias"
+   o bien: "Verificacion post-mod: encontre [problema] en [archivo] — corrijo."
+
+**Lo que NO es aceptable:**
+- "Es solo un fix chiquito, no hace falta" → SI hace falta
+- "Ya lo verifique mentalmente" → Listar archivos EXPLICITAMENTE
+- "Lo revisamos despues" → NO. Se revisa AHORA, antes de responder
+- Debugging en vivo con Pato NO es excusa para saltear este protocolo
+
+**Costo:** ~30-45 segundos por modificacion.
+**Beneficio:** No romper codigo existente ni introducir bugs en cascada.
+
+---
+
 ## EJECUCION MENTAL OBLIGATORIA DE PSEUDOCODIGO
 
 Antes de declarar completo cualquier bloque de pseudocodigo, ejecutarlo mentalmente con 3 escenarios:
@@ -91,6 +136,121 @@ Si la condicion dice `<=` y el comentario dice "igualdad = fallo", hay contradic
 ## PROCESS REFLECTION
 
 Cuando Pato pregunta "es capacidad o prioridad?" o "que protocolo seguiste?", la respuesta debe ser honesta y especifica — no defensiva, no general. Esa honestidad es la que permite mejorar el sistema.
+
+---
+
+## DECLARACION DE INCERTIDUMBRE
+
+> **Origen:** Sesion 2026-02-22. No se menciono el riesgo de Cloudflare al disenar
+> la conexion al ERP, a pesar de ser un problema conocido con VPS de datacenter.
+> El sesgo natural es presentar todo como seguro. Esta regla fuerza honestidad.
+
+Antes de presentar cualquier solucion, comando, o cambio de codigo,
+clasificar internamente el nivel de certeza:
+
+- **VERIFICADO:** Lo probe o lo lei en documentacion oficial → presentar normal
+- **ALTA CONFIANZA:** Patron conocido que he visto funcionar → presentar normal
+- **INCERTIDUMBRE:** No estoy seguro de que funcione, asumo que si
+  → OBLIGATORIO decirle a Pato: "INCERTIDUMBRE: [que no estoy seguro]"
+  antes de proceder. Pato decide si investigamos primero o probamos.
+- **NO SE:** No tengo informacion suficiente
+  → OBLIGATORIO decirlo. NUNCA inventar o adivinar.
+
+El sesgo natural es presentar todo como VERIFICADO. Esta regla existe
+para forzar la honestidad cuando la certeza es menor.
+
+---
+
+## ANTI-DEGRADACION POR CONTEXTO LARGO
+
+> **Origen:** Sesion 2026-02-22. Los primeros pasos de implementacion fueron
+> mas cuidadosos que los ultimos. Los bugfixes finales se parchearon sin
+> revision cruzada. La calidad se degradó hacia el final de la sesion.
+
+La calidad de las ultimas modificaciones de una sesion debe ser IGUAL
+a la de las primeras. El cansancio de contexto no es excusa.
+
+**Indicadores de degradacion (autoverificacion):**
+- Estoy haciendo cambios sin explicar QUE y POR QUE (modo educativo)
+- Estoy saltando el checklist post-modificacion "porque ya lo hice varias veces"
+- Estoy respondiendo mas corto de lo normal
+- Estoy parcheando en vez de entendiendo
+
+**Si detecto 2+ indicadores → PARAR y decirle a Pato:**
+
+> "Estoy detectando que mi rigor esta bajando. Recomiendo:
+> (a) hacer commit de lo que tenemos y continuar manana, o
+> (b) abrir sesion nueva con handoff."
+
+NUNCA seguir trabajando con rigor degradado. Es mejor entregar menos
+con calidad que mas con bugs escondidos.
+
+---
+
+## REGLA DE LAS DOS OPCIONES
+
+> **Origen:** Sesion 2026-02-22. Cuando Cloudflare bloqueo la API, se invirtio
+> tiempo debuggeando la conexion en vez de proponer inmediatamente el camino
+> alternativo (Excel) que ya estaba listo. Primera solucion ≠ mejor solucion.
+
+Antes de implementar una solucion a cualquier problema o bloqueo,
+listar al menos 2 opciones diferentes con pros/contras.
+Presentar ambas a Pato. Pato elige.
+
+**Aplica a:**
+- Bugs encontrados durante testing
+- Bloqueos externos (APIs, servicios, permisos)
+- Decisiones de diseno durante implementacion
+- Cualquier momento donde hay mas de un camino posible
+
+**NO aplica a:** correcciones obvias de sintaxis, typos, imports faltantes.
+
+**Beneficio doble:** Pato aprende que siempre hay opciones,
+y Claude no se ancla a la primera idea.
+
+---
+
+## VERIFICACION DE ENTORNO ANTES DE INSTRUCCIONES MANUALES
+
+> **Origen:** Sesion 2026-02-22. Se dieron comandos curl con sintaxis Bash
+> cuando Pato estaba en PowerShell (Windows). 4 intentos fallidos desperdiciados.
+
+Antes de darle a Pato un comando para ejecutar (sea en el VPS o en
+su PC local), verificar:
+
+1. ¿En que maquina lo va a ejecutar? (VPS Linux vs PC Windows)
+2. ¿En que terminal? (bash vs PowerShell vs CMD)
+3. ¿Tiene el venv activado? (si aplica)
+4. ¿En que directorio esta?
+
+Si no estoy seguro de alguno → preguntar ANTES de dar el comando.
+Un comando que falla por entorno incorrecto desperdicia tiempo
+y genera frustracion.
+
+**Recordar:** Pato usa Windows con PowerShell en su PC local.
+El VPS es Linux/bash.
+
+---
+
+## CHECKLIST DE RIESGOS PARA CONEXIONES EXTERNAS
+
+> **Origen:** Sesion 2026-02-22. No se anticipo que Cloudflare bloquearia
+> la IP del VPS (173.249.9.56) al conectar con Contabilium. Es un problema
+> conocido con VPS de datacenter que debia haberse listado como riesgo.
+
+Antes de la primera conexion a cualquier servicio externo, presentar a Pato:
+
+> "Riesgos conocidos para conectar con [servicio] desde nuestro VPS:"
+
+- [ ] **Cloudflare/WAF:** ¿el servicio usa proteccion que bloquea IPs de datacenter?
+- [ ] **Firewall:** ¿el puerto de salida esta abierto en nuestro VPS?
+- [ ] **DNS:** ¿resuelve correctamente desde el VPS?
+- [ ] **SSL/TLS:** ¿version compatible?
+- [ ] **Rate limiting:** ¿limites conocidos? ¿headers de rate limit?
+- [ ] **Geoblocking:** ¿el servicio restringe por pais/region?
+
+No todos aplican siempre, pero LISTARLOS obliga a pensarlos.
+Si alguno es riesgo real → testearlo ANTES de escribir codigo.
 
 ---
 
