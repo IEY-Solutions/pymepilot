@@ -99,21 +99,15 @@ def save_tenant_credentials(
     """
     ciphertext = encrypt_secret(client_secret, encryption_key)
 
+    erp_config = json.dumps({
+        'client_id': client_id,
+        'client_secret_encrypted': ciphertext,
+    })
+
     with get_db_connection_no_tenant() as conn:
         conn.execute(
-            """
-            UPDATE tenants
-            SET erp_config = jsonb_build_object(
-                'client_id', %(client_id)s,
-                'client_secret_encrypted', %(ciphertext)s
-            )
-            WHERE slug = %(slug)s
-            """,
-            {
-                'client_id': client_id,
-                'ciphertext': ciphertext,
-                'slug': tenant_slug,
-            },
+            "UPDATE tenants SET erp_config = %(config)s::jsonb WHERE slug = %(slug)s",
+            {'config': erp_config, 'slug': tenant_slug},
         )
         conn.commit()
 

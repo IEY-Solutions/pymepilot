@@ -86,15 +86,24 @@ class SyncEngine:
         # Paso 3: Registrar sync en sync_log
         sync_id = None
         with get_db_connection(tenant_id) as conn:
+            # Determinar sync_type segun los parametros
+            if limit:
+                sync_type = 'limited'
+            elif since_date:
+                sync_type = 'incremental'
+            else:
+                sync_type = 'full'
+
             result = conn.execute(
                 """
-                INSERT INTO sync_log (tenant_id, sync_type, status, started_at)
-                VALUES (%(tenant_id)s, %(sync_type)s, 'started', NOW())
+                INSERT INTO sync_log (tenant_id, sync_type, source, status, started_at)
+                VALUES (%(tenant_id)s, %(sync_type)s, %(source)s, 'started', NOW())
                 RETURNING id
                 """,
                 {
                     'tenant_id': tenant_id,
-                    'sync_type': 'incremental' if since_date else 'full',
+                    'sync_type': sync_type,
+                    'source': erp_type or 'unknown',
                 },
             ).fetchone()
             sync_id = result[0]

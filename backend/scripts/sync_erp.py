@@ -31,6 +31,10 @@ import os
 import sys
 from datetime import date
 
+# Agregar la raiz del proyecto al path de Python para que encuentre
+# el paquete "backend". Sin esto, "from backend.config..." falla.
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+
 from dotenv import load_dotenv
 
 # load_dotenv ANTES de imports del proyecto

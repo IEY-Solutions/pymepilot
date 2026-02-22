@@ -59,10 +59,14 @@ def _reset_connection(conn: psycopg.Connection) -> None:
     Cast de '' a uuid FALLA → query denegada. Comportamiento FAIL-CLOSED:
     si el reset funciono, ninguna query pasa sin set_tenant_context() nuevo.
 
+    conn.rollback() primero: si la conexion tiene una transaccion abierta
+    (estado INTRANS), el RESET falla. rollback() la limpia.
+
     Si el RESET falla (conexion rota), psycopg_pool descarta la conexion
     automaticamente y crea una nueva. No hay riesgo de leak.
     """
     conn.execute("RESET app.tenant_id")
+    conn.commit()
 
 
 def get_pool() -> ConnectionPool:
