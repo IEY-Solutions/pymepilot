@@ -35,7 +35,7 @@ run_vertical.py (CLI)
 1. **Predicción por PRODUCTO** — No solo "Juan necesita comprar" sino "Juan necesita 50 Fundas MagSafe"
 2. **Ventana adaptativa** — Clientes regulares: contactar 5 días antes. Irregulares: 14 días antes.
 3. **Prioridad por valor de negocio** — Clientes que facturan más suben de prioridad.
-4. **Tracking de conversión** — Si el cliente compra después del contacto, se registra automáticamente.
+4. **Tracking de conversión automático** — Si el cliente compra después de una predicción, se atribuye sin intervención manual. No depende de que el vendedor marque nada.
 5. **Perfiles de cliente** — VIP, Regular, En riesgo, Nuevo-recurrente. Claude ajusta el tono.
 6. **Secuencia preparada** — Metadata con sequence_step/sequence_id para seguimientos futuros.
 
@@ -115,6 +115,34 @@ run_vertical.py (CLI)
 
 ---
 
+## Atribución de Resultados (100% automática)
+
+**Principio:** PymePilot demuestra su valor sin depender de acciones manuales del vendedor.
+
+**Flujo:**
+```
+PymePilot genera predicción para Juan
+  → Sync diario trae compras nuevas del ERP
+    → Si Juan compró dentro de 14 días de la predicción
+      → Atribución automática: predicción → compra (monto, fecha, productos)
+```
+
+**Lógica de atribución:** Si existe una predicción (status 'pending' o 'contacted') para un
+cliente, y ese cliente hace una compra dentro de los 14 días siguientes a la predicción,
+la venta se atribuye a PymePilot. No requiere que el vendedor confirme nada.
+
+**Métricas que esto genera para el panel de resultados:**
+- Tasa de conversión: predicciones que resultaron en compra / total predicciones
+- Facturación asistida: suma de montos de compras atribuidas
+- Tiempo de respuesta: días promedio entre predicción y compra
+- ROI: facturación asistida / costo de PymePilot
+
+**Nota:** Puede sobreestimar ligeramente (incluye clientes que habrían comprado solos).
+Cuando tengamos más datos, podemos refinar comparando contra un grupo de control
+(clientes sin predicción que también compran).
+
+---
+
 ## Verificación End-to-End
 
 1. Migration 014 ejecutada OK
@@ -123,3 +151,4 @@ run_vertical.py (CLI)
 4. `--limit 1` genera 1 predicción real con mensaje
 5. Re-run = 0 nuevas (de-duplicación funciona)
 6. Verificar en DB: mensaje, score, priority, metadata
+7. Verificar atribución: simular compra posterior → predicción marcada como 'completed'

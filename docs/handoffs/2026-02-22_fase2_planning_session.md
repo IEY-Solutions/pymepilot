@@ -77,6 +77,11 @@ Sesión de diseño colaborativa donde se definió:
 - Template Method pattern (no ABC puro)
 - Una llamada a Claude por candidato (no batch)
 - Prompt en archivo .txt separado (no hardcoded)
+- **Atribución de conversión 100% automática** — predicción + compra dentro de 14 días
+  = venta atribuida. SIN paso manual del vendedor. La compra se detecta del sync del ERP.
+  Pato: "todo lo que depende de lo manual me genera desconfianza"
+- **Kommo/WhatsApp es OPCIONAL** — PymePilot demuestra valor con sus propios datos,
+  independiente de herramientas externas que el cliente use o no
 
 ### Tech debt conocido (no blocker)
 
