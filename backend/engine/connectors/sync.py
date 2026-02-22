@@ -505,33 +505,63 @@ class SyncEngine:
     def _update_derived_fields(self, conn, tenant_id: str) -> None:
         """Calcula campos derivados de clientes con una sola query UPDATE...FROM.
 
-        avg_days: dias entre primera y ultima compra / (cantidad - 1).
-        Si solo tiene 1 orden → NULL (no hay intervalo calculable).
+        Usa un CTE (Common Table Expression) para calcular los intervalos
+        entre compras consecutivas con LAG() window function, y despues
+        agrega todo en un solo GROUP BY:
+
+        - first/last_purchase_date, total_purchases_count/amount: directos
+        - avg_days: (ultima - primera) / (cantidad - 1). NULL si 1 sola orden.
+        - stddev_days: desviacion estandar de los intervalos individuales.
+          Necesita minimo 3 ordenes (2 intervalos) para ser significativo.
+          NULL si < 3 ordenes.
+
         Solo cuenta ordenes con status='completed'.
         """
         conn.execute(
             """
+            WITH intervals AS (
+                -- CTE: cada orden con el intervalo (dias) desde la orden anterior
+                -- LAG() mira la fila anterior dentro del mismo customer_id
+                -- La primera orden de cada cliente tiene days_gap = NULL
+                SELECT
+                    customer_id,
+                    order_date,
+                    total_amount,
+                    (order_date - LAG(order_date) OVER (
+                        PARTITION BY customer_id ORDER BY order_date
+                    ))::numeric AS days_gap
+                FROM orders
+                WHERE tenant_id = %(tenant_id)s
+                  AND status = 'completed'
+            )
             UPDATE customers AS c SET
                 first_purchase_date = sub.first_date,
                 last_purchase_date  = sub.last_date,
                 total_purchases_count = sub.order_count,
                 total_purchases_amount = sub.total_amount,
-                avg_days_between_purchases = sub.avg_days
+                avg_days_between_purchases = sub.avg_days,
+                stddev_days_between_purchases = sub.stddev_days
             FROM (
                 SELECT
-                    o.customer_id,
-                    MIN(o.order_date)  AS first_date,
-                    MAX(o.order_date)  AS last_date,
-                    COUNT(*)           AS order_count,
-                    COALESCE(SUM(o.total_amount), 0) AS total_amount,
+                    customer_id,
+                    MIN(order_date)  AS first_date,
+                    MAX(order_date)  AS last_date,
+                    COUNT(*)         AS order_count,
+                    COALESCE(SUM(total_amount), 0) AS total_amount,
+                    -- avg_days: misma formula que antes (rango total / intervalos)
                     CASE WHEN COUNT(*) > 1 THEN
-                        (MAX(o.order_date) - MIN(o.order_date))::numeric
+                        (MAX(order_date) - MIN(order_date))::numeric
                         / (COUNT(*) - 1)
-                    ELSE NULL END AS avg_days
-                FROM orders o
-                WHERE o.tenant_id = %(tenant_id)s
-                  AND o.status = 'completed'
-                GROUP BY o.customer_id
+                    ELSE NULL END AS avg_days,
+                    -- stddev_days: desviacion estandar de los intervalos individuales
+                    -- COUNT(days_gap) cuenta solo non-NULL (excluye primera orden)
+                    -- >= 2 significa al menos 3 ordenes (2 intervalos reales)
+                    -- STDDEV_SAMP = sample stddev (divide por N-1, no N)
+                    CASE WHEN COUNT(days_gap) >= 2 THEN
+                        STDDEV_SAMP(days_gap)
+                    ELSE NULL END AS stddev_days
+                FROM intervals
+                GROUP BY customer_id
             ) AS sub
             WHERE c.id = sub.customer_id
               AND c.tenant_id = %(tenant_id)s

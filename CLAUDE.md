@@ -465,6 +465,86 @@ fi
 
 ---
 
+## CONTROL DE COSTOS CLAUDE API — PRIORIDAD MAXIMA
+
+> **Origen:** Fase 2 (2026-02-22). La API de Claude es un recurso de pago
+> que se conecta directamente a la billetera del proyecto. Cada token
+> consumido es dinero real. El sistema DEBE ser implacable en el control
+> de costos: prevenir, medir, alertar, y bloquear antes de que un error
+> de codigo o un loop infinito genere una factura inesperada.
+
+**PRINCIPIO FUNDAMENTAL:** Cada llamada a Claude es dinero. Tratar los
+tokens como un recurso escaso y caro. Antes de llamar a Claude, siempre
+preguntarse: "¿Es estrictamente necesaria esta llamada? ¿Puedo reducir
+el prompt? ¿Estoy enviando datos innecesarios?"
+
+### 4 Capas de Control (obligatorias, no se pueden saltear)
+
+| Capa | Control | Configurable en .env |
+|------|---------|---------------------|
+| 1. Limite diario | Bloquea llamadas si tokens_total_hoy >= limite | `DAILY_TOKEN_LIMIT` (default: 100,000) |
+| 2. Limite por llamada | max_tokens nunca > techo absoluto | `MAX_TOKENS_PER_CALL` (default: 4,000) |
+| 3. Registro post-llamada | SIEMPRE registra en api_usage (bloque finally) | — |
+| 4. Alertas por log | WARNING >70%, CRITICAL >90% del limite | — |
+
+### Reglas de Consumo Cauteloso
+
+- **Prompts minimos:** Enviar solo los datos necesarios. No mandar historial
+  completo si solo se necesitan las ultimas 3 compras.
+- **max_tokens ajustado:** Usar el minimo necesario por tipo de llamada.
+  Un mensaje de WhatsApp no necesita 4000 tokens de respuesta.
+- **Sin loops a Claude:** NUNCA llamar a Claude dentro de un loop sin
+  limite explicito. Siempre usar `--limit` en desarrollo/testing.
+- **Dry-run primero:** Antes de correr en produccion, SIEMPRE probar
+  con `--dry-run` (ejecuta todo menos la llamada a Claude).
+- **Monitorear despues de cada run:** Verificar `get_usage_today()` o
+  consultar `SELECT * FROM api_usage WHERE usage_date = CURRENT_DATE`.
+
+### Ajustar Limites
+
+Editar `.env` y reiniciar el servicio:
+```bash
+DAILY_TOKEN_LIMIT=100000      # Tokens totales por dia (default 100k)
+MAX_TOKENS_PER_CALL=4000      # Techo por llamada individual
+CLAUDE_MAX_TOKENS=1500         # Default si no se especifica en la llamada
+```
+
+### Seguridad de la API Key
+
+- La key vive SOLO en `.env` (permisos 600). NUNCA en codigo, DB, o logs.
+- `SanitizingFormatter` ya captura `ANTHROPIC_API_KEY` como patron sensible.
+- El SDK la transmite por HTTPS (encriptada en transito).
+- `api_usage` solo guarda conteos y costos, NUNCA la key.
+- Si la key se compromete → revocar en console.anthropic.com inmediatamente.
+
+### Fail-open vs Fail-closed
+
+Si la DB esta temporalmente caida y no se puede consultar api_usage:
+- La llamada a Claude SE PERMITE (fail-open) + log ERROR.
+- Razon: Anthropic tiene sus propios rate limits como red de seguridad.
+- Apenas la DB vuelva, el registro se retoma normalmente.
+- Si esto es inaceptable, cambiar `_get_usage_from_db()` para que lance
+  excepcion en vez de retornar 0.
+
+### Tabla api_usage
+
+```sql
+-- Tabla GLOBAL (sin tenant_id, sin RLS). Cada fila = 1 llamada a Claude.
+-- Consultar uso del dia:
+SELECT SUM(tokens_total) AS tokens_hoy, SUM(cost_usd) AS costo_hoy
+FROM api_usage WHERE usage_date = CURRENT_DATE;
+```
+
+### Costo de Referencia (Claude Sonnet)
+
+| Escenario | Candidatos/dia | Costo estimado/mes |
+|-----------|---------------|-------------------|
+| Testing | 5-10 | ~$0.05 total |
+| IEY produccion | 10-15/dia | ~$1.50-2.00/mes |
+| Limite default (100k tokens/dia) | ~50-60 llamadas | ~$0.45-1.50/dia max |
+
+---
+
 # CONTEXTO DEL PROYECTO
 
 ## Que es PymePilot

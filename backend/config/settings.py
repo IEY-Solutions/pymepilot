@@ -32,7 +32,17 @@ DATABASE_PASSWORD = os.getenv("DATABASE_PASSWORD", "")
 # --- Claude API ---
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 CLAUDE_MODEL = os.getenv("CLAUDE_MODEL", "claude-sonnet-4-20250514")
-CLAUDE_MAX_TOKENS = int(os.getenv("CLAUDE_MAX_TOKENS", "1024"))
+CLAUDE_MAX_TOKENS = int(os.getenv("CLAUDE_MAX_TOKENS", "1500"))
+
+# --- Claude API Cost Control ---
+# Limite diario de tokens totales (input + output). Si se supera,
+# el sistema BLOQUEA llamadas hasta el dia siguiente.
+# 100k tokens/dia ≈ $0.45-1.50 USD/dia segun mix input/output.
+DAILY_TOKEN_LIMIT = int(os.getenv("DAILY_TOKEN_LIMIT", "100000"))
+
+# Techo absoluto por llamada individual. NUNCA se puede superar.
+# Si alguien pasa max_tokens > este valor, se recorta silenciosamente.
+MAX_TOKENS_PER_CALL = int(os.getenv("MAX_TOKENS_PER_CALL", "4000"))
 
 # --- Contabilium API ---
 # Solo la URL base. Las credenciales de cada tenant van encriptadas en la DB
