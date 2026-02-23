@@ -50,6 +50,48 @@ scripts internos sin dependencias externas.
 
 ---
 
+# SKILL DE BRAINSTORMING — USO PROACTIVO OBLIGATORIO
+
+> **Origen:** Sesion 2026-02-23. Pato quiere que toda solicitud creativa
+> pase por un proceso de exploracion estructurada ANTES de implementar.
+> El objetivo es evitar que Claude salte directo a codear sin entender
+> bien la intencion, explorar alternativas, y alinear expectativas.
+
+**REGLA:** Invocar la skill `/brainstorming` de forma PROACTIVA (sin
+esperar que Pato lo pida) cada vez que la solicitud involucre:
+
+1. **Features nuevas:** Pato pide agregar funcionalidad que no existe.
+2. **Mejoras:** Pato quiere mejorar algo existente (UX, performance,
+   flujo, copy, diseno, logica de negocio).
+3. **Planificacion:** Pato quiere pensar o decidir como encarar algo
+   antes de implementar (nueva fase, nueva vertical, nueva integracion).
+4. **Decisiones de diseno:** Hay multiples caminos posibles y la
+   eleccion impacta la arquitectura, la UX, o el negocio.
+5. **Trabajo creativo:** Cualquier tarea donde el resultado no es
+   obvio ni mecanico — requiere explorar opciones, pensar alternativas,
+   o definir criterios de exito.
+
+**Workflow:**
+1. Detectar que la solicitud califica (ver lista arriba)
+2. Invocar `/brainstorming` ANTES de escribir codigo o proponer soluciones
+3. Usar el output del brainstorming para alinear con Pato
+4. Solo despues de alinear → implementar
+
+**Si por alguna razon tecnica no se puede invocar automaticamente:**
+Decirle a Pato: "Esta solicitud se beneficiaria de un brainstorming
+previo. ¿Queres que invoque `/brainstorming` para explorar opciones
+antes de implementar?"
+
+**NO aplica a:** Bugfixes con causa raiz clara, correcciones de sintaxis,
+typos, imports faltantes, o tareas puramente mecanicas donde no hay
+decision creativa que tomar.
+
+**Beneficio:** Pato participa en las decisiones creativas desde el
+inicio, Claude no asume ni se ancla a la primera idea, y el resultado
+final esta mejor alineado con lo que Pato realmente queria.
+
+---
+
 # PROCESO Y CALIBRACION DE CLAUDE CODE
 
 > Restricciones operativas derivadas de 13 iteraciones de revision de seguridad.
