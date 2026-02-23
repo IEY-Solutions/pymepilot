@@ -19,7 +19,21 @@
       "WebFetch(domain:github.com)",
       "WebFetch(domain:raw.githubusercontent.com)",
       "Bash(source:*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(source backend/venv/bin/activate && pip install \"cryptography>=42.0.0\" \"openpyxl>=3.1.0\" 2>&1 | tail -5)",
+      "Bash(wc -l /home/pato/projects/pymepilot/backend/engine/connectors/*.py /home/pato/projects/pymepilot/backend/scripts/*.py /home/pato/projects/pymepilot/backend/config/settings.py)",
+      "Bash(node --version && npm --version 2>/dev/null)",
+      "WebFetch(domain:context7.com)",
+      "Bash(node --version 2>/dev/null && npm --version 2>/dev/null && npx --version 2>/dev/null)",
+      "Bash(grep -r \"SUPABASE\" /home/pato/projects/pymepilot --include=\"*.md\" --include=\"*.py\" --include=\"*.ts\" --include=\"*.tsx\" --include=\"*.js\" 2>/dev/null | head -20)",
+      "Bash(ls -la /opt/orion-stack/.env* 2>&1 | head -5)",
+      "Bash(grep -r \"supabaseUrl\\\\|API_EXTERNAL_URL\\\\|devapi.menteax\" /home/pato/projects/pymepilot --include=\"*.ts\" --include=\"*.tsx\" --include=\"*.py\" --include=\"*.env*\" 2>/dev/null | head -10)",
+      "Bash(node --version && npm --version && npx --version 2>&1)",
+      "Bash(wc -l /home/pato/projects/pymepilot/database/migrations/*.sql 2>&1 | tail -1)",
+      "Bash(git -C /home/pato/projects/pymepilot log --oneline -15)",
+      "Bash(git -C /home/pato/projects/pymepilot status --short)",
+      "mcp__context7__resolve-library-id",
+      "mcp__context7__query-docs"
     ]
   }
 }

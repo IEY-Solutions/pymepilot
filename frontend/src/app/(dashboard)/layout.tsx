@@ -1,0 +1,31 @@
+import { Header } from "@/components/layout/header";
+import { Sidebar } from "@/components/layout/sidebar";
+import { BottomNav } from "@/components/layout/bottom-nav";
+import { createClient } from "@/lib/supabase/server";
+
+export default async function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  // Obtener nombre del tenant desde app_metadata del JWT
+  const tenantName = user?.user_metadata?.full_name ?? "PymePilot";
+
+  return (
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <Header tenantName={tenantName} />
+      <div className="flex flex-1 overflow-hidden">
+        <Sidebar />
+        <main className="flex-1 overflow-y-auto pb-16 md:pb-0">
+          <div className="p-4 md:p-6 max-w-5xl">{children}</div>
+        </main>
+      </div>
+      <BottomNav />
+    </div>
+  );
+}
