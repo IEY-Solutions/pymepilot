@@ -1,0 +1,23 @@
+services:
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+    container_name: pymepilot-dashboard
+    restart: unless-stopped
+    networks:
+      - traefik-public
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.pymepilot.rule=Host(`app.pymepilot.cloud`)"
+      - "traefik.http.routers.pymepilot.entrypoints=websecure"
+      - "traefik.http.routers.pymepilot.tls.certresolver=letsencrypt"
+      - "traefik.http.services.pymepilot.loadbalancer.server.port=3000"
+
+networks:
+  traefik-public:
+    external: true
+    name: orion-stack_traefik-public
