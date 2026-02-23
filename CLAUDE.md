@@ -2,7 +2,7 @@
 
 **Proyecto:** PymePilot - Seguimiento Inteligente para Distribuidores B2B
 **Servidor:** Contabo VPS | **Usuario:** pato | **Directorio:** `/home/pato/projects/pymepilot/`
-**Ultima actualizacion:** 2026-02-22
+**Ultima actualizacion:** 2026-02-23
 
 ---
 
@@ -61,13 +61,27 @@ scripts internos sin dependencias externas.
 
 Claude Code optimiza por defecto para resolver el problema tecnico. La seguridad pasa a segundo plano automaticamente cuando el problema es complejo o "emocionante".
 
-**REGLA NO NEGOCIABLE:** El analisis de seguridad se hace ANTES de disenar la funcionalidad.
+**REGLA NO NEGOCIABLE:** El analisis de seguridad se hace ANTES de
+cualquier accion que toque, mueva, copie, o referencie archivos,
+datos, o configuraciones — no solo cuando se "disena".
 
-**Protocolo obligatorio antes de disenar cualquier componente:**
+Debuggear, configurar, deployar, y arreglar son contextos donde las
+decisiones peligrosas ocurren sin ser percibidas como decisiones de
+seguridad. El checkpoint de seguridad se activa por la ACCION
+(tocar un archivo, escribir un comando, crear un artefacto), no por
+la INTENCION (disenar, arreglar, configurar).
+
+> **Origen de esta ampliacion:** Sesion 2026-02-23. Se intento COPY
+> .env.local dentro de un Dockerfile mientras se "arreglaba el build".
+> La regla original decia "antes de disenar". Como el contexto mental
+> era "arreglando", el checkpoint no se activo. La accion era peligrosa
+> independientemente de la intencion.
+
+**Protocolo obligatorio antes de cualquier accion:**
 1. Threat modeling: que puede salir mal, quien puede atacar esto
 2. Trazar el flujo de cada dato sensible desde que nace hasta que muere
-3. Identificar puntos de contacto: logs, memoria, DB, HTTP, filesystem, error paths, serializacion
-4. Solo despues de completar 1-3: disenar la funcionalidad
+3. Identificar puntos de contacto: logs, memoria, DB, HTTP, filesystem, error paths, serializacion, **artefactos de build (Docker images, bundles, CI artifacts)**
+4. Solo despues de completar 1-3: ejecutar la accion
 
 ---
 
@@ -229,6 +243,18 @@ con calidad que mas con bugs escondidos.
 Antes de implementar una solucion a cualquier problema o bloqueo,
 listar al menos 2 opciones diferentes con pros/contras.
 Presentar ambas a Pato. Pato elige.
+
+**FILTRO DE SEGURIDAD (obligatorio):** Ambas opciones presentadas
+deben cumplir el piso minimo de seguridad del proyecto. Si una opcion
+es insegura, NO es opcion — ni siquiera como "temporal", "para el MVP",
+o "mientras tanto". El atajo inseguro temporal no existe.
+
+> **Origen de este filtro:** Sesion 2026-02-23. Se presento como
+> "Opcion A Recomendada" usar una string literal `${ANON_KEY}` como
+> API key de Kong — un hack inseguro disfrazado de pragmatismo.
+> Pato eligio la opcion correcta (generar JWTs reales). El sesgo
+> natural es presentar "lo rapido" como recomendado. Este filtro
+> obliga a que ambas opciones sean seguras antes de presentarlas.
 
 **Aplica a:**
 - Bugs encontrados durante testing
