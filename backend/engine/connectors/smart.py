@@ -25,6 +25,7 @@ SEGURIDAD:
 
 import json
 import re
+import unicodedata
 from collections import defaultdict
 from datetime import date, datetime
 from hashlib import md5
@@ -367,11 +368,12 @@ class SmartFileConnector(ERPConnector):
             return
 
         # --- Extraer clientes unicos ---
+        # IDs basados en hash del nombre → mismos datos = mismo ID entre uploads
         customer_ids: dict[str, str] = {}  # nombre → ID generado
         for row in rows:
             name = str(row.get(col_customer, "")).strip()
             if name and name not in customer_ids:
-                cid = str(len(customer_ids) + 1)
+                cid = _content_hash(name)
                 customer_ids[name] = cid
                 self._parsed["customers"].append({
                     "Id": cid,
@@ -379,12 +381,13 @@ class SmartFileConnector(ERPConnector):
                 })
 
         # --- Extraer productos unicos (si hay columna de producto) ---
+        # IDs basados en hash del nombre → mismos datos = mismo ID entre uploads
         product_ids: dict[str, str] = {}  # nombre → ID generado
         if col_product:
             for row in rows:
                 pname = str(row.get(col_product, "")).strip()
                 if pname and pname not in product_ids:
-                    pid = str(len(product_ids) + 1)
+                    pid = _content_hash(pname)
                     product_ids[pname] = pid
                     price = _safe_number(row.get(col_price)) if col_price else None
                     self._parsed["products"].append({
@@ -396,8 +399,8 @@ class SmartFileConnector(ERPConnector):
         # --- Agrupar filas en ordenes ---
         # Si hay order_id explícito, agrupar por eso.
         # Si no, agrupar por (fecha + cliente) — cada combinación = 1 orden.
+        # IDs basados en hash → mismos datos = mismo ID entre uploads
         orders_by_key: dict[str, dict] = {}
-        order_counter = 0
 
         for row in rows:
             customer_name = str(row.get(col_customer, "")).strip()
@@ -416,8 +419,11 @@ class SmartFileConnector(ERPConnector):
                 order_key = md5(f"{date_str}|{customer_name}".encode()).hexdigest()[:12]
 
             if order_key not in orders_by_key:
-                order_counter += 1
-                oid = str(row.get(col_order_id)) if col_order_id and row.get(col_order_id) else str(order_counter)
+                if col_order_id and row.get(col_order_id):
+                    oid = str(row.get(col_order_id))
+                else:
+                    date_str = str(fecha) if fecha else ""
+                    oid = _content_hash(date_str, customer_name)
                 orders_by_key[order_key] = {
                     "Id": oid,
                     "Fecha": fecha,
@@ -454,12 +460,13 @@ class SmartFileConnector(ERPConnector):
 
     def _parse_customers_sheet(self, rows: list[dict], reverse_map: dict) -> None:
         """Parsea hoja de clientes. Mapea columnas al formato SyncEngine."""
-        base_id = len(self._parsed["customers"])
-        for i, row in enumerate(rows, start=base_id + 1):
-            cid = _get_mapped(row, reverse_map, "customer_id") or str(i)
+        for row in rows:
             name = _get_mapped(row, reverse_map, "customer_name")
             if not name:
                 continue
+            # Si el Excel tiene su propia columna de ID, usarla.
+            # Si no, generar hash del nombre → estable entre uploads.
+            cid = _get_mapped(row, reverse_map, "customer_id") or _content_hash(str(name))
 
             self._parsed["customers"].append({
                 "Id": str(cid),
@@ -473,41 +480,75 @@ class SmartFileConnector(ERPConnector):
 
     def _parse_products_sheet(self, rows: list[dict], reverse_map: dict) -> None:
         """Parsea hoja de productos. Mapea columnas al formato SyncEngine."""
-        base_id = len(self._parsed["products"])
-        for i, row in enumerate(rows, start=base_id + 1):
-            pid = _get_mapped(row, reverse_map, "product_id") or str(i)
+        for row in rows:
             name = _get_mapped(row, reverse_map, "product_name")
             if not name:
                 continue
+            sku = _get_mapped(row, reverse_map, "sku")
+            # Si el Excel tiene su propia columna de ID, usarla.
+            # Si no, generar hash del nombre+sku → estable entre uploads.
+            pid = _get_mapped(row, reverse_map, "product_id") or _content_hash(str(name), str(sku or ""))
 
             self._parsed["products"].append({
                 "Id": str(pid),
                 "Nombre": str(name),
                 "PrecioVenta": _safe_number(_get_mapped(row, reverse_map, "price")),
-                "Codigo": _get_mapped(row, reverse_map, "sku"),
+                "Codigo": sku,
                 "Rubro": _get_mapped(row, reverse_map, "category"),
                 "SubRubro": _get_mapped(row, reverse_map, "subcategory"),
             })
 
     def _parse_orders_sheet(self, rows: list[dict], reverse_map: dict) -> None:
         """Parsea hoja de ordenes (sin items). Mapea columnas al formato SyncEngine."""
-        base_id = len(self._parsed["orders"])
-        for i, row in enumerate(rows, start=base_id + 1):
-            oid = _get_mapped(row, reverse_map, "order_id") or str(i)
+        for row in rows:
             fecha = _normalize_date(_get_mapped(row, reverse_map, "order_date"))
             customer_ref = _get_mapped(row, reverse_map, "customer_ref")
             if not fecha:
                 continue
+            total = _safe_number(_get_mapped(row, reverse_map, "total_amount"))
+            # Si el Excel tiene su propia columna de ID, usarla.
+            # Si no, generar hash de fecha+cliente+total → estable entre uploads.
+            oid = _get_mapped(row, reverse_map, "order_id") or _content_hash(
+                str(fecha), str(customer_ref or ""), str(total or "")
+            )
 
             self._parsed["orders"].append({
                 "Id": str(oid),
                 "Fecha": fecha,
                 "Cliente": str(customer_ref) if customer_ref else "",
-                "Total": _safe_number(_get_mapped(row, reverse_map, "total_amount")),
+                "Total": total,
             })
 
 
 # --- Funciones helper (module-level, no metodos) ---
+
+
+def _content_hash(*parts: str) -> str:
+    """Genera external_id estable basado en contenido.
+
+    QUE HACE: Toma una o mas strings (ej: nombre del cliente, nombre del
+    producto + SKU), las normaliza (quita acentos, minusculas, trim),
+    las une con '|' y les saca un hash MD5 truncado a 12 caracteres.
+
+    POR QUE: Si el mismo dato aparece en 2 uploads distintos, genera
+    el mismo ID. Asi SyncEngine hace UPSERT (actualiza) en vez de
+    INSERT (duplicar). Es como un DNI basado en tus datos: siempre
+    el mismo para los mismos inputs.
+
+    Prefijo 'su_' (smart upload) evita colision con IDs del Canal 1 (ERP),
+    que son numericos puros (ej: '12345' de Contabilium).
+
+    Args:
+        *parts: Strings que identifican la entidad (nombre, SKU, fecha, etc.)
+
+    Returns:
+        String tipo 'su_a1b2c3d4e5f6' (prefijo + 12 hex chars)
+    """
+    normalized = "|".join(
+        unicodedata.normalize("NFKD", str(p)).encode("ascii", "ignore").decode().lower().strip()
+        for p in parts if p
+    )
+    return "su_" + md5(normalized.encode()).hexdigest()[:12]
 
 
 def _get_mapped(row: dict, reverse_map: dict, field: str):

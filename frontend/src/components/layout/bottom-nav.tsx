@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Home, MessageSquare, Clock, Database } from "lucide-react";
+import { NotificationBadge } from "@/components/notifications/notification-badge";
 
 const navItems = [
   { href: "/", label: "Inicio", icon: Home },
@@ -11,7 +12,7 @@ const navItems = [
   { href: "/datos", label: "Datos", icon: Database },
 ];
 
-export function BottomNav() {
+export function BottomNav({ unreadCount = 0 }: { unreadCount?: number }) {
   const pathname = usePathname();
 
   return (
@@ -32,7 +33,12 @@ export function BottomNav() {
                   : "text-gray-400 hover:text-gray-600"
               }`}
             >
-              <item.icon className={`h-5 w-5 ${isActive ? "stroke-[2.5]" : ""}`} />
+              <span className="relative">
+                <item.icon className={`h-5 w-5 ${isActive ? "stroke-[2.5]" : ""}`} />
+                {item.href === "/datos" && (
+                  <NotificationBadge count={unreadCount} />
+                )}
+              </span>
               {item.label}
             </Link>
           );

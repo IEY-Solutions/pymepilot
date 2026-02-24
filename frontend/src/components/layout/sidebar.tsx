@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Home, MessageSquare, Clock, Database } from "lucide-react";
+import { NotificationBadge } from "@/components/notifications/notification-badge";
 
 const navItems = [
   { href: "/", label: "Inicio", icon: Home },
@@ -11,7 +12,7 @@ const navItems = [
   { href: "/datos", label: "Datos", icon: Database },
 ];
 
-export function Sidebar() {
+export function Sidebar({ unreadCount = 0 }: { unreadCount?: number }) {
   const pathname = usePathname();
 
   return (
@@ -32,7 +33,12 @@ export function Sidebar() {
                   : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
               }`}
             >
-              <item.icon className="h-5 w-5" />
+              <span className="relative">
+                <item.icon className="h-5 w-5" />
+                {item.href === "/datos" && (
+                  <NotificationBadge count={unreadCount} />
+                )}
+              </span>
               {item.label}
             </Link>
           );

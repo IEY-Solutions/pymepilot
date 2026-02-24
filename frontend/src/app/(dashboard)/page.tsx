@@ -1,10 +1,14 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import {
   MessageSquare,
   UserCheck,
   Users,
   RefreshCw,
+  AlertTriangle,
+  CheckCircle,
 } from "lucide-react";
+import { getFreshnessInfo } from "@/lib/freshness";
 
 function KpiCard({
   title,
@@ -89,10 +93,11 @@ export default async function HomePage() {
 
   const lastSync = lastSyncRes.data;
   const lastSyncTime = lastSync?.started_at ?? null;
+  const freshness = getFreshnessInfo(lastSyncTime);
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Inicio</h1>
+    <div className="space-y-4">
+      <h1 className="text-2xl font-bold text-gray-900">Inicio</h1>
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
         <KpiCard
@@ -124,6 +129,42 @@ export default async function HomePage() {
           color="bg-orange-50 text-orange-600"
         />
       </div>
+
+      {/* Card de frescura — solo visible si datos NO estan frescos */}
+      {freshness && freshness.color !== "green" && (
+        <div
+          className={`flex items-center justify-between gap-3 p-4 ${freshness.bgClass} border ${freshness.borderClass} rounded-lg`}
+        >
+          <div className="flex items-center gap-3">
+            <AlertTriangle
+              className={`h-5 w-5 ${freshness.textClass} shrink-0`}
+            />
+            <div>
+              <p className={`text-sm font-medium ${freshness.textClass}`}>
+                {freshness.label}
+              </p>
+              <p
+                className={`text-xs ${freshness.textClass} opacity-80 mt-0.5`}
+              >
+                {freshness.message}
+              </p>
+            </div>
+          </div>
+          <Link
+            href="/datos"
+            className={`text-xs ${freshness.textClass} underline shrink-0`}
+          >
+            Actualizar
+          </Link>
+        </div>
+      )}
+
+      {freshness && freshness.color === "green" && (
+        <div className="flex items-center gap-2 px-3 py-2 bg-green-50 border border-green-200 rounded-lg">
+          <CheckCircle className="h-4 w-4 text-green-600 shrink-0" />
+          <p className="text-xs text-green-800">{freshness.label}</p>
+        </div>
+      )}
     </div>
   );
 }
