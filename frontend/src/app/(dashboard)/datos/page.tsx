@@ -6,6 +6,7 @@ import {
   Clock,
   Database,
 } from "lucide-react";
+import { FileUpload } from "@/components/upload/file-upload";
 
 const statusConfig: Record<
   string,
@@ -26,11 +27,65 @@ function formatDate(dateStr: string): string {
   });
 }
 
+/**
+ * Calcula la antiguedad de la ultima sync y retorna color + texto descriptivo.
+ *
+ * Escala visual:
+ * - Verde (<24h): datos frescos
+ * - Amarillo (24-72h): datos algo viejos
+ * - Rojo (>72h): datos muy viejos, predicciones menos precisas
+ */
+function getFreshnessInfo(lastSyncDate: string | null): {
+  color: "green" | "yellow" | "red";
+  bgClass: string;
+  borderClass: string;
+  textClass: string;
+  label: string;
+  message: string;
+} | null {
+  if (!lastSyncDate) return null;
+
+  const ageMs = Date.now() - new Date(lastSyncDate).getTime();
+  const ageHours = ageMs / (1000 * 60 * 60);
+  const ageDays = Math.floor(ageHours / 24);
+
+  if (ageHours < 24) {
+    return {
+      color: "green",
+      bgClass: "bg-green-50",
+      borderClass: "border-green-200",
+      textClass: "text-green-800",
+      label: "Datos actualizados",
+      message: `Ultima actualizacion hace ${Math.floor(ageHours)} hora${Math.floor(ageHours) !== 1 ? "s" : ""}`,
+    };
+  }
+
+  if (ageHours < 72) {
+    return {
+      color: "yellow",
+      bgClass: "bg-yellow-50",
+      borderClass: "border-yellow-200",
+      textClass: "text-yellow-800",
+      label: `Datos de hace ${ageDays} dia${ageDays !== 1 ? "s" : ""}`,
+      message: "Subi datos nuevos para mejorar la precision de las predicciones.",
+    };
+  }
+
+  return {
+    color: "red",
+    bgClass: "bg-red-50",
+    borderClass: "border-red-200",
+    textClass: "text-red-800",
+    label: `Datos de hace ${ageDays} dias`,
+    message: "Las predicciones pueden ser imprecisas. Subi datos actualizados.",
+  };
+}
+
 export default async function DatosPage() {
   const supabase = await createClient();
 
-  // Queries en paralelo
-  const [syncsRes, customersRes, productsRes, ordersRes, predictionsRes] =
+  // Queries en paralelo (+ upload_jobs recientes)
+  const [syncsRes, customersRes, productsRes, ordersRes, predictionsRes, uploadsRes] =
     await Promise.all([
       supabase
         .from("sync_log")
@@ -49,30 +104,57 @@ export default async function DatosPage() {
       supabase
         .from("predictions")
         .select("id", { count: "exact", head: true }),
+      supabase
+        .from("upload_jobs")
+        .select("id, status, file_paths, created_at, completed_at, error_message")
+        .order("created_at", { ascending: false })
+        .limit(5),
     ]);
 
   const syncs = syncsRes.data ?? [];
+  const uploads = uploadsRes.data ?? [];
   const lastSync = syncs[0];
 
-  // Detectar si la ultima sync es muy vieja (>48h)
-  const isStale =
-    lastSync &&
-    Date.now() - new Date(lastSync.started_at).getTime() > 48 * 60 * 60 * 1000;
+  // Indicador de frescura
+  const freshness = getFreshnessInfo(lastSync?.started_at ?? null);
 
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold text-gray-900">Estado de Datos</h1>
 
-      {/* Alerta si datos viejos */}
-      {isStale && (
-        <div className="flex items-center gap-3 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-          <AlertTriangle className="h-5 w-5 text-yellow-600 shrink-0" />
-          <p className="text-sm text-yellow-800">
-            La ultima sincronizacion fue hace mas de 48 horas. Los datos pueden
-            no estar actualizados.
-          </p>
+      {/* Indicador de frescura mejorado */}
+      {freshness && (
+        <div className={`flex items-center justify-between gap-3 p-4 ${freshness.bgClass} border ${freshness.borderClass} rounded-lg`}>
+          <div className="flex items-center gap-3">
+            {freshness.color === "green" ? (
+              <CheckCircle className="h-5 w-5 text-green-600 shrink-0" />
+            ) : freshness.color === "yellow" ? (
+              <AlertTriangle className="h-5 w-5 text-yellow-600 shrink-0" />
+            ) : (
+              <AlertTriangle className="h-5 w-5 text-red-600 shrink-0" />
+            )}
+            <div>
+              <p className={`text-sm font-medium ${freshness.textClass}`}>
+                {freshness.label}
+              </p>
+              <p className={`text-xs ${freshness.textClass} opacity-80 mt-0.5`}>
+                {freshness.message}
+              </p>
+            </div>
+          </div>
+          {freshness.color !== "green" && (
+            <a
+              href="#upload-section"
+              className={`text-xs ${freshness.textClass} underline shrink-0`}
+            >
+              Actualizar datos
+            </a>
+          )}
         </div>
       )}
+
+      {/* Smart File Upload (Canal 2) */}
+      <FileUpload />
 
       {/* Conteo de registros */}
       <div>
@@ -101,6 +183,49 @@ export default async function DatosPage() {
           ))}
         </div>
       </div>
+
+      {/* Uploads recientes */}
+      {uploads.length > 0 && (
+        <div>
+          <h2 className="text-sm font-medium text-gray-500 mb-3">
+            Uploads recientes
+          </h2>
+          <div className="bg-white rounded-lg border border-gray-200 divide-y divide-gray-100">
+            {uploads.map((upload) => {
+              const config = statusConfig[upload.status] ?? statusConfig.started;
+              const StatusIcon = config.icon;
+              const filePaths = upload.file_paths as { name: string }[];
+              const fileNames = filePaths?.map((f) => f.name).join(", ") ?? "";
+              return (
+                <div
+                  key={upload.id}
+                  className="p-3 flex items-center justify-between"
+                >
+                  <div className="flex items-center gap-3">
+                    <StatusIcon className={`h-5 w-5 ${config.color}`} />
+                    <div>
+                      <p className="text-sm font-medium text-gray-900 max-w-xs truncate">
+                        {fileNames}
+                      </p>
+                      <p className="text-xs text-gray-400">
+                        {formatDate(upload.created_at)}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right text-xs text-gray-500">
+                    <p>{config.label}</p>
+                    {upload.error_message && (
+                      <p className="text-red-500 mt-0.5 max-w-48 truncate">
+                        {upload.error_message}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Ultimas sincronizaciones */}
       <div>

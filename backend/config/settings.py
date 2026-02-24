@@ -58,3 +58,10 @@ ERP_ENCRYPTION_KEY = os.getenv("ERP_ENCRYPTION_KEY", "")
 SYNC_PAGE_SIZE = 50           # Registros por pagina en paginacion de API
 SYNC_MAX_RETRIES = 3          # Maximo reintentos en errores temporales
 SYNC_RATE_LIMIT_DELAY = 0.5   # Segundos de espera entre requests (rate limiting respetuoso)
+
+# --- Supabase Storage (para Smart File Upload) ---
+# URL interna del API gateway de Supabase (Kong).
+# El worker descarga archivos de Storage usando esta URL + SERVICE_ROLE_KEY.
+# NUNCA loguear SERVICE_ROLE_KEY — SanitizingFormatter la captura por patron.
+SUPABASE_URL = os.getenv("SUPABASE_URL", "")
+SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")

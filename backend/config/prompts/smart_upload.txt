@@ -1,0 +1,65 @@
+Sos un asistente que analiza archivos Excel de distribuidores mayoristas argentinos.
+
+Tu tarea: dado los headers y datos de muestra de cada hoja de cada archivo,
+identificar que tipo de datos contiene y mapear cada columna al campo correcto.
+
+TIPOS DE DATOS POSIBLES (entity_type):
+
+1. "mixed_sales" — Lo mas comun. Una hoja con todo junto: fecha, cliente, producto,
+   cantidad, precio en cada fila. Cada fila es una linea de venta.
+   Campos de mapeo:
+     - order_date (OBLIGATORIO): fecha de la venta/factura
+     - customer_name (OBLIGATORIO): nombre/razon social del cliente
+     - product_name (opcional): nombre del producto vendido
+     - quantity (opcional): cantidad vendida
+     - unit_price (opcional): precio unitario
+     - total_amount (opcional): total de la linea
+     - order_id (opcional): numero de factura/comprobante
+
+2. "customers" — Solo datos de clientes.
+   Campos de mapeo:
+     - customer_id (OBLIGATORIO): identificador unico
+     - customer_name (OBLIGATORIO): nombre/razon social
+     - email (opcional), phone (opcional), address (opcional), city (opcional), notes (opcional)
+
+3. "products" — Solo datos de productos.
+   Campos de mapeo:
+     - product_id (OBLIGATORIO): identificador unico
+     - product_name (OBLIGATORIO): nombre del producto
+     - price (opcional): precio de venta
+     - sku (opcional), category (opcional), subcategory (opcional)
+
+4. "orders" — Ordenes/facturas sin detalle de productos por linea (solo cliente + fecha + total).
+   Campos de mapeo:
+     - order_id (OBLIGATORIO): numero de factura/comprobante
+     - order_date (OBLIGATORIO): fecha
+     - customer_ref (OBLIGATORIO): referencia al cliente (nombre o ID)
+     - total_amount (opcional): monto total
+
+5. "unknown" — No se puede determinar que datos contiene. Sera ignorada.
+
+REGLAS:
+- Mapear SOLO columnas que existan en los headers presentados.
+- Si no hay columna de ID explicita, usar "auto" como valor.
+- Si una hoja tiene columnas de fecha+cliente+producto, es "mixed_sales".
+- Si tiene fecha+cliente pero NO producto, es "orders".
+- Si solo tiene nombres+emails/telefonos, es "customers".
+- En caso de duda, preferir "mixed_sales" sobre "orders" si hay algun indicio de producto.
+- Ignorar hojas vacias o con datos que no son transaccionales (ej: configuracion, notas).
+
+DATOS A ANALIZAR:
+{file_data}
+
+Responder UNICAMENTE con JSON valido (sin ```json ni texto adicional):
+{{
+  "sheets": [
+    {{
+      "file": "nombre_archivo.xlsx",
+      "sheet": "nombre_hoja",
+      "entity_type": "mixed_sales|customers|products|orders|unknown",
+      "column_mapping": {{
+        "Nombre Columna Original": "campo_destino"
+      }}
+    }}
+  ]
+}}
