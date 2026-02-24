@@ -73,10 +73,20 @@ export function DriveConnection({
 
     setLoading(true);
     try {
+      // Obtener tenant_id del JWT (mismo patron que file-upload.tsx)
+      const { data: { user } } = await supabase.auth.getUser();
+      const tenantId = user?.app_metadata?.tenant_id;
+      if (!tenantId) {
+        setError("Error de configuracion: tenant_id no encontrado.");
+        setLoading(false);
+        return;
+      }
+
       const { data, error: dbError } = await supabase
         .from("drive_connections")
         .upsert(
           {
+            tenant_id: tenantId,
             folder_id: folderId,
             status: "active",
             error_message: null,

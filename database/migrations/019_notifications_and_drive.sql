@@ -26,7 +26,7 @@ ALTER TABLE public.tenant_notification_config FORCE ROW LEVEL SECURITY;
 
 CREATE POLICY tenant_notification_config_isolation
     ON public.tenant_notification_config
-    FOR ALL USING (tenant_id = current_setting('app.tenant_id', true)::uuid);
+    FOR ALL USING (tenant_id = get_current_tenant_id());
 
 CREATE POLICY tenant_notification_config_worker_access
     ON public.tenant_notification_config
@@ -56,7 +56,7 @@ ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.notifications FORCE ROW LEVEL SECURITY;
 
 CREATE POLICY notifications_tenant_isolation ON public.notifications
-    FOR ALL USING (tenant_id = current_setting('app.tenant_id', true)::uuid);
+    FOR ALL USING (tenant_id = get_current_tenant_id());
 
 CREATE POLICY notifications_worker_access ON public.notifications
     FOR ALL TO pymepilot_app
@@ -82,7 +82,7 @@ ALTER TABLE public.drive_connections ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.drive_connections FORCE ROW LEVEL SECURITY;
 
 CREATE POLICY drive_connections_tenant_isolation ON public.drive_connections
-    FOR ALL USING (tenant_id = current_setting('app.tenant_id', true)::uuid);
+    FOR ALL USING (tenant_id = get_current_tenant_id());
 
 CREATE POLICY drive_connections_worker_access ON public.drive_connections
     FOR ALL TO pymepilot_app
