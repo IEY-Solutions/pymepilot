@@ -2,7 +2,7 @@
 
 **Proyecto:** PymePilot - Seguimiento Inteligente para Distribuidores B2B
 **Servidor:** Contabo VPS | **Usuario:** pato | **Directorio:** `/home/pato/projects/pymepilot/`
-**Ultima actualizacion:** 2026-02-23
+**Ultima actualizacion:** 2026-02-24
 
 ---
 
@@ -124,6 +124,51 @@ la INTENCION (disenar, arreglar, configurar).
 2. Trazar el flujo de cada dato sensible desde que nace hasta que muere
 3. Identificar puntos de contacto: logs, memoria, DB, HTTP, filesystem, error paths, serializacion, **artefactos de build (Docker images, bundles, CI artifacts)**
 4. Solo despues de completar 1-3: ejecutar la accion
+
+---
+
+## DEFINICION DE TERMINADO — SESGO DE SCOPE REDUCIDO
+
+> **Origen:** Sesion 2026-02-24. Tres errores con la misma raiz:
+> (1) SmartFileConnector con IDs secuenciales que se pisan entre uploads
+> — se optimizo para "que funcione el primer upload" sin considerar el
+> segundo. (2) Canal 2 declarado completo sin revisar el design doc
+> multi-canal que lo contenia — el scope de "terminado" fue la tarea
+> inmediata, no el plan que la origino. (3) WhatsApp API presentado
+> como opcion viable sin verificar que Pato no tenia proveedor — la
+> opcion se evaluo por completitud del brainstorming, no por viabilidad
+> real.
+>
+> **Patron comun:** Claude construye una definicion de "terminado" al
+> inicio de la tarea y despues no la cuestiona. Esa definicion tiende
+> a ser mas chica que la realidad porque excluye lo que esta fuera del
+> campo de vision inmediato: usos futuros, documentos padre, y
+> dependencias externas no tecnicas.
+
+**REGLA:** Antes de declarar cualquier entregable como terminado
+(feature, fix, plan, brainstorming, diseno), pausar y responder
+explicitamente estas preguntas:
+
+1. **Alcance que asumo:** ¿Cual es MI definicion de "terminado" para
+   esto? Declararla en una frase.
+2. **Contexto mas amplio:** ¿Existe un documento padre, plan, o
+   sistema mayor del que esto es una parte? Si si → abrirlo y
+   verificar que items del plan mayor quedan pendientes.
+3. **Segundo uso:** Si esto se ejecuta, se sube, o se usa una
+   SEGUNDA vez con datos o contexto distinto, ¿sigue funcionando?
+   ¿Los identificadores colisionan? ¿Los datos se pisan?
+4. **Viabilidad externa:** Si la solucion depende de algo fuera del
+   codigo (cuenta en servicio externo, aprobacion de tercero,
+   hardware, acceso), ¿ya existe o es un bloqueante?
+
+**Declarar en la respuesta al usuario:**
+
+> "Alcance asumido: [X]. Contexto padre verificado: [Y]. Segundo
+> uso evaluado: [Z]."
+
+Esto hace la verificacion observable — Pato puede ver si se hizo
+o si se salteo. Si no aparece esta declaracion antes de un
+"completado", el entregable no esta terminado.
 
 ---
 
