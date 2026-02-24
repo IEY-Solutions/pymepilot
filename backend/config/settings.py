@@ -65,3 +65,9 @@ SYNC_RATE_LIMIT_DELAY = 0.5   # Segundos de espera entre requests (rate limiting
 # NUNCA loguear SERVICE_ROLE_KEY — SanitizingFormatter la captura por patron.
 SUPABASE_URL = os.getenv("SUPABASE_URL", "")
 SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
+
+# --- Google Drive (Canal 3) ---
+# Path al archivo JSON de credenciales del Service Account.
+# Se obtiene en Google Cloud Console > IAM > Service Accounts > Keys.
+# NUNCA loguear el contenido de este archivo. Solo guardar el PATH.
+GOOGLE_SERVICE_ACCOUNT_PATH = os.getenv("GOOGLE_SERVICE_ACCOUNT_PATH", "")

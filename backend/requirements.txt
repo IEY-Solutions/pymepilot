@@ -22,3 +22,7 @@ cryptography>=42.0.0          # Fernet (AES-128-CBC + HMAC) para encriptar crede
 
 # --- Excel (conector alternativo) ---
 openpyxl>=3.1.0               # Lectura de archivos Excel (.xlsx) en modo read-only
+
+# --- Google Drive (Canal 3) ---
+google-api-python-client>=2.100.0  # SDK oficial para Google APIs (Drive API v3)
+google-auth>=2.23.0                # Autenticacion con Service Account

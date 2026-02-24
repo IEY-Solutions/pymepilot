@@ -7,6 +7,7 @@ import {
   Database,
 } from "lucide-react";
 import { FileUpload } from "@/components/upload/file-upload";
+import { DriveConnection } from "@/components/drive/drive-connection";
 import { getFreshnessInfo } from "@/lib/freshness";
 
 const statusConfig: Record<
@@ -32,7 +33,7 @@ export default async function DatosPage() {
   const supabase = await createClient();
 
   // Queries en paralelo (+ upload_jobs recientes)
-  const [syncsRes, customersRes, productsRes, ordersRes, predictionsRes, uploadsRes] =
+  const [syncsRes, customersRes, productsRes, ordersRes, predictionsRes, uploadsRes, driveRes] =
     await Promise.all([
       supabase
         .from("sync_log")
@@ -56,10 +57,16 @@ export default async function DatosPage() {
         .select("id, status, file_paths, created_at, completed_at, error_message")
         .order("created_at", { ascending: false })
         .limit(5),
+      supabase
+        .from("drive_connections")
+        .select("id, folder_id, status, last_synced_at, error_message")
+        .limit(1)
+        .maybeSingle(),
     ]);
 
   const syncs = syncsRes.data ?? [];
   const uploads = uploadsRes.data ?? [];
+  const driveConnection = driveRes.data ?? null;
   const lastSync = syncs[0];
 
   // Indicador de frescura
@@ -102,6 +109,9 @@ export default async function DatosPage() {
 
       {/* Smart File Upload (Canal 2) */}
       <FileUpload />
+
+      {/* Google Drive (Canal 3) */}
+      <DriveConnection connection={driveConnection} />
 
       {/* Conteo de registros */}
       <div>

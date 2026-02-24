@@ -47,6 +47,7 @@ logs/
 *.p12
 *.pfx
 *.credentials.json
+credentials/
 
 # --- Base de datos ---
 *.sql.gz
