@@ -78,13 +78,21 @@ def check_all_tenants() -> None:
         for tenant_id, tenant_name in tenants:
             try:
                 _check_tenant(conn, tenant_id, tenant_name)
+                # M-03 FIX: Commit despues de cada tenant exitoso.
+                # Antes, un unico conn.commit() al final commiteaba todo junto.
+                # Si tenant B fallaba con error de DB (ej: constraint violation),
+                # la conexion quedaba en estado INERROR y el commit final
+                # perdia las notificaciones de TODOS los tenants (incluyendo A).
+                # Es como cobrar a cada cliente por separado en vez de hacer
+                # una unica factura grupal — si uno falla, los demas ya pagaron.
+                conn.commit()
             except Exception as exc:
-                # Un tenant falla → no para los demas (aislamiento)
+                # Limpiar estado INERROR de la conexion para que el siguiente
+                # tenant arranque con una transaccion limpia
+                conn.rollback()
                 logger.error(
                     f"Error verificando tenant {tenant_name} ({tenant_id}): {exc}"
                 )
-
-        conn.commit()
 
 
 def _check_tenant(conn, tenant_id, tenant_name: str) -> None:

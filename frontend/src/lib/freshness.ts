@@ -18,18 +18,30 @@ export function getFreshnessInfo(lastSyncDate: string | null): {
 } | null {
   if (!lastSyncDate) return null;
 
-  const ageMs = Date.now() - new Date(lastSyncDate).getTime();
+  // M-06 FIX: Validar que la fecha es parseable.
+  // Si lastSyncDate es un string invalido, new Date() retorna NaN
+  // y todas las comparaciones fallan → siempre cae en rojo.
+  const parsed = new Date(lastSyncDate).getTime();
+  if (isNaN(parsed)) return null;
+
+  // M-06 FIX: Fecha futura (bug en servidor o timezone) → tratar como fresco
+  const ageMs = Math.max(0, Date.now() - parsed);
   const ageHours = ageMs / (1000 * 60 * 60);
   const ageDays = Math.floor(ageHours / 24);
 
   if (ageHours < 24) {
+    // L-05 FIX: "hace 0 horas" → "hace menos de 1 hora"
+    // Consistente con timeAgo() en page.tsx que ya maneja este caso.
+    const hoursLabel = ageHours < 1
+      ? "hace menos de 1 hora"
+      : `hace ${Math.floor(ageHours)} hora${Math.floor(ageHours) !== 1 ? "s" : ""}`;
     return {
       color: "green",
       bgClass: "bg-green-50",
       borderClass: "border-green-200",
       textClass: "text-green-800",
       label: "Datos actualizados",
-      message: `Ultima actualizacion hace ${Math.floor(ageHours)} hora${Math.floor(ageHours) !== 1 ? "s" : ""}`,
+      message: `Ultima actualizacion ${hoursLabel}`,
     };
   }
 

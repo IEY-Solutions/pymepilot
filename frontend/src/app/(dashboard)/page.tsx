@@ -51,7 +51,7 @@ export default async function HomePage() {
   const supabase = await createClient();
 
   // Queries en paralelo para los 4 KPIs
-  const [pendingRes, contactRateRes, activeRes, lastSyncRes] =
+  const [pendingRes, totalPredRes, contactedPredRes, activeRes, lastSyncRes] =
     await Promise.all([
       // 1. Predicciones pendientes
       supabase
@@ -59,8 +59,19 @@ export default async function HomePage() {
         .select("id", { count: "exact", head: true })
         .eq("status", "pending"),
 
-      // 2. Tasa de contacto 30d (contacted / total)
-      supabase.from("predictions").select("status"),
+      // 2a. Total predictions (M-08 FIX: count en vez de traer todas las filas)
+      // Antes: SELECT status FROM predictions (traia TODAS las filas a memoria).
+      // Ahora: COUNT con head:true (solo pide el numero, no descarga datos).
+      // Con miles de predicciones, la query vieja se volvia lenta y consumia RAM.
+      supabase
+        .from("predictions")
+        .select("id", { count: "exact", head: true }),
+
+      // 2b. Predictions contactadas/completadas
+      supabase
+        .from("predictions")
+        .select("id", { count: "exact", head: true })
+        .in("status", ["contacted", "completed"]),
 
       // 3. Clientes activos
       supabase
@@ -68,25 +79,25 @@ export default async function HomePage() {
         .select("id", { count: "exact", head: true })
         .eq("status", "active"),
 
-      // 4. Ultima sync
+      // 4. Ultima sync (L-04 FIX: maybeSingle en vez de single)
+      // single() lanza error si hay 0 filas (tenant nuevo sin syncs).
+      // maybeSingle() retorna data=null sin error → mas robusto.
       supabase
         .from("sync_log")
         .select("started_at, status")
         .order("started_at", { ascending: false })
         .limit(1)
-        .single(),
+        .maybeSingle(),
     ]);
 
   const pendingCount = pendingRes.count ?? 0;
 
-  // Calcular tasa de contacto
-  const allPredictions = contactRateRes.data ?? [];
-  const contacted = allPredictions.filter(
-    (p) => p.status === "contacted" || p.status === "completed"
-  ).length;
+  // Calcular tasa de contacto con counts (no filas individuales)
+  const totalPredictions = totalPredRes.count ?? 0;
+  const contactedCount = contactedPredRes.count ?? 0;
   const contactRate =
-    allPredictions.length > 0
-      ? Math.round((contacted / allPredictions.length) * 100)
+    totalPredictions > 0
+      ? Math.round((contactedCount / totalPredictions) * 100)
       : 0;
 
   const activeCount = activeRes.count ?? 0;
@@ -110,7 +121,7 @@ export default async function HomePage() {
         <KpiCard
           title="Tasa contacto"
           value={`${contactRate}%`}
-          subtitle={`${contacted} de ${allPredictions.length} total`}
+          subtitle={`${contactedCount} de ${totalPredictions} total`}
           icon={UserCheck}
           color="bg-green-50 text-green-600"
         />
