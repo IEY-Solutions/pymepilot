@@ -24,10 +24,14 @@ CREATE TABLE IF NOT EXISTS public.tenant_notification_config (
 ALTER TABLE public.tenant_notification_config ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tenant_notification_config FORCE ROW LEVEL SECURITY;
 
+-- M-05 FIX: DROP IF EXISTS antes de CREATE para idempotencia.
+-- Si la migracion se ejecuta 2 veces (ej: rebuild de DB), no falla.
+DROP POLICY IF EXISTS tenant_notification_config_isolation ON public.tenant_notification_config;
 CREATE POLICY tenant_notification_config_isolation
     ON public.tenant_notification_config
     FOR ALL USING (tenant_id = get_current_tenant_id());
 
+DROP POLICY IF EXISTS tenant_notification_config_worker_access ON public.tenant_notification_config;
 CREATE POLICY tenant_notification_config_worker_access
     ON public.tenant_notification_config
     FOR ALL TO pymepilot_app
@@ -55,9 +59,11 @@ CREATE INDEX idx_notifications_unread
 ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.notifications FORCE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS notifications_tenant_isolation ON public.notifications;
 CREATE POLICY notifications_tenant_isolation ON public.notifications
     FOR ALL USING (tenant_id = get_current_tenant_id());
 
+DROP POLICY IF EXISTS notifications_worker_access ON public.notifications;
 CREATE POLICY notifications_worker_access ON public.notifications
     FOR ALL TO pymepilot_app
     USING (true) WITH CHECK (true);
@@ -81,9 +87,11 @@ CREATE TABLE IF NOT EXISTS public.drive_connections (
 ALTER TABLE public.drive_connections ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.drive_connections FORCE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS drive_connections_tenant_isolation ON public.drive_connections;
 CREATE POLICY drive_connections_tenant_isolation ON public.drive_connections
     FOR ALL USING (tenant_id = get_current_tenant_id());
 
+DROP POLICY IF EXISTS drive_connections_worker_access ON public.drive_connections;
 CREATE POLICY drive_connections_worker_access ON public.drive_connections
     FOR ALL TO pymepilot_app
     USING (true) WITH CHECK (true);

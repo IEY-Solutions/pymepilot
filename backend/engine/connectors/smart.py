@@ -28,7 +28,7 @@ import re
 import unicodedata
 from collections import defaultdict
 from datetime import date, datetime
-from hashlib import md5
+from hashlib import sha256
 from pathlib import Path
 
 import openpyxl
@@ -41,6 +41,11 @@ logger = get_logger(__name__)
 
 # Path al prompt para Claude (relativo a la raiz del proyecto)
 _PROMPT_PATH = Path(__file__).parent.parent.parent / "config" / "prompts" / "smart_upload.txt"
+
+# Limite de filas por hoja. Un distribuidor PyME no deberia tener mas de 50k
+# filas en un Excel. Sin este limite, un .xlsx de 10MB comprimido puede tener
+# cientos de miles de filas que al descomprimirse consumen toda la RAM.
+MAX_ROWS_PER_SHEET = 50_000
 
 
 class SmartFileConnector(ERPConnector):
@@ -318,7 +323,20 @@ class SmartFileConnector(ERPConnector):
                 return []
 
             ws = wb[sheet_name]
-            raw_rows = list(ws.iter_rows(values_only=True))
+            # M-04 FIX: Leer con limite de filas en vez de list() completo.
+            # list(ws.iter_rows()) materializa TODA la hoja en RAM.
+            # Con read_only=True openpyxl usa parser incremental, pero
+            # list() anula esa ventaja. Con el limite, si la hoja tiene
+            # 500k filas, solo leemos las primeras 50k.
+            raw_rows = []
+            for i, row in enumerate(ws.iter_rows(values_only=True)):
+                if i > MAX_ROWS_PER_SHEET:
+                    logger.warning(
+                        f"Hoja '{sheet_name}' truncada a {MAX_ROWS_PER_SHEET} filas "
+                        f"(archivo: {file_path.name})"
+                    )
+                    break
+                raw_rows.append(row)
 
             if not raw_rows:
                 return []
@@ -416,7 +434,7 @@ class SmartFileConnector(ERPConnector):
             else:
                 # Hash de fecha+cliente como key estable
                 date_str = str(fecha) if fecha else ""
-                order_key = md5(f"{date_str}|{customer_name}".encode()).hexdigest()[:12]
+                order_key = sha256(f"{date_str}|{customer_name}".encode()).hexdigest()[:12]
 
             if order_key not in orders_by_key:
                 if col_order_id and row.get(col_order_id):
@@ -528,12 +546,16 @@ def _content_hash(*parts: str) -> str:
 
     QUE HACE: Toma una o mas strings (ej: nombre del cliente, nombre del
     producto + SKU), las normaliza (quita acentos, minusculas, trim),
-    las une con '|' y les saca un hash MD5 truncado a 12 caracteres.
+    las une con '|' y les saca un hash SHA-256 truncado a 12 caracteres.
 
     POR QUE: Si el mismo dato aparece en 2 uploads distintos, genera
     el mismo ID. Asi SyncEngine hace UPSERT (actualiza) en vez de
     INSERT (duplicar). Es como un DNI basado en tus datos: siempre
     el mismo para los mismos inputs.
+
+    L-01 FIX: Se cambio de MD5 a SHA-256. MD5 tiene colisiones conocidas
+    (dos inputs diferentes que dan el mismo hash). SHA-256 es mas moderno
+    y resistente, sin costo adicional de performance.
 
     Prefijo 'su_' (smart upload) evita colision con IDs del Canal 1 (ERP),
     que son numericos puros (ej: '12345' de Contabilium).
@@ -548,7 +570,7 @@ def _content_hash(*parts: str) -> str:
         unicodedata.normalize("NFKD", str(p)).encode("ascii", "ignore").decode().lower().strip()
         for p in parts if p
     )
-    return "su_" + md5(normalized.encode()).hexdigest()[:12]
+    return "su_" + sha256(normalized.encode()).hexdigest()[:12]
 
 
 def _get_mapped(row: dict, reverse_map: dict, field: str):

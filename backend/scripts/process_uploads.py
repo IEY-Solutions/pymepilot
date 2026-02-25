@@ -237,7 +237,7 @@ def check_stale_jobs() -> None:
                 error_message = 'Timeout: el procesamiento tardo demasiado. Intenta subir de nuevo.',
                 completed_at = NOW()
             WHERE status = 'processing'
-              AND started_at < NOW() - INTERVAL '%s minutes'
+              AND started_at < NOW() - make_interval(mins => %s)
             RETURNING id
             """,
             (STALE_JOB_TIMEOUT_MINUTES,),

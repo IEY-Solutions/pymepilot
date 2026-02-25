@@ -165,7 +165,7 @@ export function DriveConnection({
 
         <div className="text-xs text-gray-500 space-y-1">
           <p>
-            Carpeta: <code className="bg-gray-100 px-1 rounded">{currentConnection.folder_id}</code>
+            Carpeta: <code className="bg-gray-100 px-1 rounded truncate max-w-[200px] inline-block align-bottom" title={currentConnection.folder_id}>{currentConnection.folder_id}</code>
           </p>
           <p>Ultima sync: {lastSync}</p>
           {currentConnection.error_message && (
