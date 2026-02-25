@@ -133,7 +133,11 @@ def get_db_connection(tenant_id: UUID | str):
 
             yield conn
 
-    except psycopg.OperationalError as e:
+    # P-02 FIX: Capturar psycopg.Error (clase padre) en vez de solo OperationalError.
+    # psycopg3 puede lanzar InterfaceError (conexion muerta), DatabaseError
+    # (constraint violation en set_tenant_context), etc. Sin esto, esos errores
+    # se propagan sin logging y cuesta diagnosticar que paso.
+    except psycopg.Error as e:
         logger.error(f"Database connection error: {e}", exc_info=True)
         raise
 
@@ -157,7 +161,8 @@ def get_db_connection_no_tenant():
             logger.debug("DB connection acquired WITHOUT tenant context")
             yield conn
 
-    except psycopg.OperationalError as e:
+    # P-02 FIX: Mismo cambio que en get_db_connection (ver arriba).
+    except psycopg.Error as e:
         logger.error(f"Database connection error: {e}", exc_info=True)
         raise
 

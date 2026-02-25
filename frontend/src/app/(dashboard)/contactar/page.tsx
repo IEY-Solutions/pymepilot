@@ -12,7 +12,8 @@ export default async function ContactarPage() {
     )
     .in("status", ["pending", "contacted"])
     .order("priority", { ascending: true })
-    .order("contact_date", { ascending: true });
+    .order("contact_date", { ascending: true })
+    .limit(50);
 
   if (error) {
     return (

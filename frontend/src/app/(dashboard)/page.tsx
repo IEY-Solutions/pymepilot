@@ -39,7 +39,9 @@ function KpiCard({
 
 function timeAgo(dateStr: string | null): string {
   if (!dateStr) return "Nunca";
-  const diff = Date.now() - new Date(dateStr).getTime();
+  const time = new Date(dateStr).getTime();
+  if (isNaN(time)) return "—";
+  const diff = Math.max(0, Date.now() - time);
   const hours = Math.floor(diff / (1000 * 60 * 60));
   if (hours < 1) return "Hace menos de 1 hora";
   if (hours < 24) return `Hace ${hours}h`;

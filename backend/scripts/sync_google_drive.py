@@ -295,15 +295,25 @@ def sync_all_connections() -> None:
                 logger.error(
                     f"Error sync Drive para tenant {tenant_slug}: {error_msg}"
                 )
-                conn.execute(
-                    """
-                    UPDATE drive_connections
-                    SET status = 'error', error_message = %s
-                    WHERE id = %s
-                    """,
-                    (error_msg, conn_id),
-                )
-                conn.commit()
+                # P-07 FIX: Envolver el UPDATE en su propio try/except.
+                # Si la DB se cayo (ej: PostgreSQL reiniciado), el UPDATE tambien
+                # falla. Sin este try/except, esa excepcion mata el loop y todos
+                # los tenants restantes se pierden. Con el try/except, se loguea
+                # el error y el loop continua con el siguiente tenant.
+                try:
+                    conn.execute(
+                        """
+                        UPDATE drive_connections
+                        SET status = 'error', error_message = %s
+                        WHERE id = %s
+                        """,
+                        (error_msg, conn_id),
+                    )
+                    conn.commit()
+                except Exception as db_err:
+                    logger.critical(
+                        f"No se pudo actualizar drive_connection a error: {db_err}"
+                    )
 
 
 def _sync_one_connection(
@@ -311,6 +321,12 @@ def _sync_one_connection(
     last_synced_at, tenant_slug: str,
 ) -> None:
     """Sincroniza una conexion Drive individual."""
+    # S-01 FIX: Validar formato de folder_id antes de usar en Drive API query.
+    # El frontend valida con regex, pero el backend no debe confiar en eso.
+    # Un folder_id con comillas simples podria inyectarse en la query de Drive.
+    if not re.match(r'^[a-zA-Z0-9_-]+$', folder_id):
+        raise ValueError(f"folder_id invalido para tenant {tenant_slug}")
+
     logger.info(f"Sync Drive: tenant={tenant_slug}, folder={folder_id}")
 
     # 1. Listar archivos nuevos/modificados

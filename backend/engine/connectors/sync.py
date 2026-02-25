@@ -394,8 +394,26 @@ class SyncEngine:
         orders: ON CONFLICT (tenant_id, external_id) DO UPDATE
         order_items: DELETE existentes + INSERT nuevos (no tiene UNIQUE para upsert)
         """
+        # P-03 FIX: Pre-cargar mapeos external_id → id para customers y products.
+        # Antes: 1 SELECT por orden (customer) + 1 SELECT por item (product) = N+1.
+        # Ahora: 2 SELECTs totales + lookup en diccionario en memoria.
+        # Con 40 ordenes y 67 items: de ~107 queries a 2 queries.
+        customer_map: dict[str, str] = {}
+        for row in conn.execute(
+            "SELECT external_id, id FROM customers WHERE tenant_id = %s",
+            (tenant_id,),
+        ).fetchall():
+            customer_map[row[0]] = str(row[1])
+
+        product_map: dict[str, str] = {}
+        for row in conn.execute(
+            "SELECT external_id, id FROM products WHERE tenant_id = %s",
+            (tenant_id,),
+        ).fetchall():
+            product_map[row[0]] = str(row[1])
+
         for o in orders:
-            # Resolver customer_id via external_id lookup
+            # Resolver customer_id via mapa pre-cargado
             customer_external_id = None
             cliente = o.get('Cliente', {})
             if isinstance(cliente, dict):
@@ -403,17 +421,7 @@ class SyncEngine:
             elif isinstance(cliente, (int, str)):
                 customer_external_id = str(cliente)
 
-            customer_id = None
-            if customer_external_id:
-                row = conn.execute(
-                    """
-                    SELECT id FROM customers
-                    WHERE tenant_id = %(tenant_id)s AND external_id = %(eid)s
-                    """,
-                    {'tenant_id': tenant_id, 'eid': customer_external_id},
-                ).fetchone()
-                if row:
-                    customer_id = row[0]
+            customer_id = customer_map.get(customer_external_id) if customer_external_id else None
 
             # Upsert orden (customer_id es NOT NULL — si no se encuentra, saltamos)
             if customer_id is None:
@@ -458,21 +466,13 @@ class SyncEngine:
             items = o.get('Items', [])
             if isinstance(items, list):
                 for item in items:
-                    # Resolver product_id via external_id lookup
+                    # Resolver product_id via mapa pre-cargado (P-03 FIX)
                     product_id = None
                     concepto = item.get('Concepto', {})
                     if isinstance(concepto, dict):
                         product_external_id = str(concepto.get('Id', ''))
                         if product_external_id:
-                            prow = conn.execute(
-                                """
-                                SELECT id FROM products
-                                WHERE tenant_id = %(tenant_id)s AND external_id = %(eid)s
-                                """,
-                                {'tenant_id': tenant_id, 'eid': product_external_id},
-                            ).fetchone()
-                            if prow:
-                                product_id = prow[0]
+                            product_id = product_map.get(product_external_id)
 
                     product_name = ''
                     if isinstance(concepto, dict):

@@ -147,7 +147,24 @@ export function FileUpload() {
       setStatus("processing");
 
       // Polling para ver cuando el worker lo procesa
+      // F-08 FIX: Timeout maximo de 5 minutos (60 polls x 5s).
+      // Sin esto, si el worker no responde, el polling sigue indefinidamente.
+      let pollCount = 0;
+      const MAX_POLLS = 60; // 5 minutos
+
       pollRef.current = setInterval(async () => {
+        pollCount++;
+
+        if (pollCount >= MAX_POLLS) {
+          if (pollRef.current) clearInterval(pollRef.current);
+          setStatus("failed");
+          setError(
+            "El procesamiento esta tardando mas de lo esperado. " +
+            "Recarga la pagina para ver el estado."
+          );
+          return;
+        }
+
         const { data: updatedJob } = await supabase
           .from("upload_jobs")
           .select("status, error_message")

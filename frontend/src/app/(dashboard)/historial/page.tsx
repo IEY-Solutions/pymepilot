@@ -89,7 +89,7 @@ export default async function HistorialPage({
           ].map((opt) => (
             <a
               key={opt.value}
-              href={`/historial?status=${opt.value}${query ? `&q=${query}` : ""}`}
+              href={`/historial?status=${opt.value}${query ? `&q=${encodeURIComponent(query)}` : ""}`}
               className={`px-3 py-2 text-xs font-medium rounded-lg transition-colors ${
                 (statusFilter ?? "all") === opt.value
                   ? "bg-blue-100 text-blue-700"
@@ -161,7 +161,7 @@ export default async function HistorialPage({
         <div className="flex justify-center gap-2">
           {page > 1 && (
             <a
-              href={`/historial?page=${page - 1}${statusFilter ? `&status=${statusFilter}` : ""}${query ? `&q=${query}` : ""}`}
+              href={`/historial?page=${page - 1}${statusFilter ? `&status=${statusFilter}` : ""}${query ? `&q=${encodeURIComponent(query)}` : ""}`}
               className="px-3 py-1.5 text-sm bg-gray-100 rounded-lg hover:bg-gray-200"
             >
               Anterior
@@ -172,7 +172,7 @@ export default async function HistorialPage({
           </span>
           {page < totalPages && (
             <a
-              href={`/historial?page=${page + 1}${statusFilter ? `&status=${statusFilter}` : ""}${query ? `&q=${query}` : ""}`}
+              href={`/historial?page=${page + 1}${statusFilter ? `&status=${statusFilter}` : ""}${query ? `&q=${encodeURIComponent(query)}` : ""}`}
               className="px-3 py-1.5 text-sm bg-gray-100 rounded-lg hover:bg-gray-200"
             >
               Siguiente

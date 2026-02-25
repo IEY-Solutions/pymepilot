@@ -294,6 +294,13 @@ class ClaudeClient:
                 # Otros errores HTTP (400, 401, 403, etc) no son temporales
                 raise
 
+        # P-01 FIX: Safety net. Si el loop termina sin return ni raise,
+        # Python retorna None implicitamente. Despues, response.usage.input_tokens
+        # lanza AttributeError con un mensaje confuso. Este raise lo hace explicito.
+        raise RuntimeError(
+            f"_call_with_retry: loop terminó tras {self.MAX_RETRIES} intentos sin resultado"
+        )
+
     def _get_usage_from_db(self) -> int:
         """Consulta tokens totales usados hoy desde api_usage.
 
