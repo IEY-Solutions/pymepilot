@@ -34,6 +34,10 @@ from backend.engine.core.logger import get_logger
 
 logger = get_logger(__name__)
 
+# Limite de filas por hoja. Mismo valor que SmartFileConnector.
+# Protege contra archivos enormes que consumirian toda la RAM.
+MAX_ROWS_PER_SHEET = 50_000
+
 # Columnas minimas requeridas por hoja.
 # "Id" es obligatorio en todas: sin el, external_id queda vacio y el
 # UNIQUE constraint (tenant_id, external_id) falla en el segundo registro.
@@ -157,16 +161,25 @@ class ExcelConnector(ERPConnector):
                 return []
 
             ws = wb[sheet_name]
-            rows = list(ws.iter_rows(values_only=True))
+            # Leer con limite de filas para proteger contra archivos enormes.
+            # Mismo patron que SmartFileConnector._read_sheet().
+            raw_rows: list[tuple] = []
+            for i, row in enumerate(ws.iter_rows(values_only=True)):
+                if i > MAX_ROWS_PER_SHEET:
+                    logger.warning(
+                        f"Hoja '{sheet_name}' truncada a {MAX_ROWS_PER_SHEET} filas"
+                    )
+                    break
+                raw_rows.append(row)
 
-            if not rows:
+            if not raw_rows:
                 return []
 
             headers = [str(h).strip() if h is not None else f"col_{i}"
-                       for i, h in enumerate(rows[0])]
+                       for i, h in enumerate(raw_rows[0])]
 
             records = []
-            for row in rows[1:]:
+            for row in raw_rows[1:]:
                 # Saltar filas completamente vacias
                 if all(v is None for v in row):
                     continue

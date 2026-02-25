@@ -45,7 +45,7 @@ load_dotenv()
 os.umask(0o077)
 
 from backend.engine.connectors.sync import SyncEngine
-from backend.engine.core.logger import get_logger
+from backend.engine.core.logger import get_logger, sanitize_text
 
 logger = get_logger(__name__)
 
@@ -132,7 +132,7 @@ def main() -> None:
             source_override=source_override,
         )
     except Exception as e:
-        logger.error(f"Sync fallido: {e}")
+        logger.error(f"Sync fallido: {sanitize_text(str(e))}")
         sys.exit(1)
 
 

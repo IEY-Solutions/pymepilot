@@ -41,7 +41,7 @@ from backend.config.settings import (
 )
 from backend.engine.connectors.base import ERPConnector
 from backend.engine.connectors.crypto import TenantCredentials
-from backend.engine.core.logger import get_logger
+from backend.engine.core.logger import get_logger, sanitize_text
 
 logger = get_logger(__name__)
 
@@ -118,7 +118,8 @@ class ContabiliumConnector(ERPConnector):
         self._access_token: str | None = None
         self._session = requests.Session()
         self._session.mount('https://', IPv4HTTPAdapter())
-        self._session.mount('http://', IPv4HTTPAdapter())
+        # Solo HTTPS — no montar http:// para prevenir envio
+        # accidental de credenciales sin encriptar.
 
     def authenticate(self) -> None:
         """Obtiene un Bearer token via OAuth2 client_credentials.
@@ -194,7 +195,7 @@ class ContabiliumConnector(ERPConnector):
             except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
                 _retries += 1
                 if _retries > SYNC_MAX_RETRIES:
-                    raise APIError(f"GET {endpoint} fallo tras {SYNC_MAX_RETRIES} reintentos: {e}")
+                    raise APIError(f"GET {endpoint} fallo tras {SYNC_MAX_RETRIES} reintentos: {sanitize_text(str(e))}")
                 delay = 2 ** (_retries - 1)  # 1s, 2s, 4s
                 logger.warning(f"GET {endpoint} -> error de red (intento {_retries}). Retry en {delay}s")
                 time.sleep(delay)
@@ -335,7 +336,7 @@ class ContabiliumConnector(ERPConnector):
                         raw.append(client)
                     time.sleep(SYNC_RATE_LIMIT_DELAY)
                 except Exception as e:
-                    logger.warning(f"fetch_customers(): no se pudo obtener cliente id={cid}: {e}")
+                    logger.warning(f"fetch_customers(): no se pudo obtener cliente id={cid}: {sanitize_text(str(e))}")
             truncated = False
             logger.info(
                 f"fetch_customers(): {len(raw)} clientes obtenidos por ID "
