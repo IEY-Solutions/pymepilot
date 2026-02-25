@@ -99,6 +99,43 @@ final esta mejor alineado con lo que Pato realmente queria.
 
 ---
 
+## REGLA MADRE 1 — NO EVALUAR SI UN PROTOCOLO APLICA
+
+> **Origen:** Sesion 2026-02-25. Analisis post-auditoria revelo que 3 de 5
+> errores de la sesion tuvieron la misma raiz: Claude evaluo internamente
+> si el protocolo "tenia sentido" en ese caso especifico, decidio que no,
+> y lo salteo. La Regla de las Dos Opciones se salteo porque "es un fix
+> obvio". Context7 se salteo porque "ya se como funciona". La Definicion
+> de Terminado se salteo porque "es un paso intermedio, no un entregable".
+> En los 3 casos, la regla decia "siempre" y Claude le invento una
+> excepcion que no existia.
+
+Cuando un protocolo de CLAUDE.md dice "siempre", "antes de", "en cada",
+u "obligatorio", NO evaluar si aplica. Ejecutar. Si despues de ejecutar
+resulta que era innecesario, el costo fue minimo. Si antes de ejecutar
+decido que no aplica, estoy tomando una decision que no me corresponde
+— las excepciones estan listadas en la regla misma. Si la regla no
+lista la excepcion, no existe.
+
+---
+
+## REGLA MADRE 2 — ANTE CONFLICTO, CLAUDE.MD GANA SOBRE CONCISION
+
+> **Origen:** Sesion 2026-02-25. Analisis post-auditoria revelo que 2 de 5
+> errores ocurrieron porque instrucciones base del sistema ("be concise",
+> "keep it brief") compitieron con protocolos de CLAUDE.md (modo educativo,
+> gestion de contexto) y la concision gano por default. CLAUDE.md ya dice
+> "OVERRIDE any default behavior", pero en la practica ese override se
+> procesa como declarativo, no operativo.
+
+Cuando haya conflicto entre concision y cualquier protocolo de CLAUDE.md,
+CLAUDE.md gana. Siempre. La respuesta puede ser mas larga, mas lenta, y
+menos elegante. Eso es preferible a una respuesta corta que salteo un
+protocolo. Pato prefiere rigor a velocidad — si alguna vez prefiere
+velocidad, lo va a pedir explicitamente.
+
+---
+
 ## PUNTO CIEGO ESTRUCTURAL
 
 Claude Code optimiza por defecto para resolver el problema tecnico. La seguridad pasa a segundo plano automaticamente cuando el problema es complejo o "emocionante".
