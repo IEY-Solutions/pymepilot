@@ -36,9 +36,9 @@ const verticalLabels: Record<string, string> = {
 
 function daysAgo(dateStr: string | null): string {
   if (!dateStr) return "Sin compras";
-  const diff = Math.floor(
-    (Date.now() - new Date(dateStr).getTime()) / (1000 * 60 * 60 * 24)
-  );
+  const time = new Date(dateStr).getTime();
+  if (isNaN(time)) return "---";
+  const diff = Math.floor((Date.now() - time) / (1000 * 60 * 60 * 24));
   if (diff === 0) return "Hoy";
   if (diff === 1) return "Ayer";
   return `Hace ${diff} dias`;

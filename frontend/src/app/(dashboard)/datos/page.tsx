@@ -173,7 +173,7 @@ export default async function DatosPage() {
                     <p>{config.label}</p>
                     {upload.error_message && (
                       <p className="text-red-500 mt-0.5 max-w-48 truncate">
-                        {upload.error_message}
+                        Error en procesamiento
                       </p>
                     )}
                   </div>
@@ -219,7 +219,7 @@ export default async function DatosPage() {
                     </p>
                     {sync.error_message && (
                       <p className="text-red-500 mt-0.5 max-w-48 truncate">
-                        {sync.error_message}
+                        Error en sincronizacion
                       </p>
                     )}
                   </div>

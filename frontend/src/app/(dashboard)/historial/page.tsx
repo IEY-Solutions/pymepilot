@@ -35,7 +35,9 @@ export default async function HistorialPage({
   const params = await searchParams;
   const statusFilter = params.status;
   const query = params.q;
-  const page = parseInt(params.page ?? "1", 10);
+  // Clampar page a rango valido: minimo 1, maximo 1000
+  // || 1 cubre el caso NaN (si params.page es texto no numerico)
+  const page = Math.max(1, Math.min(parseInt(params.page ?? "1", 10) || 1, 1000));
   const pageSize = 50;
 
   const supabase = await createClient();
@@ -54,7 +56,10 @@ export default async function HistorialPage({
   }
 
   if (query) {
-    dbQuery = dbQuery.ilike("customer.name", `%${query}%`);
+    // Escapar caracteres especiales de LIKE (%, _, \) para que se
+    // busquen literalmente y no como wildcards de SQL
+    const escaped = query.replace(/[%_\\]/g, "\\$&");
+    dbQuery = dbQuery.ilike("customer.name", `%${escaped}%`);
   }
 
   const { data: predictions, count, error } = await dbQuery;
@@ -105,7 +110,7 @@ export default async function HistorialPage({
       {/* Error */}
       {error && (
         <p className="text-red-600 bg-red-50 p-3 rounded-lg text-sm">
-          Error: {error.message}
+          Error al cargar historial. Intenta recargar la pagina.
         </p>
       )}
 

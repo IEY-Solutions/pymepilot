@@ -22,7 +22,7 @@ export default async function ContactarPage() {
           Contactar Hoy
         </h1>
         <p className="text-red-600 bg-red-50 p-4 rounded-lg">
-          Error al cargar predicciones: {error.message}
+          Error al cargar predicciones. Intenta recargar la pagina.
         </p>
       </div>
     );

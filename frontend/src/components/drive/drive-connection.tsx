@@ -169,7 +169,7 @@ export function DriveConnection({
           </p>
           <p>Ultima sync: {lastSync}</p>
           {currentConnection.error_message && (
-            <p className="text-red-500">{currentConnection.error_message}</p>
+            <p className="text-red-500">Error en conexion con Drive</p>
           )}
         </div>
 

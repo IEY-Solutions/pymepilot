@@ -125,6 +125,12 @@ def get_db_connection(tenant_id: UUID | str):
                 "SELECT set_tenant_context(%s::uuid)",
                 (tenant_id_str,)
             )
+            # Commit explicito: cierra la transaccion implicita que abrio
+            # psycopg3 al ejecutar el SELECT. Esto deja la conexion en estado
+            # limpio (IDLE) antes de pasarla al caller. Sin esto, funciona
+            # igual (set_config SESSION persiste sin commit), pero depende
+            # de un detalle de implementacion de PostgreSQL.
+            conn.commit()
 
             logger.debug(
                 "DB connection acquired with tenant context",
