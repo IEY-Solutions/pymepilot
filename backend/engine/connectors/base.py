@@ -80,28 +80,43 @@ class ERPConnector(ABC):
         return valid
 
     @abstractmethod
-    def fetch_customers(self) -> tuple[list[dict], bool]:
-        """Obtiene todos los clientes del ERP.
+    def fetch_customers(
+        self,
+        limit: int | None = None,
+        client_ids: set[str] | None = None,
+    ) -> tuple[list[dict], bool]:
+        """Obtiene clientes del ERP.
+
+        Args:
+            limit: Si se provee, retorna como maximo esta cantidad.
+            client_ids: Si se provee, solo descarga estos clientes especificos
+                (por external_id). Util para no descargar 5000+ clientes
+                cuando solo necesitamos los del canal mayorista (~138).
+                Si es None, descarga todos.
 
         Retorna:
             tuple[list[dict], bool]: (clientes, truncated)
         """
 
     @abstractmethod
-    def fetch_products(self) -> tuple[list[dict], bool]:
+    def fetch_products(self, limit: int | None = None) -> tuple[list[dict], bool]:
         """Obtiene todos los productos del ERP.
+
+        Args:
+            limit: Si se provee, retorna como maximo esta cantidad.
 
         Retorna:
             tuple[list[dict], bool]: (productos, truncated)
         """
 
     @abstractmethod
-    def fetch_orders(self, since_date: date | None = None) -> tuple[list[dict], bool]:
+    def fetch_orders(self, since_date: date | None = None, limit: int | None = None) -> tuple[list[dict], bool]:
         """Obtiene ordenes/comprobantes del ERP.
 
         Args:
             since_date: Si se provee, solo trae ordenes desde esa fecha.
                        Si es None, trae todas (sync full).
+            limit: Si se provee, retorna como maximo esta cantidad.
 
         Retorna:
             tuple[list[dict], bool]: (ordenes, truncated)

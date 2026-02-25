@@ -3,12 +3,18 @@ Conector para la API REST de Contabilium (ERP).
 
 QUE HACE ESTE ARCHIVO:
 Se conecta a la API de Contabilium para LEER datos de clientes,
-productos y comprobantes (facturas). NUNCA escribe en el ERP del cliente.
+productos y comprobantes (facturas/cotizaciones). NUNCA escribe en el ERP.
 
 CONCEPTO CLAVE - Solo lectura:
 Solo existe _get() para datos. No hay _post(), _put(), _delete().
 authenticate() usa POST SOLO para obtener el Bearer token (OAuth2),
 y va a /token, NO a endpoints de datos.
+
+CONCEPTO CLAVE - Filtro por punto de venta:
+Para IEY, solo sincronizamos comprobantes del PV 0003 (mayorista).
+Esto se hace con el parametro 'filtro' de comprobantes/search y un
+post-filtro por Numero (ej: '0003-00000001'). Asi evitamos descargar
+datos de canales minoristas (MercadoLibre, TiendaNube) que no nos interesan.
 
 CONCEPTO CLAVE - Resiliencia:
 No es solo "llamar a una API". Es manejar todos los casos de error:
@@ -19,10 +25,13 @@ No es solo "llamar a una API". Es manejar todos los casos de error:
 Maximo 3 reintentos totales. Despues: parar y esperar al dia siguiente.
 """
 
+import socket
 import time
-from datetime import date
+from datetime import date, datetime
 
 import requests
+import urllib3.util.connection as urllib3_cn
+from requests.adapters import HTTPAdapter
 
 from backend.config.settings import (
     CONTABILIUM_API_URL,
@@ -61,6 +70,39 @@ class RateLimitError(ContabiliumError):
 _TOKEN_URL = CONTABILIUM_API_URL.replace('/api', '') + '/token'
 
 
+class IPv4HTTPAdapter(HTTPAdapter):
+    """Adaptador HTTP que fuerza conexiones IPv4 (AF_INET).
+
+    POR QUE EXISTE: El VPS (Contabo) prefiere IPv6 por defecto, pero
+    Contabilium solo tiene whitelisted la IPv4 (173.249.9.56) en Cloudflare.
+    Sin esto, urllib3 resuelve DNS a IPv6, Cloudflare devuelve 403.
+
+    COMO FUNCIONA: urllib3 usa allowed_gai_family() para decidir que familia
+    de direcciones pasar a getaddrinfo(). Por defecto retorna AF_UNSPEC
+    (ambas). Este adapter la reemplaza por AF_INET (solo IPv4).
+
+    ALCANCE: Aunque el parche es a nivel modulo de urllib3, en nuestro backend
+    solo ContabiliumConnector usa requests/urllib3. psycopg3 tiene su propio
+    mecanismo de conexion, no se ve afectado.
+    """
+
+    def init_poolmanager(self, connections: int, maxsize: int, block: bool = False, **kwargs: object) -> None:
+        urllib3_cn.allowed_gai_family = lambda: socket.AF_INET
+        super().init_poolmanager(connections, maxsize, block=block, **kwargs)
+
+
+# --- Filtro de comprobantes mayorista ---
+# Solo se sincronizan comprobantes cuyo Numero empiece con este prefijo.
+# Para IEY: "0003-" = punto de venta 3 (mayorista).
+# TODO: Mover a erp_config per-tenant cuando haya segundo tenant.
+_PV_MAYORISTA = '0003-'
+
+# Tipos de comprobante que representan ventas.
+# FCA/FCB = facturas (A y B). COT = cotizaciones (ventas no facturadas).
+# NCA/NCB = notas de credito (devoluciones) → se EXCLUYEN.
+_COMPROBANTE_TIPOS_VENTA = {'FCA', 'FCB', 'COT'}
+
+
 class ContabiliumConnector(ERPConnector):
     """Conector de solo lectura para la API REST de Contabilium.
 
@@ -74,6 +116,9 @@ class ContabiliumConnector(ERPConnector):
     def __init__(self, credentials: TenantCredentials) -> None:
         self._credentials = credentials
         self._access_token: str | None = None
+        self._session = requests.Session()
+        self._session.mount('https://', IPv4HTTPAdapter())
+        self._session.mount('http://', IPv4HTTPAdapter())
 
     def authenticate(self) -> None:
         """Obtiene un Bearer token via OAuth2 client_credentials.
@@ -89,7 +134,7 @@ class ContabiliumConnector(ERPConnector):
         client_secret_str = self._credentials.get_secret_as_str()
 
         try:
-            response = requests.post(
+            response = self._session.post(
                 _TOKEN_URL,
                 data={
                     "grant_type": "client_credentials",
@@ -140,7 +185,7 @@ class ContabiliumConnector(ERPConnector):
 
         while True:
             try:
-                response = requests.get(
+                response = self._session.get(
                     f"{CONTABILIUM_API_URL}/{endpoint}",
                     headers={"Authorization": f"Bearer {self._access_token}"},
                     params=params,
@@ -210,12 +255,15 @@ class ContabiliumConnector(ERPConnector):
         endpoint: str,
         params: dict | None = None,
         max_pages: int = 100,
+        limit: int | None = None,
     ) -> tuple[list[dict], bool]:
         """Paginacion automatica con deteccion de formato.
 
         Retorna (items, truncated). truncated=True si se alcanzo max_pages.
-        SAFEGUARD: max_pages=100 hardcoded. Para IEY (~500 clientes, pageSize 50)
-        = 10 paginas. Safeguard da margen 10x.
+        Si limit se provee, deja de paginar apenas tenga suficientes registros
+        y retorna exactamente esa cantidad (no descarga paginas de mas).
+        SAFEGUARD: max_pages=100 hardcoded. Para IEY (~5000 clientes, pageSize 50)
+        = 100 paginas. Safeguard evita loops infinitos.
         """
         all_items: list[dict] = []
         page = 1
@@ -243,6 +291,11 @@ class ContabiliumConnector(ERPConnector):
 
             all_items.extend(items)
 
+            # Si tenemos suficientes registros, cortar y retornar
+            if limit is not None and len(all_items) >= limit:
+                all_items = all_items[:limit]
+                return all_items, False
+
             # Condicion de salida: pagina vacia o parcial
             if len(items) == 0 or len(items) < SYNC_PAGE_SIZE:
                 break
@@ -259,41 +312,171 @@ class ContabiliumConnector(ERPConnector):
 
         return all_items, truncated
 
-    def fetch_customers(self) -> tuple[list[dict], bool]:
+    def fetch_customers(
+        self,
+        limit: int | None = None,
+        client_ids: set[str] | None = None,
+    ) -> tuple[list[dict], bool]:
         """Obtiene clientes de Contabilium.
 
-        Campos validados: ["Id", "RazonSocial"] — ambos necesarios para el upsert.
-        "RazonSocial" mapea a customers.name (NOT NULL sin DEFAULT).
-        Si Contabilium usa "Nombre" en vez de "RazonSocial", ajustar en Test 5.
+        Si client_ids se provee, descarga SOLO esos clientes via GET individual
+        (clientes/?id=XXX). Esto evita descargar 5000+ clientes cuando solo
+        necesitamos ~138 del canal mayorista.
+
+        Si client_ids es None, descarga todos (paginado). Util para sync full.
         """
-        raw, truncated = self._get_paginated("clientes/search")
+        if client_ids:
+            # Modo dirigido: solo clientes especificos (mayorista)
+            raw: list[dict] = []
+            for cid in client_ids:
+                try:
+                    client = self._get("clientes/", params={"id": cid})
+                    if isinstance(client, dict):
+                        raw.append(client)
+                    time.sleep(SYNC_RATE_LIMIT_DELAY)
+                except Exception as e:
+                    logger.warning(f"fetch_customers(): no se pudo obtener cliente id={cid}: {e}")
+            truncated = False
+            logger.info(
+                f"fetch_customers(): {len(raw)} clientes obtenidos por ID "
+                f"(de {len(client_ids)} solicitados)"
+            )
+        else:
+            # Modo completo: todos los clientes (paginado)
+            raw, truncated = self._get_paginated("clientes/search", limit=limit)
+
         valid = self._validate_records(raw, "clientes", ["Id", "RazonSocial"])
         return valid, truncated
 
-    def fetch_products(self) -> tuple[list[dict], bool]:
+    def fetch_products(self, limit: int | None = None) -> tuple[list[dict], bool]:
         """Obtiene productos de Contabilium.
 
         Campos validados: ["Id", "Nombre"] — ambos necesarios para el upsert.
         "Nombre" mapea a products.name (NOT NULL sin DEFAULT).
+        Si limit se provee, corta la paginacion apenas tenga suficientes.
         """
-        raw, truncated = self._get_paginated("conceptos/search")
+        raw, truncated = self._get_paginated("conceptos/search", limit=limit)
         valid = self._validate_records(raw, "productos", ["Id", "Nombre"])
         return valid, truncated
 
-    def fetch_orders(self, since_date: date | None = None) -> tuple[list[dict], bool]:
-        """Obtiene comprobantes/facturas de Contabilium.
+    def fetch_orders(self, since_date: date | None = None, limit: int | None = None) -> tuple[list[dict], bool]:
+        """Obtiene comprobantes de venta del punto de venta mayorista.
 
-        Campos validados: ["Id", "Fecha"] — ambos necesarios para el upsert.
-        "Fecha" mapea a orders.order_date (NOT NULL sin DEFAULT).
-        Si since_date se provee, solo trae ordenes desde esa fecha.
-        Formato de fecha [INFERIDO] — a confirmar en Test 5.
+        Endpoint: comprobantes/search con filtro por PV mayorista (_PV_MAYORISTA).
+        Solo incluye tipos de venta (FCA, FCB, COT). Excluye notas de credito
+        (NCA, NCB) porque son devoluciones, no ventas.
+
+        Cada comprobante del search NO incluye Items (productos). Para obtenerlos,
+        se hace un GET adicional a comprobantes/?id=XXX por cada comprobante.
+
+        Transforma los campos al formato que _upsert_orders en sync.py espera:
+        - 'Id' <- str(Id del comprobante)
+        - 'Fecha' <- FechaEmision parseada (ISO 2025-03-12T00:00:00 -> date)
+        - 'Total' <- ImporteTotalNeto parseado ("47.341,01" -> float)
+        - 'Cliente' <- str(IdCliente) (ID interno Contabilium = external_id)
+        - 'Items' <- del GetById, transformados a formato Concepto/Cantidad/etc.
         """
-        params: dict = {}
-        if since_date is not None:
-            params["fechaDesde"] = since_date.strftime("%Y-%m-%d")
+        params: dict = {
+            'fechaDesde': (since_date or date(2020, 1, 1)).strftime("%Y-%m-%d"),
+            'fechaHasta': date.today().strftime("%Y-%m-%d"),
+            'filtro': _PV_MAYORISTA,
+        }
+
+        # Descargar comprobantes del search (todos para luego filtrar por tipo)
         raw, truncated = self._get_paginated("comprobantes/search", params)
-        valid = self._validate_records(raw, "ordenes", ["Id", "Fecha"])
+        logger.info(f"fetch_orders(): {len(raw)} comprobantes obtenidos del search (filtro={_PV_MAYORISTA})")
+
+        # Post-filtro de seguridad: verificar que el Numero empieza con el PV
+        # correcto (por si 'filtro' matcheo razon social u otro campo)
+        pv_filtered = [
+            c for c in raw
+            if str(c.get('Numero', '')).startswith(_PV_MAYORISTA)
+        ]
+        if len(pv_filtered) < len(raw):
+            logger.info(
+                f"fetch_orders(): {len(raw) - len(pv_filtered)} comprobantes descartados "
+                f"(Numero no empieza con '{_PV_MAYORISTA}')"
+            )
+
+        # Filtrar por tipo: solo ventas, no notas de credito
+        sales = [c for c in pv_filtered if c.get('TipoFc') in _COMPROBANTE_TIPOS_VENTA]
+        excluded = len(pv_filtered) - len(sales)
+        if excluded:
+            logger.info(
+                f"fetch_orders(): {excluded} comprobantes excluidos "
+                f"(notas de credito u otros tipos no-venta)"
+            )
+
+        # Aplicar limit DESPUES de los filtros
+        if limit is not None:
+            sales = sales[:limit]
+
+        # Transformar y enriquecer cada comprobante con sus Items
+        orders: list[dict] = []
+        for comp in sales:
+            comp_id = comp.get('Id')
+
+            # GET detalle para obtener Items (productos del comprobante)
+            detail = self._get("comprobantes/", params={"id": comp_id})
+            time.sleep(SYNC_RATE_LIMIT_DELAY)
+
+            # Transformar Items al formato que sync.py espera
+            items: list[dict] = []
+            for item in (detail.get('Items') or []):
+                qty = item.get('Cantidad', 0) or 0
+                unit_price = item.get('PrecioUnitario', 0) or 0
+                items.append({
+                    'Concepto': {
+                        'Id': str(item.get('IdConcepto', '')),
+                        'Nombre': item.get('Concepto', ''),
+                    },
+                    'Cantidad': qty,
+                    'PrecioUnitario': unit_price,
+                    'Total': qty * unit_price,
+                })
+
+            # Transformar comprobante al formato que sync.py espera
+            orders.append({
+                'Id': str(comp_id),
+                'Fecha': self._parse_iso_date(comp.get('FechaEmision', '')),
+                'Total': self._parse_argentine_money(comp.get('ImporteTotalNeto', '')),
+                'Cliente': str(comp.get('IdCliente', '')),
+                'Items': items,
+            })
+
+        valid = self._validate_records(orders, "ordenes", ["Id", "Fecha"])
         return valid, truncated
+
+    @staticmethod
+    def _parse_iso_date(date_str: str) -> date | None:
+        """Parsea fecha ISO (2025-03-12T00:00:00) a date de Python.
+
+        Contabilium devuelve FechaEmision en formato ISO con hora.
+        PostgreSQL necesita un objeto date (psycopg3 lo serializa a YYYY-MM-DD).
+        """
+        if not date_str:
+            return None
+        try:
+            return datetime.fromisoformat(date_str).date()
+        except ValueError:
+            logger.warning(f"No se pudo parsear fecha ISO: '{date_str}'")
+            return None
+
+    @staticmethod
+    def _parse_argentine_money(money_str: str) -> float | None:
+        """Parsea monto en formato argentino '371.708,00' a float.
+
+        Contabilium usa punto como separador de miles y coma como decimal:
+        '371.708,00' -> 371708.00
+        """
+        if not money_str:
+            return None
+        try:
+            clean = str(money_str).replace('.', '').replace(',', '.')
+            return float(clean)
+        except (ValueError, TypeError):
+            logger.warning(f"No se pudo parsear monto: '{money_str}'")
+            return None
 
     def test_connection(self) -> bool:
         """Prueba la conexion: autenticar + leer 1 cliente.

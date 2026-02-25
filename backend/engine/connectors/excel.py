@@ -193,23 +193,27 @@ class ExcelConnector(ERPConnector):
             mapped.append(new_record)
         return mapped
 
-    def fetch_customers(self) -> tuple[list[dict], bool]:
+    def fetch_customers(self, limit: int | None = None, client_ids: set[str] | None = None) -> tuple[list[dict], bool]:
         """Lee hoja 'Clientes' y mapea campos al formato SyncEngine."""
         records = self._read_sheet("Clientes")
         records = self._apply_field_map(records, _FIELD_MAP_CUSTOMERS)
         records = self._validate_records(records, "clientes", ["Id", "RazonSocial"])
+        if limit is not None:
+            records = records[:limit]
         logger.info(f"fetch_customers(): {len(records)} clientes validos de Excel")
         return records, False
 
-    def fetch_products(self) -> tuple[list[dict], bool]:
+    def fetch_products(self, limit: int | None = None) -> tuple[list[dict], bool]:
         """Lee hoja 'Productos' y mapea campos al formato SyncEngine."""
         records = self._read_sheet("Productos")
         records = self._apply_field_map(records, _FIELD_MAP_PRODUCTS)
         records = self._validate_records(records, "productos", ["Id", "Nombre"])
+        if limit is not None:
+            records = records[:limit]
         logger.info(f"fetch_products(): {len(records)} productos validos de Excel")
         return records, False
 
-    def fetch_orders(self, since_date: date | None = None) -> tuple[list[dict], bool]:
+    def fetch_orders(self, since_date: date | None = None, limit: int | None = None) -> tuple[list[dict], bool]:
         """Lee hoja 'Ventas' + 'Items' (opcional) y arma estructura para SyncEngine.
 
         Si existe la hoja 'Items', agrupa los items por OrdenId y los adjunta
@@ -260,5 +264,7 @@ class ExcelConnector(ERPConnector):
                         filtered.append(r)
             records = filtered
 
+        if limit is not None:
+            records = records[:limit]
         logger.info(f"fetch_orders(): {len(records)} ordenes leidas de Excel")
         return records, False

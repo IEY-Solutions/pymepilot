@@ -148,19 +148,13 @@ class SyncEngine:
                         conn.commit()
                     return
 
-                customers_data, c_truncated = connector.fetch_customers()
-                if limit:
-                    customers_data = customers_data[:limit]
+                customers_data, c_truncated = connector.fetch_customers(limit=limit)
                 logger.info(f"Clientes obtenidos: {len(customers_data)}")
 
-                products_data, p_truncated = connector.fetch_products()
-                if limit:
-                    products_data = products_data[:limit]
+                products_data, p_truncated = connector.fetch_products(limit=limit)
                 logger.info(f"Productos obtenidos: {len(products_data)}")
 
-                orders_data, o_truncated = connector.fetch_orders(since_date)
-                if limit:
-                    orders_data = orders_data[:limit]
+                orders_data, o_truncated = connector.fetch_orders(since_date, limit=limit)
                 logger.info(f"Ordenes obtenidas: {len(orders_data)}")
 
             else:
@@ -198,22 +192,29 @@ class SyncEngine:
                         return
 
                     # Pasos 7-9: Fetch datos con rate limiting entre entidades
-                    customers_data, c_truncated = connector.fetch_customers()
-                    if limit:
-                        customers_data = customers_data[:limit]
+                    # ORDEN: ordenes PRIMERO para saber que clientes descargar.
+                    # Esto evita descargar 5000+ clientes cuando solo necesitamos
+                    # los ~138 del canal mayorista.
+                    orders_data, o_truncated = connector.fetch_orders(since_date, limit=limit)
+                    logger.info(f"Ordenes obtenidas: {len(orders_data)}")
+                    time.sleep(SYNC_RATE_LIMIT_DELAY)
+
+                    # Extraer IDs unicos de clientes de las ordenes
+                    client_external_ids: set[str] = set()
+                    for order in orders_data:
+                        cid = order.get('Cliente')
+                        if cid and str(cid).strip():
+                            client_external_ids.add(str(cid))
+
+                    customers_data, c_truncated = connector.fetch_customers(
+                        limit=limit,
+                        client_ids=client_external_ids or None,
+                    )
                     logger.info(f"Clientes obtenidos: {len(customers_data)}")
                     time.sleep(SYNC_RATE_LIMIT_DELAY)
 
-                    products_data, p_truncated = connector.fetch_products()
-                    if limit:
-                        products_data = products_data[:limit]
+                    products_data, p_truncated = connector.fetch_products(limit=limit)
                     logger.info(f"Productos obtenidos: {len(products_data)}")
-                    time.sleep(SYNC_RATE_LIMIT_DELAY)
-
-                    orders_data, o_truncated = connector.fetch_orders(since_date)
-                    if limit:
-                        orders_data = orders_data[:limit]
-                    logger.info(f"Ordenes obtenidas: {len(orders_data)}")
 
                 # Al salir del with, credenciales se limpian automaticamente
             any_truncated = c_truncated or p_truncated or o_truncated

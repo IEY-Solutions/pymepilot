@@ -211,7 +211,7 @@ class SmartFileConnector(ERPConnector):
 
     # --- Metodos ERPConnector ---
 
-    def fetch_customers(self) -> tuple[list[dict], bool]:
+    def fetch_customers(self, limit: int | None = None, client_ids: set[str] | None = None) -> tuple[list[dict], bool]:
         """Extrae clientes segun el mapping de Claude.
 
         Dependiendo del entity_type:
@@ -222,10 +222,12 @@ class SmartFileConnector(ERPConnector):
         self._ensure_parsed()
         records = self._parsed["customers"]
         records = self._validate_records(records, "clientes", ["Id", "RazonSocial"])
+        if limit is not None:
+            records = records[:limit]
         logger.info(f"fetch_customers(): {len(records)} clientes de Smart Upload")
         return records, False
 
-    def fetch_products(self) -> tuple[list[dict], bool]:
+    def fetch_products(self, limit: int | None = None) -> tuple[list[dict], bool]:
         """Extrae productos segun el mapping de Claude.
 
         Dependiendo del entity_type:
@@ -235,10 +237,12 @@ class SmartFileConnector(ERPConnector):
         self._ensure_parsed()
         records = self._parsed["products"]
         records = self._validate_records(records, "productos", ["Id", "Nombre"])
+        if limit is not None:
+            records = records[:limit]
         logger.info(f"fetch_products(): {len(records)} productos de Smart Upload")
         return records, False
 
-    def fetch_orders(self, since_date: date | None = None) -> tuple[list[dict], bool]:
+    def fetch_orders(self, since_date: date | None = None, limit: int | None = None) -> tuple[list[dict], bool]:
         """Extrae ordenes segun el mapping de Claude.
 
         Dependiendo del entity_type:
@@ -261,6 +265,8 @@ class SmartFileConnector(ERPConnector):
             records = filtered
 
         records = self._validate_records(records, "ordenes", ["Id", "Fecha"])
+        if limit is not None:
+            records = records[:limit]
         logger.info(f"fetch_orders(): {len(records)} ordenes de Smart Upload")
         return records, False
 
