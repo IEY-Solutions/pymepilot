@@ -135,6 +135,9 @@ class VerticalActivacion(VerticalBase):
         """Extiende metadata base con datos de secuencia y factores."""
         meta = super().build_metadata(candidate, context, profile, confidence)
 
+        # INVARIANTE: almacenar como int. La query de dedup en queries.py
+        # compara con metadata->>'sequence_day' que retorna text en PostgreSQL.
+        # PG convierte int JSON a text automaticamente. No cambiar a str().
         meta['sequence_day'] = candidate.get('sequence_day', 7)
         meta['days_since_first'] = candidate.get('days_since_first', 0)
         meta['confidence_factors'] = {

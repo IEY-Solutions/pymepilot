@@ -4,12 +4,18 @@ import { ContactarContent } from "./contactar-content";
 export default async function ContactarPage() {
   const supabase = await createClient();
 
+  // Ventana de 3 dias: tolera fines de semana sin perder predicciones
+  const threeDaysAgo = new Date(Date.now() - 3 * 86_400_000)
+    .toISOString()
+    .split("T")[0];
+
   const { data: predictions, error } = await supabase
     .from("predictions")
     .select(
       "id, vertical, prediction_date, contact_date, message_text, confidence_score, priority, status, metadata, customer:customers!inner(name, phone, email, last_purchase_date)"
     )
     .in("status", ["pending", "contacted"])
+    .gte("prediction_date", threeDaysAgo)
     .order("priority", { ascending: true })
     .order("contact_date", { ascending: true })
     .limit(50);

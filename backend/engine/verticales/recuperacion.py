@@ -132,6 +132,34 @@ class VerticalRecuperacion(VerticalBase):
     # OVERRIDES
     # ================================================================
 
+    def classify_profile(self, candidate: dict, vip_threshold: float) -> str:
+        """Clasifica perfil del cliente inactivo para ajustar tono.
+
+        Override necesario porque base.py usa days_until_predicted
+        (campo de V2 Reposicion) que V4 no tiene. En su lugar,
+        usamos window_days para determinar urgencia.
+
+        Perfiles:
+        - VIP: facturacion en top 20% (>= vip_threshold)
+        - En riesgo: ventana de 120 dias (casi perdido)
+        - Nuevo-recurrente: exactamente 2 compras
+        - Regular: todos los demas
+        """
+        amount = float(candidate.get('total_purchases_amount') or 0)
+        count = candidate.get('total_purchases_count', 0)
+        window = candidate.get('window_days', 60)
+
+        if vip_threshold > 0 and amount >= vip_threshold:
+            return 'VIP'
+
+        if window >= 120:
+            return 'En riesgo'
+
+        if count == 2:
+            return 'Nuevo-recurrente'
+
+        return 'Regular'
+
     def build_metadata(
         self,
         candidate: dict,
@@ -142,6 +170,9 @@ class VerticalRecuperacion(VerticalBase):
         """Extiende metadata base con datos de ventana y factores."""
         meta = super().build_metadata(candidate, context, profile, confidence)
 
+        # INVARIANTE: almacenar como int. La query de dedup en queries.py
+        # compara con metadata->>'window_days' que retorna text en PostgreSQL.
+        # PG convierte int JSON a text automaticamente. No cambiar a str().
         meta['window_days'] = candidate.get('window_days', 60)
         meta['days_inactive'] = candidate.get('days_inactive', 0)
         meta['confidence_factors'] = {
