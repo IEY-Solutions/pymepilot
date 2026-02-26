@@ -19,4 +19,6 @@ Si actualizas un solo lugar, todo el sistema queda sincronizado.
 #   3. Agregarla al active_verticals del tenant en la DB
 VERTICAL_REGISTRY: dict[str, str] = {
     'reposicion': 'backend.engine.verticales.reposicion.VerticalReposicion',
+    'activacion': 'backend.engine.verticales.activacion.VerticalActivacion',
+    'recuperacion': 'backend.engine.verticales.recuperacion.VerticalRecuperacion',
 }

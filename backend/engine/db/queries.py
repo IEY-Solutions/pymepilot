@@ -623,3 +623,189 @@ def get_run_summary(
         f"valor potencial ${result['potential_value']:,.2f}"
     )
     return result
+
+
+# ============================================================
+# QUERY 9: Candidatos para activacion (V1)
+# ============================================================
+
+def get_activation_candidates(
+    conn,
+    tenant_id: str,
+) -> list[dict]:
+    """Busca clientes nuevos que estan en ventana de seguimiento.
+
+    QUE HACE: Encuentra clientes con exactamente 1 compra que son
+    genuinamente nuevos (no clientes viejos con una sola compra),
+    y que estan en uno de los dias de secuencia: 7, 15, o 25 dias
+    despues de su primera compra.
+
+    COMO LO CALCULA:
+      days_since_first = hoy - first_purchase_date
+      Si days_since_first cae en (6-8, 14-16, 24-26) → candidato
+
+    FILTROS:
+      - Exactamente 1 compra (total_purchases_count = 1)
+      - Genuinamente nuevo (created_at cercano a first_purchase_date)
+      - En ventana de secuencia (+/- 1 dia)
+      - No tiene prediccion de activacion para ese sequence_day
+
+    Args:
+        conn: Conexion con tenant context.
+        tenant_id: UUID del tenant (filtro explicito sobre RLS).
+
+    Returns:
+        Lista de dicts con datos del candidato. Vacia si no hay candidatos.
+    """
+    with conn.cursor(row_factory=dict_row) as cur:
+        cur.execute(
+            """
+            SELECT
+                c.id AS customer_id,
+                c.name,
+                c.email,
+                c.phone,
+                c.first_purchase_date,
+                c.total_purchases_amount,
+                c.created_at,
+                (CURRENT_DATE - c.first_purchase_date) AS days_since_first,
+                CASE
+                    WHEN (CURRENT_DATE - c.first_purchase_date) BETWEEN 6 AND 8 THEN 7
+                    WHEN (CURRENT_DATE - c.first_purchase_date) BETWEEN 14 AND 16 THEN 15
+                    WHEN (CURRENT_DATE - c.first_purchase_date) BETWEEN 24 AND 26 THEN 25
+                END AS sequence_day
+            FROM customers c
+            WHERE c.tenant_id = %(tenant_id)s
+              AND c.status = 'active'
+              AND c.total_purchases_count = 1
+              AND c.first_purchase_date IS NOT NULL
+              -- Genuinamente nuevo: created_at cercano a primera compra
+              AND c.created_at >= c.first_purchase_date - INTERVAL '7 days'
+              -- En ventana de secuencia (+/- 1 dia)
+              AND (
+                  (CURRENT_DATE - c.first_purchase_date) BETWEEN 6 AND 8
+                  OR (CURRENT_DATE - c.first_purchase_date) BETWEEN 14 AND 16
+                  OR (CURRENT_DATE - c.first_purchase_date) BETWEEN 24 AND 26
+              )
+              -- Sin prediccion de activacion para este sequence_day
+              AND NOT EXISTS (
+                  SELECT 1 FROM predictions p
+                  WHERE p.customer_id = c.id
+                    AND p.tenant_id = c.tenant_id
+                    AND p.vertical = 'activacion'
+                    AND p.status IN ('pending', 'contacted', 'completed')
+                    AND p.metadata->>'sequence_day' = (
+                        CASE
+                            WHEN (CURRENT_DATE - c.first_purchase_date) BETWEEN 6 AND 8 THEN '7'
+                            WHEN (CURRENT_DATE - c.first_purchase_date) BETWEEN 14 AND 16 THEN '15'
+                            WHEN (CURRENT_DATE - c.first_purchase_date) BETWEEN 24 AND 26 THEN '25'
+                        END
+                    )
+              )
+            ORDER BY (CURRENT_DATE - c.first_purchase_date) ASC
+            """,
+            {
+                'tenant_id': tenant_id,
+            },
+        )
+        candidates = cur.fetchall()
+
+    logger.info(f"Candidatos activacion encontrados: {len(candidates)}")
+    return candidates
+
+
+# ============================================================
+# QUERY 10: Candidatos para recuperacion (V4)
+# ============================================================
+
+def get_recovery_candidates(
+    conn,
+    tenant_id: str,
+) -> list[dict]:
+    """Busca clientes inactivos que estan en ventana de recuperacion.
+
+    QUE HACE: Encuentra clientes que fueron recurrentes (2+ compras)
+    pero dejaron de comprar hace 60, 90, o 120 dias. Estos clientes
+    ya demostraron interes pero se fueron — vale la pena recuperarlos.
+
+    COMO LO CALCULA:
+      days_inactive = hoy - last_purchase_date
+      Si days_inactive cae en (58-62, 88-92, 118-122) → candidato
+
+    FILTROS:
+      - 2+ compras (fue recurrente)
+      - En ventana de inactividad (+/- 2 dias)
+      - Sin prediccion activa de V2 reposicion (evitar doble contacto)
+      - No tiene prediccion de recuperacion para esa ventana
+
+    Args:
+        conn: Conexion con tenant context.
+        tenant_id: UUID del tenant (filtro explicito sobre RLS).
+
+    Returns:
+        Lista de dicts con datos del candidato. Vacia si no hay candidatos.
+    """
+    with conn.cursor(row_factory=dict_row) as cur:
+        cur.execute(
+            """
+            SELECT
+                c.id AS customer_id,
+                c.name,
+                c.email,
+                c.phone,
+                c.first_purchase_date,
+                c.last_purchase_date,
+                c.total_purchases_count,
+                c.total_purchases_amount,
+                c.avg_days_between_purchases,
+                c.stddev_days_between_purchases,
+                (CURRENT_DATE - c.last_purchase_date) AS days_inactive,
+                CASE
+                    WHEN (CURRENT_DATE - c.last_purchase_date) BETWEEN 58 AND 62 THEN 60
+                    WHEN (CURRENT_DATE - c.last_purchase_date) BETWEEN 88 AND 92 THEN 90
+                    WHEN (CURRENT_DATE - c.last_purchase_date) BETWEEN 118 AND 122 THEN 120
+                END AS window_days
+            FROM customers c
+            WHERE c.tenant_id = %(tenant_id)s
+              AND c.status = 'active'
+              AND c.total_purchases_count >= 2
+              AND c.last_purchase_date IS NOT NULL
+              -- En ventana de inactividad (+/- 2 dias)
+              AND (
+                  (CURRENT_DATE - c.last_purchase_date) BETWEEN 58 AND 62
+                  OR (CURRENT_DATE - c.last_purchase_date) BETWEEN 88 AND 92
+                  OR (CURRENT_DATE - c.last_purchase_date) BETWEEN 118 AND 122
+              )
+              -- Sin prediccion activa de V2 (evitar doble contacto)
+              AND NOT EXISTS (
+                  SELECT 1 FROM predictions p
+                  WHERE p.customer_id = c.id
+                    AND p.tenant_id = c.tenant_id
+                    AND p.vertical = 'reposicion'
+                    AND p.status IN ('pending', 'contacted')
+              )
+              -- Sin prediccion de recuperacion para esta ventana
+              AND NOT EXISTS (
+                  SELECT 1 FROM predictions p
+                  WHERE p.customer_id = c.id
+                    AND p.tenant_id = c.tenant_id
+                    AND p.vertical = 'recuperacion'
+                    AND p.status IN ('pending', 'contacted', 'completed')
+                    AND p.metadata->>'window_days' = (
+                        CASE
+                            WHEN (CURRENT_DATE - c.last_purchase_date) BETWEEN 58 AND 62 THEN '60'
+                            WHEN (CURRENT_DATE - c.last_purchase_date) BETWEEN 88 AND 92 THEN '90'
+                            WHEN (CURRENT_DATE - c.last_purchase_date) BETWEEN 118 AND 122 THEN '120'
+                        END
+                    )
+              )
+            ORDER BY (CURRENT_DATE - c.last_purchase_date) DESC
+            """,
+            {
+                'tenant_id': tenant_id,
+            },
+        )
+        candidates = cur.fetchall()
+
+    logger.info(f"Candidatos recuperacion encontrados: {len(candidates)}")
+    return candidates

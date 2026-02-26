@@ -2,6 +2,12 @@ import { CopyButton } from "./copy-button";
 import { PredictionActions } from "./prediction-actions";
 import { Phone, Mail, Calendar, TrendingUp } from "lucide-react";
 
+interface PredictionMetadata {
+  sequence_day?: number;
+  window_days?: number;
+  [key: string]: unknown;
+}
+
 interface Prediction {
   id: string;
   vertical: string;
@@ -11,6 +17,7 @@ interface Prediction {
   confidence_score: number | null;
   priority: number;
   status: "pending" | "contacted" | "ignored";
+  metadata?: PredictionMetadata | null;
   customer: {
     name: string;
     phone: string | null;
@@ -27,11 +34,14 @@ const priorityLabels: Record<number, { label: string; color: string }> = {
   5: { label: "Baja", color: "bg-gray-100 text-gray-600" },
 };
 
-const verticalLabels: Record<string, string> = {
-  reposicion: "Reposicion",
-  activacion: "Activacion",
-  cross_sell: "Cross-sell",
-  recuperacion: "Recuperacion",
+const verticalStyles: Record<
+  string,
+  { label: string; color: string }
+> = {
+  reposicion: { label: "Reposicion", color: "bg-blue-100 text-blue-700" },
+  activacion: { label: "Activacion", color: "bg-green-100 text-green-700" },
+  cross_sell: { label: "Cross-sell", color: "bg-purple-100 text-purple-700" },
+  recuperacion: { label: "Recuperacion", color: "bg-amber-100 text-amber-700" },
 };
 
 function daysAgo(dateStr: string | null): string {
@@ -44,9 +54,27 @@ function daysAgo(dateStr: string | null): string {
   return `Hace ${diff} dias`;
 }
 
+function getVerticalBadgeText(prediction: Prediction): string {
+  const style = verticalStyles[prediction.vertical];
+  const label = style?.label ?? prediction.vertical;
+  const meta = prediction.metadata;
+
+  if (prediction.vertical === "activacion" && meta?.sequence_day) {
+    return `${label} - Dia ${meta.sequence_day}`;
+  }
+  if (prediction.vertical === "recuperacion" && meta?.window_days) {
+    return `${label} - ${meta.window_days}d`;
+  }
+  return label;
+}
+
 export function PredictionCard({ prediction }: { prediction: Prediction }) {
   const priority = priorityLabels[prediction.priority] ?? priorityLabels[3];
-  const vertical = verticalLabels[prediction.vertical] ?? prediction.vertical;
+  const verticalStyle = verticalStyles[prediction.vertical] ?? {
+    label: prediction.vertical,
+    color: "bg-purple-100 text-purple-700",
+  };
+  const verticalBadgeText = getVerticalBadgeText(prediction);
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
@@ -62,8 +90,10 @@ export function PredictionCard({ prediction }: { prediction: Prediction }) {
             >
               {priority.label}
             </span>
-            <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">
-              {vertical}
+            <span
+              className={`text-xs font-medium px-2 py-0.5 rounded-full ${verticalStyle.color}`}
+            >
+              {verticalBadgeText}
             </span>
             {prediction.confidence_score !== null && (
               <span className="flex items-center gap-0.5 text-xs text-gray-500">

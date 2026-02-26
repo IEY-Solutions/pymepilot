@@ -1,6 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { PredictionCard } from "@/components/predictions/prediction-card";
-import { MessageSquare } from "lucide-react";
+import { ContactarContent } from "./contactar-content";
 
 export default async function ContactarPage() {
   const supabase = await createClient();
@@ -8,7 +7,7 @@ export default async function ContactarPage() {
   const { data: predictions, error } = await supabase
     .from("predictions")
     .select(
-      "id, vertical, prediction_date, contact_date, message_text, confidence_score, priority, status, customer:customers!inner(name, phone, email, last_purchase_date)"
+      "id, vertical, prediction_date, contact_date, message_text, confidence_score, priority, status, metadata, customer:customers!inner(name, phone, email, last_purchase_date)"
     )
     .in("status", ["pending", "contacted"])
     .order("priority", { ascending: true })
@@ -28,48 +27,12 @@ export default async function ContactarPage() {
     );
   }
 
-  const pending = predictions?.filter((p) => p.status === "pending") ?? [];
-  const contacted = predictions?.filter((p) => p.status === "contacted") ?? [];
+  const normalizedPredictions = (predictions ?? []).map((p) => ({
+    ...p,
+    customer: Array.isArray(p.customer)
+      ? (p.customer as unknown as { name: string; phone: string | null; email: string | null; last_purchase_date: string | null }[])[0]
+      : p.customer,
+  }));
 
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Contactar Hoy</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            {pending.length} pendiente{pending.length !== 1 ? "s" : ""}
-            {contacted.length > 0 &&
-              ` | ${contacted.length} contactado${contacted.length !== 1 ? "s" : ""}`}
-          </p>
-        </div>
-      </div>
-
-      {predictions?.length === 0 ? (
-        <div className="text-center py-12">
-          <MessageSquare className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-          <p className="text-gray-500 font-medium">
-            No hay predicciones para hoy
-          </p>
-          <p className="text-sm text-gray-400 mt-1">
-            El motor genera predicciones cada dia a las 5 AM
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {predictions?.map((prediction) => (
-            <PredictionCard
-              key={prediction.id}
-              prediction={{
-                ...prediction,
-                status: prediction.status as "pending" | "contacted" | "ignored",
-                customer: Array.isArray(prediction.customer)
-                  ? prediction.customer[0]
-                  : prediction.customer,
-              }}
-            />
-          ))}
-        </div>
-      )}
-    </div>
-  );
+  return <ContactarContent predictions={normalizedPredictions} />;
 }
