@@ -7,6 +7,7 @@ import {
   RefreshCw,
   AlertTriangle,
   CheckCircle,
+  Zap,
 } from "lucide-react";
 import { getFreshnessInfo } from "@/lib/freshness";
 
@@ -49,12 +50,30 @@ function timeAgo(dateStr: string | null): string {
   return `Hace ${days} dia${days !== 1 ? "s" : ""}`;
 }
 
+function formatTime(dateStr: string | null): string {
+  if (!dateStr) return "—";
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return "—";
+  return d.toLocaleTimeString("es-AR", {
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "America/Argentina/Buenos_Aires",
+  });
+}
+
 export default async function HomePage() {
   const supabase = await createClient();
 
-  // Queries en paralelo para los 4 KPIs
-  const [pendingRes, totalPredRes, contactedPredRes, activeRes, lastSyncRes] =
-    await Promise.all([
+  // Queries en paralelo para KPIs + indicador del orquestador
+  const [
+    pendingRes,
+    totalPredRes,
+    contactedPredRes,
+    activeRes,
+    lastSyncRes,
+    todayPredRes,
+    lastRunRes,
+  ] = await Promise.all([
       // 1. Predicciones pendientes
       supabase
         .from("predictions")
@@ -62,9 +81,6 @@ export default async function HomePage() {
         .eq("status", "pending"),
 
       // 2a. Total predictions (M-08 FIX: count en vez de traer todas las filas)
-      // Antes: SELECT status FROM predictions (traia TODAS las filas a memoria).
-      // Ahora: COUNT con head:true (solo pide el numero, no descarga datos).
-      // Con miles de predicciones, la query vieja se volvia lenta y consumia RAM.
       supabase
         .from("predictions")
         .select("id", { count: "exact", head: true }),
@@ -82,11 +98,23 @@ export default async function HomePage() {
         .eq("status", "active"),
 
       // 4. Ultima sync (L-04 FIX: maybeSingle en vez de single)
-      // single() lanza error si hay 0 filas (tenant nuevo sin syncs).
-      // maybeSingle() retorna data=null sin error → mas robusto.
       supabase
         .from("sync_log")
         .select("started_at, status")
+        .order("started_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+
+      // 5. Predicciones generadas hoy (para tarjeta del orquestador)
+      supabase
+        .from("predictions")
+        .select("id", { count: "exact", head: true })
+        .eq("prediction_date", new Date().toISOString().split("T")[0]),
+
+      // 6. Ultima corrida del orquestador
+      supabase
+        .from("orchestrator_runs")
+        .select("completed_at, status, predictions_generated")
         .order("started_at", { ascending: false })
         .limit(1)
         .maybeSingle(),
@@ -107,6 +135,11 @@ export default async function HomePage() {
   const lastSync = lastSyncRes.data;
   const lastSyncTime = lastSync?.started_at ?? null;
   const freshness = getFreshnessInfo(lastSyncTime);
+
+  const todayPredictions = todayPredRes.count ?? 0;
+  const lastRun = lastRunRes.data;
+  const lastRunTime = lastRun?.completed_at ?? null;
+  const lastRunStatus = lastRun?.status ?? null;
 
   return (
     <div className="space-y-4">
@@ -142,6 +175,31 @@ export default async function HomePage() {
           color="bg-orange-50 text-orange-600"
         />
       </div>
+
+      {/* Card del orquestador — predicciones del dia */}
+      {todayPredictions > 0 && (
+        <div className="flex items-center justify-between gap-3 p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
+          <div className="flex items-center gap-3">
+            <Zap className="h-5 w-5 text-indigo-600 shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-indigo-900">
+                {todayPredictions} contacto{todayPredictions !== 1 ? "s" : ""} sugerido{todayPredictions !== 1 ? "s" : ""} hoy
+              </p>
+              <p className="text-xs text-indigo-600 opacity-80 mt-0.5">
+                {lastRunTime
+                  ? `Ultima corrida: ${formatTime(lastRunTime)}${lastRunStatus && lastRunStatus !== "completed" ? ` (${lastRunStatus})` : ""}`
+                  : "Sin corridas registradas"}
+              </p>
+            </div>
+          </div>
+          <Link
+            href="/contactar"
+            className="text-xs text-indigo-600 underline shrink-0"
+          >
+            Ver contactos
+          </Link>
+        </div>
+      )}
 
       {/* Card de frescura — solo visible si datos NO estan frescos */}
       {freshness && freshness.color !== "green" && (
