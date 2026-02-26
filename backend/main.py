@@ -68,19 +68,9 @@ from backend.engine.db.queries import (
     get_predictions_for_attribution,
     update_prediction_attribution,
 )
+from backend.engine.verticales import VERTICAL_REGISTRY
 
 logger = get_logger(__name__)
-
-
-# ================================================================
-# REGISTRY DE VERTICALES
-# ================================================================
-# Mismo registro que run_vertical.py. Cuando se agregue una nueva
-# vertical, hay que registrarla aca tambien.
-
-VERTICAL_REGISTRY: dict[str, str] = {
-    'reposicion': 'backend.engine.verticales.reposicion.VerticalReposicion',
-}
 
 
 # ================================================================

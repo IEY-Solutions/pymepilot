@@ -48,14 +48,10 @@ load_dotenv()
 os.umask(0o077)
 
 from backend.engine.core.logger import get_logger
+from backend.engine.db.connection import close_pool
+from backend.engine.verticales import VERTICAL_REGISTRY
 
 logger = get_logger(__name__)
-
-# Registry de verticales disponibles
-# Cuando se agreguen nuevas verticales, registrarlas aca.
-VERTICAL_REGISTRY = {
-    'reposicion': 'backend.engine.verticales.reposicion.VerticalReposicion',
-}
 
 
 def _load_vertical_class(vertical_name: str):
@@ -172,6 +168,8 @@ def main() -> None:
     except Exception as e:
         logger.error(f"Vertical fallida: {e}", exc_info=True)
         sys.exit(1)
+    finally:
+        close_pool()
 
     # Mostrar resumen en consola
     stats = result['stats']

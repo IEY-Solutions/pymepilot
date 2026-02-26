@@ -420,6 +420,7 @@ def get_predictions_for_attribution(
     conn,
     tenant_id: str,
     attribution_window_days: int = 14,
+    vertical: str = 'reposicion',
 ) -> list[dict]:
     """Busca predicciones activas que tengan compras recientes del cliente.
 
@@ -439,6 +440,8 @@ def get_predictions_for_attribution(
         tenant_id: UUID del tenant.
         attribution_window_days: Dias despues de la prediccion para
             buscar compras (default 14).
+        vertical: Tipo de vertical a buscar (default 'reposicion').
+            Permite atribuir predicciones de cualquier vertical.
 
     Returns:
         Lista de dicts con prediccion + datos de la compra.
@@ -469,13 +472,14 @@ def get_predictions_for_attribution(
               AND o.order_date <= pred.prediction_date
                   + %(window)s
             WHERE pred.tenant_id = %(tenant_id)s
-              AND pred.vertical = 'reposicion'
+              AND pred.vertical = %(vertical)s
               AND pred.status IN ('pending', 'contacted')
             ORDER BY pred.prediction_date
             """,
             {
                 'tenant_id': tenant_id,
                 'window': attribution_window_days,
+                'vertical': vertical,
             },
         )
         results = cur.fetchall()
@@ -547,6 +551,7 @@ def get_run_summary(
     conn,
     tenant_id: str,
     run_date: date | None = None,
+    vertical: str = 'reposicion',
 ) -> dict:
     """Obtiene resumen de predicciones generadas en una fecha.
 
@@ -558,6 +563,8 @@ def get_run_summary(
         conn: Conexion con tenant context.
         tenant_id: UUID del tenant.
         run_date: Fecha del run (default: hoy).
+        vertical: Tipo de vertical a resumir (default 'reposicion').
+            Permite obtener resumen de cualquier vertical.
 
     Returns:
         Dict con total, by_priority, avg_confidence, total_potential_value.
@@ -577,10 +584,10 @@ def get_run_summary(
                 COUNT(*) FILTER (WHERE priority >= 4) AS low_priority
             FROM predictions
             WHERE tenant_id = %(tenant_id)s
-              AND vertical = 'reposicion'
+              AND vertical = %(vertical)s
               AND prediction_date = %(run_date)s
             """,
-            {'tenant_id': tenant_id, 'run_date': run_date},
+            {'tenant_id': tenant_id, 'run_date': run_date, 'vertical': vertical},
         )
         summary = cur.fetchone()
 
@@ -591,10 +598,10 @@ def get_run_summary(
             FROM predictions p
             JOIN customers c ON c.id = p.customer_id
             WHERE p.tenant_id = %(tenant_id)s
-              AND p.vertical = 'reposicion'
+              AND p.vertical = %(vertical)s
               AND p.prediction_date = %(run_date)s
             """,
-            {'tenant_id': tenant_id, 'run_date': run_date},
+            {'tenant_id': tenant_id, 'run_date': run_date, 'vertical': vertical},
         )
         value_row = cur.fetchone()
 
