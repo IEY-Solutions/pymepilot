@@ -21,4 +21,5 @@ VERTICAL_REGISTRY: dict[str, str] = {
     'reposicion': 'backend.engine.verticales.reposicion.VerticalReposicion',
     'activacion': 'backend.engine.verticales.activacion.VerticalActivacion',
     'recuperacion': 'backend.engine.verticales.recuperacion.VerticalRecuperacion',
+    'cross_sell': 'backend.engine.verticales.cross_sell.VerticalCrossSell',
 }

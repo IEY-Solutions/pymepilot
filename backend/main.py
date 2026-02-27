@@ -42,6 +42,7 @@ import importlib
 import json
 import os
 import sys
+from datetime import date
 from decimal import Decimal
 
 # Agregar la raiz del proyecto al path de Python.
@@ -66,6 +67,7 @@ from backend.engine.db.connection import (
 )
 from backend.engine.db.queries import (
     get_predictions_for_attribution,
+    refresh_materialized_views,
     update_prediction_attribution,
 )
 from backend.engine.verticales import VERTICAL_REGISTRY
@@ -278,11 +280,57 @@ def _run_attribution(tenant_id: str, tenant_slug: str) -> int:
         return 0
 
 
+def _refresh_views() -> bool:
+    """Refresca las vistas materializadas co_purchases y client_rankings.
+
+    CONCEPTO: Las vistas materializadas son como "reportes pre-calculados"
+    que se guardan en disco. Se refrescan una vez al dia con datos nuevos
+    para que las queries del motor (V3 Cross-Sell) y del dashboard
+    (Ranking Clientes) sean instantaneas.
+
+    Se ejecuta UNA vez al inicio del pipeline (no por tenant) porque
+    las MVs ya contienen datos de TODOS los tenants.
+
+    La funcion SQL refresh_materialized_views() usa SECURITY DEFINER
+    para correr como superuser y bypasear RLS al leer datos de todos
+    los tenants.
+
+    Returns:
+        True si el refresh fue exitoso, False si fallo.
+    """
+    logger.info("Refrescando vistas materializadas...")
+
+    try:
+        with get_db_connection_no_tenant() as conn:
+            refresh_materialized_views(conn)
+        logger.info("Vistas materializadas refrescadas OK")
+        return True
+    except Exception as e:
+        logger.error(
+            f"Refresh de vistas materializadas fallido: "
+            f"{sanitize_text(str(e))}",
+            exc_info=True,
+        )
+        return False
+
+
+# Verticales que solo se ejecutan ciertos dias de la semana.
+# V3 Cross-Sell: solo lunes (weekday() == 0) — no tiene sentido
+# sugerir productos nuevos todos los dias, una vez por semana basta.
+_WEEKLY_VERTICALS: dict[str, int] = {
+    'cross_sell': 0,  # 0 = Monday
+}
+
+
 def _run_verticals(tenant: dict, dry_run: bool) -> dict:
     """Ejecuta las verticales activas para un tenant.
 
     Lee active_verticals del tenant y ejecuta cada una en orden.
     Si DailyLimitExceeded salta, para inmediatamente.
+
+    Verticales semanales (cross_sell) se saltean si no es el dia
+    configurado, a menos que estemos en dry-run o el tenant se paso
+    explicitamente (para testing).
 
     Args:
         tenant: Dict con datos del tenant (incluye active_verticals).
@@ -293,12 +341,26 @@ def _run_verticals(tenant: dict, dry_run: bool) -> dict:
     """
     result = {'predictions': 0, 'limit_exceeded': False}
     verticals = tenant.get('active_verticals', [])
+    today_weekday = date.today().weekday()
 
     if not verticals:
         logger.info(f"[{tenant['slug']}] Sin verticales activas configuradas")
         return result
 
     for vertical_name in verticals:
+        # --- Check: verticales semanales ---
+        if vertical_name in _WEEKLY_VERTICALS:
+            expected_day = _WEEKLY_VERTICALS[vertical_name]
+            if today_weekday != expected_day:
+                day_names = ['lunes', 'martes', 'miercoles', 'jueves',
+                             'viernes', 'sabado', 'domingo']
+                logger.info(
+                    f"[{tenant['slug']}] Vertical '{vertical_name}' skip: "
+                    f"solo corre los {day_names[expected_day]} "
+                    f"(hoy es {day_names[today_weekday]})"
+                )
+                continue
+
         logger.info(f"[{tenant['slug']}] Vertical '{vertical_name}' iniciando...")
 
         try:
@@ -408,6 +470,17 @@ def main() -> None:
             f"Tenants a procesar: {len(tenants)} "
             f"— {[t['slug'] for t in tenants]}"
         )
+
+        # --- Paso 2b: Refrescar vistas materializadas ---
+        # Se ejecuta UNA vez (no por tenant) porque las MVs contienen
+        # datos de todos los tenants. Necesario ANTES de verticales
+        # para que V3 Cross-Sell vea datos frescos en co_purchases.
+        if not _refresh_views():
+            errors.append({
+                'step': 'refresh_views',
+                'error': 'Refresh de vistas materializadas fallido',
+            })
+            # No es fatal: las MVs tienen datos del dia anterior
 
         # --- Paso 3: Procesar cada tenant ---
         for tenant in tenants:

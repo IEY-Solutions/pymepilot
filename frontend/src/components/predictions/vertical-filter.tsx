@@ -25,6 +25,11 @@ const verticalConfig: Record<
     color: "bg-gray-100 text-gray-600",
     activeColor: "bg-amber-100 text-amber-700 ring-1 ring-amber-300",
   },
+  cross_sell: {
+    label: "Cross-sell",
+    color: "bg-gray-100 text-gray-600",
+    activeColor: "bg-indigo-100 text-indigo-700 ring-1 ring-indigo-300",
+  },
 };
 
 export function VerticalFilter({

@@ -809,3 +809,336 @@ def get_recovery_candidates(
 
     logger.info(f"Candidatos recuperacion encontrados: {len(candidates)}")
     return candidates
+
+
+# ============================================================
+# QUERY 11: Candidatos para cross-sell (V3)
+# ============================================================
+
+def get_cross_sell_candidates(
+    conn,
+    tenant_id: str,
+    co_purchase_min_rate: float = 0.30,
+) -> list[dict]:
+    """Busca clientes con oportunidades de cross-sell.
+
+    QUE HACE: Para cada cliente activo con 2+ compras, busca productos
+    que NUNCA compro pero que frecuentemente se compran JUNTO con
+    productos que SI compra. Usa la vista materializada co_purchases
+    que se refresca a diario.
+
+    COMO LO CALCULA:
+    1. Lista todos los productos que el cliente compro alguna vez
+    2. Para cada producto, busca pares de co-compra en la MV
+    3. Filtra pares donde la tasa de co-compra >= 30%
+    4. Descarta productos que el cliente ya tiene
+    5. Agrega: cuantos productos le "faltan" y que tan fuerte es
+       la recomendacion mas alta
+
+    CONCEPTO CLAVE - Anti-join:
+    Es como buscar lo que FALTA en una coleccion. Si Juan compra
+    fundas y cargadores, y el 75% de los que compran fundas tambien
+    compran vidrios templados, pero Juan NO compra vidrios, esa es
+    la oportunidad de cross-sell.
+
+    FILTROS (excluir del pool de candidatos):
+    - Clientes con 0 o 1 compra (poco historial)
+    - Clientes inactivos >60 dias (van a V4 Recuperacion)
+    - Clientes con prediccion V3 activa (dedup)
+    - Clientes con prediccion V2 pendiente (no saturar)
+    - Productos no-producto (SHIPPING, COMISIONES)
+
+    NOTA SOBRE co_purchase_rate BIDIRECCIONAL:
+    La MV almacena el rate desde la perspectiva de product_a.
+    El rate inverso (B→A) podria ser diferente, pero usamos el
+    rate almacenado como proxy de fuerza de co-compra. Es una
+    aproximacion aceptable para el MVP.
+
+    Args:
+        conn: Conexion con tenant context.
+        tenant_id: UUID del tenant (filtro explicito sobre RLS).
+        co_purchase_min_rate: Rate minimo de co-compra (default 0.30 = 30%).
+
+    Returns:
+        Lista de dicts con datos del candidato + stats de oportunidad.
+        Vacia si no hay candidatos o si co_purchases esta vacia.
+    """
+    with conn.cursor(row_factory=dict_row) as cur:
+        cur.execute(
+            """
+            WITH customer_products AS (
+                -- Todos los productos que cada cliente compro alguna vez
+                SELECT DISTINCT o.customer_id, oi.product_id
+                FROM order_items oi
+                JOIN orders o ON o.id = oi.order_id
+                WHERE o.tenant_id = %(tenant_id)s
+                  AND o.status = 'completed'
+                  AND oi.product_id IS NOT NULL
+            ),
+            recommendations_fwd AS (
+                -- Direccion A→B: cliente tiene product_a, recomendar product_b
+                SELECT
+                    cp.customer_id,
+                    co.product_b AS recommended_id,
+                    co.product_b_name AS recommended_name,
+                    co.co_purchase_rate
+                FROM customer_products cp
+                JOIN co_purchases co
+                    ON co.tenant_id = %(tenant_id)s
+                    AND co.product_a = cp.product_id
+                    AND co.co_purchase_rate >= %(min_rate)s
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM customer_products cp2
+                    WHERE cp2.customer_id = cp.customer_id
+                      AND cp2.product_id = co.product_b
+                )
+                AND co.product_b_name NOT IN ('SHIPPING', 'COMISIONES')
+            ),
+            recommendations_rev AS (
+                -- Direccion B→A: cliente tiene product_b, recomendar product_a
+                SELECT
+                    cp.customer_id,
+                    co.product_a AS recommended_id,
+                    co.product_a_name AS recommended_name,
+                    co.co_purchase_rate
+                FROM customer_products cp
+                JOIN co_purchases co
+                    ON co.tenant_id = %(tenant_id)s
+                    AND co.product_b = cp.product_id
+                    AND co.co_purchase_rate >= %(min_rate)s
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM customer_products cp2
+                    WHERE cp2.customer_id = cp.customer_id
+                      AND cp2.product_id = co.product_a
+                )
+                AND co.product_a_name NOT IN ('SHIPPING', 'COMISIONES')
+            ),
+            all_recommendations AS (
+                SELECT * FROM recommendations_fwd
+                UNION ALL
+                SELECT * FROM recommendations_rev
+            ),
+            customer_agg AS (
+                -- Stats agregados por cliente
+                SELECT
+                    customer_id,
+                    COUNT(DISTINCT recommended_id) AS missing_products_count,
+                    MAX(co_purchase_rate) AS max_co_purchase_rate,
+                    AVG(co_purchase_rate) AS avg_co_purchase_rate
+                FROM all_recommendations
+                GROUP BY customer_id
+            )
+            SELECT
+                c.id AS customer_id,
+                c.name,
+                c.email,
+                c.phone,
+                c.total_purchases_count,
+                c.total_purchases_amount,
+                c.last_purchase_date,
+                c.first_purchase_date,
+                c.avg_days_between_purchases,
+                c.stddev_days_between_purchases,
+                ca.missing_products_count,
+                ca.max_co_purchase_rate,
+                ca.avg_co_purchase_rate,
+                (CURRENT_DATE - c.last_purchase_date) AS days_since_last_purchase
+            FROM customers c
+            JOIN customer_agg ca ON ca.customer_id = c.id
+            WHERE c.tenant_id = %(tenant_id)s
+              AND c.status = 'active'
+              AND c.total_purchases_count >= 2
+              AND c.last_purchase_date IS NOT NULL
+              -- No inactivo (esos van a V4 Recuperacion)
+              AND (CURRENT_DATE - c.last_purchase_date) <= 60
+              -- Sin prediccion V3 activa (dedup)
+              AND NOT EXISTS (
+                  SELECT 1 FROM predictions p
+                  WHERE p.customer_id = c.id
+                    AND p.tenant_id = c.tenant_id
+                    AND p.vertical = 'cross_sell'
+                    AND p.status IN ('pending', 'contacted')
+              )
+              -- Sin prediccion V2 pendiente (no saturar al cliente)
+              AND NOT EXISTS (
+                  SELECT 1 FROM predictions p
+                  WHERE p.customer_id = c.id
+                    AND p.tenant_id = c.tenant_id
+                    AND p.vertical = 'reposicion'
+                    AND p.status = 'pending'
+              )
+            ORDER BY
+                -- Mas productos "perdidos" = mas oportunidad
+                ca.missing_products_count DESC,
+                -- Clientes de mayor valor primero
+                c.total_purchases_amount DESC
+            """,
+            {
+                'tenant_id': tenant_id,
+                'min_rate': co_purchase_min_rate,
+            },
+        )
+        candidates = cur.fetchall()
+
+    logger.info(f"Candidatos cross-sell encontrados: {len(candidates)}")
+    return candidates
+
+
+# ============================================================
+# QUERY 12: Productos recomendados de cross-sell para un cliente
+# ============================================================
+
+def get_cross_sell_products(
+    conn,
+    tenant_id: str,
+    customer_id: str,
+    co_purchase_min_rate: float = 0.30,
+    limit: int = 3,
+) -> list[dict]:
+    """Obtiene los top N productos recomendados de cross-sell para un cliente.
+
+    QUE HACE: Para un cliente especifico, busca productos que nunca
+    compro pero que se compran frecuentemente junto con productos que
+    SI compra. Retorna los top N ordenados por fuerza de co-compra.
+
+    POR QUE SEPARADA DE get_cross_sell_candidates:
+    La query de candidatos necesita stats AGREGADOS (cuantos productos
+    faltan, rate maximo). Esta query necesita el DETALLE de cada
+    producto recomendado. Separarlas mantiene cada una simple y clara.
+
+    Cada producto incluye "because_buys": el nombre del producto que
+    el cliente YA compra y que disparo la recomendacion. Util para
+    el prompt: "como compras Fundas MagSafe, te recomiendo Vidrios
+    Templados (75% de los que compran fundas tambien compran vidrios)".
+
+    Args:
+        conn: Conexion con tenant context.
+        tenant_id: UUID del tenant.
+        customer_id: UUID del cliente.
+        co_purchase_min_rate: Rate minimo (default 0.30).
+        limit: Maximo de productos a retornar (default 3).
+
+    Returns:
+        Lista de dicts con product_id, product_name, co_purchase_rate,
+        times_bought_together, because_buys. Vacia si no hay recomendaciones.
+    """
+    with conn.cursor(row_factory=dict_row) as cur:
+        cur.execute(
+            """
+            WITH customer_products AS (
+                -- Productos que el cliente ya compro
+                SELECT DISTINCT oi.product_id
+                FROM order_items oi
+                JOIN orders o ON o.id = oi.order_id
+                WHERE o.customer_id = %(customer_id)s
+                  AND o.tenant_id = %(tenant_id)s
+                  AND o.status = 'completed'
+                  AND oi.product_id IS NOT NULL
+            ),
+            recs_fwd AS (
+                -- A→B: cliente tiene A, recomendar B
+                SELECT
+                    co.product_b AS product_id,
+                    co.product_b_name AS product_name,
+                    co.co_purchase_rate,
+                    co.times_bought_together,
+                    co.product_a_name AS because_buys
+                FROM customer_products cp
+                JOIN co_purchases co
+                    ON co.tenant_id = %(tenant_id)s
+                    AND co.product_a = cp.product_id
+                    AND co.co_purchase_rate >= %(min_rate)s
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM customer_products cp2
+                    WHERE cp2.product_id = co.product_b
+                )
+                AND co.product_b_name NOT IN ('SHIPPING', 'COMISIONES')
+            ),
+            recs_rev AS (
+                -- B→A: cliente tiene B, recomendar A
+                SELECT
+                    co.product_a AS product_id,
+                    co.product_a_name AS product_name,
+                    co.co_purchase_rate,
+                    co.times_bought_together,
+                    co.product_b_name AS because_buys
+                FROM customer_products cp
+                JOIN co_purchases co
+                    ON co.tenant_id = %(tenant_id)s
+                    AND co.product_b = cp.product_id
+                    AND co.co_purchase_rate >= %(min_rate)s
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM customer_products cp2
+                    WHERE cp2.product_id = co.product_a
+                )
+                AND co.product_a_name NOT IN ('SHIPPING', 'COMISIONES')
+            ),
+            all_recs AS (
+                SELECT * FROM recs_fwd
+                UNION ALL
+                SELECT * FROM recs_rev
+            )
+            -- Agrupar por producto recomendado (puede aparecer
+            -- por multiples productos del cliente)
+            SELECT
+                product_id,
+                product_name,
+                MAX(co_purchase_rate) AS co_purchase_rate,
+                MAX(times_bought_together) AS times_bought_together,
+                -- El producto que mas fuerte dispara la recomendacion
+                (ARRAY_AGG(
+                    because_buys ORDER BY co_purchase_rate DESC
+                ))[1] AS because_buys
+            FROM all_recs
+            GROUP BY product_id, product_name
+            ORDER BY MAX(co_purchase_rate) DESC
+            LIMIT %(limit)s
+            """,
+            {
+                'tenant_id': tenant_id,
+                'customer_id': customer_id,
+                'min_rate': co_purchase_min_rate,
+                'limit': limit,
+            },
+        )
+        products = cur.fetchall()
+
+    logger.debug(
+        f"Cross-sell products para {customer_id}: "
+        f"{len(products)} recomendados"
+    )
+    return products
+
+
+# ============================================================
+# QUERY 13: Refrescar vistas materializadas
+# ============================================================
+
+def refresh_materialized_views(conn) -> None:
+    """Refresca las vistas materializadas co_purchases y client_rankings.
+
+    QUE HACE: Llama a la funcion SQL refresh_materialized_views() que
+    fue creada en la migracion 026. La funcion es SECURITY DEFINER
+    (corre como postgres superuser) para poder leer datos de todos
+    los tenants a traves de RLS.
+
+    CONCEPTO CLAVE - REFRESH CONCURRENTLY:
+    La funcion SQL intenta REFRESH CONCURRENTLY primero (no bloquea
+    lecturas). Si falla (ej: primera vez, vista vacia), hace refresh
+    normal (bloquea lecturas brevemente).
+
+    CUANDO SE LLAMA: Una vez al dia desde el orquestador (main.py),
+    ANTES de ejecutar las verticales. Asi las verticales ven datos
+    frescos en las vistas materializadas.
+
+    Args:
+        conn: Conexion a la DB (puede ser con o sin tenant context,
+              la funcion SQL es SECURITY DEFINER).
+    """
+    with conn.cursor() as cur:
+        cur.execute("SELECT public.refresh_materialized_views()")
+    conn.commit()
+
+    logger.info(
+        "Vistas materializadas refrescadas: co_purchases, client_rankings"
+    )
