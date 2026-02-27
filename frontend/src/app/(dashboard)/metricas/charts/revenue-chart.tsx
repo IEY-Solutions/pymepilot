@@ -7,7 +7,6 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
 } from "recharts";
 import type { RevenueRow } from "../metricas-content";
@@ -23,10 +22,34 @@ function formatCurrency(n: number): string {
   return `$${n}`;
 }
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+function CustomTooltip({ active, payload, label }: any) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="bg-white shadow-lg rounded-lg border border-gray-100 px-4 py-3">
+      <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">
+        {label}
+      </p>
+      {payload.map((entry: any) => (
+        <div key={entry.dataKey} className="flex items-center gap-2 py-0.5">
+          <span
+            className="w-2.5 h-2.5 rounded-full shrink-0"
+            style={{ backgroundColor: entry.color }}
+          />
+          <span className="text-sm text-gray-600">{entry.dataKey}</span>
+          <span className="text-sm font-semibold text-gray-900 ml-auto">
+            ${Number(entry.value).toLocaleString("es-AR")}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function RevenueChart({ data }: { data: RevenueRow[] }) {
   if (data.length === 0) {
     return (
-      <div className="bg-white rounded-xl border border-gray-200 p-6 text-center text-gray-400 text-sm">
+      <div className="bg-white rounded-xl shadow-sm p-8 text-center text-gray-400 text-sm">
         Sin datos de facturacion
       </div>
     );
@@ -40,39 +63,68 @@ export function RevenueChart({ data }: { data: RevenueRow[] }) {
   }));
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-4">
-      <h3 className="text-sm font-medium text-gray-700 mb-3">
-        Facturacion mensual
-      </h3>
+    <div className="bg-white rounded-xl shadow-sm p-5">
+      <div className="mb-4">
+        <h3 className="text-base font-semibold text-gray-900">
+          Facturacion mensual
+        </h3>
+        <p className="text-xs text-gray-400 mt-0.5">
+          Total, recurrente y nueva facturacion por mes
+        </p>
+      </div>
+      <div className="flex flex-wrap gap-4 mb-3">
+        <div className="flex items-center gap-1.5">
+          <span className="w-2.5 h-2.5 rounded-full bg-indigo-500" />
+          <span className="text-xs text-gray-500">Total</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+          <span className="text-xs text-gray-500">Recurrente</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
+          <span className="text-xs text-gray-500">Nueva</span>
+        </div>
+      </div>
       <ResponsiveContainer width="100%" height={280}>
         <LineChart
           data={chartData}
           margin={{ top: 5, right: 10, left: 0, bottom: 5 }}
         >
-          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-          <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+          <CartesianGrid
+            strokeDasharray="3 3"
+            stroke="#f3f4f6"
+            vertical={false}
+          />
+          <XAxis
+            dataKey="month"
+            tick={{ fontSize: 12, fill: "#9ca3af" }}
+            axisLine={{ stroke: "#e5e7eb" }}
+            tickLine={false}
+          />
           <YAxis
             tickFormatter={(v: number) => formatCurrency(v)}
-            tick={{ fontSize: 12 }}
+            tick={{ fontSize: 12, fill: "#9ca3af" }}
             width={60}
+            axisLine={false}
+            tickLine={false}
           />
-          <Tooltip
-            formatter={(value) => `$${Number(value).toLocaleString("es-AR")}`}
-          />
-          <Legend />
+          <Tooltip content={<CustomTooltip />} />
           <Line
             type="monotone"
             dataKey="Total"
             stroke="#6366f1"
-            strokeWidth={2}
-            dot={{ r: 4 }}
+            strokeWidth={2.5}
+            dot={{ r: 4, fill: "#6366f1", strokeWidth: 2, stroke: "#fff" }}
+            activeDot={{ r: 6, fill: "#6366f1", strokeWidth: 2, stroke: "#fff" }}
           />
           <Line
             type="monotone"
             dataKey="Recurrente"
-            stroke="#22c55e"
+            stroke="#10b981"
             strokeWidth={2}
-            dot={{ r: 3 }}
+            dot={{ r: 3, fill: "#10b981", strokeWidth: 2, stroke: "#fff" }}
+            activeDot={{ r: 5, fill: "#10b981", strokeWidth: 2, stroke: "#fff" }}
           />
           <Line
             type="monotone"
@@ -80,7 +132,8 @@ export function RevenueChart({ data }: { data: RevenueRow[] }) {
             stroke="#f59e0b"
             strokeWidth={2}
             strokeDasharray="5 5"
-            dot={{ r: 3 }}
+            dot={{ r: 3, fill: "#f59e0b", strokeWidth: 2, stroke: "#fff" }}
+            activeDot={{ r: 5, fill: "#f59e0b", strokeWidth: 2, stroke: "#fff" }}
           />
         </LineChart>
       </ResponsiveContainer>

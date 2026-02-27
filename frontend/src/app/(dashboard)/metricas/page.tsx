@@ -1,11 +1,12 @@
 import { createClient } from "@/lib/supabase/server";
 import { MetricasContent } from "./metricas-content";
+import type { RankingRow } from "./metricas-content";
 
 export default async function MetricasPage() {
   const supabase = await createClient();
 
-  // 4 RPCs + ranking en paralelo
-  const [revenueRes, churnRes, ticketRes, valueRes, rankingRes] =
+  // 4 RPCs + ranking + tendencias en paralelo
+  const [revenueRes, churnRes, ticketRes, valueRes, rankingRes, trendsRes] =
     await Promise.all([
       supabase.rpc("get_monthly_revenue_split", { p_months: 6 }),
       supabase.rpc("get_monthly_churn", { p_months: 6 }),
@@ -16,7 +17,24 @@ export default async function MetricasPage() {
         .select("*")
         .order("ranking", { ascending: true })
         .limit(50),
+      supabase.rpc("get_client_trends", { p_months_window: 3 }),
     ]);
+
+  // Mergear tendencias con rankings via Map (O(n), no O(n²))
+  const trendMap = new Map<string, string>();
+  for (const t of trendsRes.data ?? []) {
+    trendMap.set(t.customer_id, t.trend);
+  }
+
+  const rankingsWithTrend: RankingRow[] = (rankingRes.data ?? []).map(
+    (r: Omit<RankingRow, "trend">) => ({
+      ...r,
+      trend: (trendMap.get(r.customer_id) ?? "stable") as
+        | "up"
+        | "down"
+        | "stable",
+    })
+  );
 
   return (
     <MetricasContent
@@ -24,7 +42,7 @@ export default async function MetricasPage() {
       churn={churnRes.data ?? []}
       ticket={ticketRes.data ?? []}
       value={valueRes.data ?? []}
-      rankings={rankingRes.data ?? []}
+      rankings={rankingsWithTrend}
     />
   );
 }

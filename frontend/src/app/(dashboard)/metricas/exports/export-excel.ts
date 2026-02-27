@@ -112,9 +112,15 @@ export function exportToExcel(data: ExportData) {
   XLSX.utils.book_append_sheet(wb, wsMetrics, "Metricas");
 
   // Hoja 4: Clientes
+  const trendLabel: Record<string, string> = {
+    up: "Sube",
+    down: "Baja",
+    stable: "Estable",
+  };
   const clientRows = data.rankings.map((c) => ({
     "#": c.ranking,
     Cliente: c.name,
+    Tendencia: trendLabel[c.trend] ?? "Estable",
     Facturacion: Number(c.total_revenue),
     Compras: c.total_orders,
     "Ticket prom.": Number(c.avg_ticket),
@@ -127,6 +133,7 @@ export function exportToExcel(data: ExportData) {
   wsClients["!cols"] = [
     { wch: 5 },
     { wch: 30 },
+    { wch: 10 },
     { wch: 15 },
     { wch: 10 },
     { wch: 15 },

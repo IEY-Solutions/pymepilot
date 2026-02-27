@@ -56,6 +56,7 @@ export interface RankingRow {
   last_purchase: string;
   avg_days_between_purchases: number | null;
   ranking: number;
+  trend: "up" | "down" | "stable";
 }
 
 interface MetricasContentProps {
@@ -90,15 +91,17 @@ function KpiCard({
   color: string;
 }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-4">
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-sm font-medium text-gray-500">{title}</span>
-        <div className={`p-2 rounded-lg ${color}`}>
+    <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 p-5">
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+          {title}
+        </span>
+        <div className={`p-2.5 rounded-full ${color}`}>
           <Icon className="h-4 w-4" />
         </div>
       </div>
-      <p className="text-2xl font-bold text-gray-900">{value}</p>
-      <p className="text-xs text-gray-400 mt-1">{subtitle}</p>
+      <p className="text-3xl font-bold tracking-tight text-gray-900">{value}</p>
+      <p className="text-sm text-gray-500 mt-1.5">{subtitle}</p>
     </div>
   );
 }
@@ -172,10 +175,10 @@ export function MetricasContent({
       : 0;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* Header con tabs + exportar */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <h1 className="text-2xl font-bold text-gray-900">Metricas</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-gray-900">Metricas</h1>
         <div className="flex items-center gap-2">
           <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
             <button
@@ -236,9 +239,9 @@ export function MetricasContent({
 
       {/* Tab: Rendimiento */}
       {activeTab === "rendimiento" && (
-        <div className="space-y-4">
+        <div className="space-y-6">
           {/* KPI Cards */}
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-4 md:gap-5">
             <KpiCard
               title="% Recurrente"
               value={
@@ -254,8 +257,8 @@ export function MetricasContent({
               icon={recurringTrend >= 0 ? TrendingUp : TrendingDown}
               color={
                 recurringTrend >= 0
-                  ? "bg-green-50 text-green-600"
-                  : "bg-red-50 text-red-600"
+                  ? "bg-gradient-to-br from-green-50 to-green-100 text-green-600"
+                  : "bg-gradient-to-br from-red-50 to-red-100 text-red-600"
               }
             />
             <KpiCard
@@ -273,10 +276,10 @@ export function MetricasContent({
               icon={churnTrend <= 0 ? TrendingDown : TrendingUp}
               color={
                 Number(lastChurn?.churn_rate ?? 0) <= 10
-                  ? "bg-green-50 text-green-600"
+                  ? "bg-gradient-to-br from-green-50 to-green-100 text-green-600"
                   : Number(lastChurn?.churn_rate ?? 0) <= 15
-                    ? "bg-amber-50 text-amber-600"
-                    : "bg-red-50 text-red-600"
+                    ? "bg-gradient-to-br from-amber-50 to-amber-100 text-amber-600"
+                    : "bg-gradient-to-br from-red-50 to-red-100 text-red-600"
               }
             />
             <KpiCard
@@ -292,7 +295,7 @@ export function MetricasContent({
                   : "Sin datos"
               }
               icon={ShoppingCart}
-              color="bg-purple-50 text-purple-600"
+              color="bg-gradient-to-br from-purple-50 to-purple-100 text-purple-600"
             />
             <KpiCard
               title="Valor PymePilot"
@@ -303,17 +306,17 @@ export function MetricasContent({
                   : "Sin conversiones aun"
               }
               icon={Zap}
-              color="bg-indigo-50 text-indigo-600"
+              color="bg-gradient-to-br from-indigo-50 to-indigo-100 text-indigo-600"
             />
           </div>
 
           {/* Graficos */}
-          <div className="space-y-4">
+          <div className="space-y-5">
             {/* Revenue chart — full width */}
             <RevenueChart data={revenue} />
 
             {/* Churn + Ticket — 2 columnas en desktop */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <ChurnChart data={churn} />
               <TicketChart data={ticket} />
             </div>

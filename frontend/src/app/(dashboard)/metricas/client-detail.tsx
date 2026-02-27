@@ -2,6 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 
 interface TopProduct {
   product_name: string;
@@ -10,65 +17,237 @@ interface TopProduct {
   times_ordered: number;
 }
 
+interface MonthlyRevenue {
+  month: string;
+  revenue: number;
+}
+
+interface ActivePrediction {
+  vertical: string;
+  prediction_date: string;
+  status: string;
+  message_text: string | null;
+}
+
 function formatCurrency(n: number): string {
   if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
   if (n >= 1_000) return `$${Math.round(n / 1_000)}k`;
   return `$${Math.round(n)}`;
 }
 
+function formatShortMonth(dateStr: string): string {
+  const d = new Date(dateStr + "T12:00:00");
+  return d.toLocaleDateString("es-AR", { month: "short" }).replace(".", "");
+}
+
+const verticalLabels: Record<string, string> = {
+  reposicion: "Reposicion",
+  activacion: "Activacion",
+  recuperacion: "Recuperacion",
+  cross_sell: "Cross-Sell",
+};
+
+const verticalColors: Record<string, string> = {
+  reposicion: "bg-blue-100 text-blue-700",
+  activacion: "bg-emerald-100 text-emerald-700",
+  recuperacion: "bg-amber-100 text-amber-700",
+  cross_sell: "bg-purple-100 text-purple-700",
+};
+
+const statusLabels: Record<string, string> = {
+  pending: "Pendiente",
+  contacted: "Contactado",
+};
+
 export function ClientDetail({ customerId }: { customerId: string }) {
   const [products, setProducts] = useState<TopProduct[]>([]);
+  const [monthlyRevenue, setMonthlyRevenue] = useState<MonthlyRevenue[]>([]);
+  const [predictions, setPredictions] = useState<ActivePrediction[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const supabase = createClient();
-    supabase
-      .rpc("get_client_top_products", {
+
+    Promise.all([
+      supabase.rpc("get_client_top_products", {
         p_customer_id: customerId,
         p_limit: 5,
-      })
-      .then(({ data }) => {
-        setProducts(data ?? []);
-        setLoading(false);
-      });
+      }),
+      supabase.rpc("get_client_monthly_revenue", {
+        p_customer_id: customerId,
+        p_months: 4,
+      }),
+      supabase
+        .from("predictions")
+        .select("vertical, prediction_date, status, message_text")
+        .eq("customer_id", customerId)
+        .in("status", ["pending", "contacted"])
+        .order("prediction_date", { ascending: false })
+        .limit(5),
+    ]).then(([productsRes, revenueRes, predictionsRes]) => {
+      setProducts(productsRes.data ?? []);
+      setMonthlyRevenue(revenueRes.data ?? []);
+      setPredictions(predictionsRes.data ?? []);
+      setLoading(false);
+    });
   }, [customerId]);
 
   if (loading) {
     return (
-      <div className="text-xs text-gray-400 py-2">Cargando productos...</div>
-    );
-  }
-
-  if (products.length === 0) {
-    return (
-      <div className="text-xs text-gray-400 py-2">
-        Sin productos registrados
+      <div className="flex items-center gap-2 py-3">
+        <div className="w-4 h-4 border-2 border-indigo-200 border-t-indigo-500 rounded-full animate-spin" />
+        <span className="text-xs text-gray-400">Cargando detalle...</span>
       </div>
     );
   }
+
+  const hasProducts = products.length > 0;
+  const hasRevenue = monthlyRevenue.length > 0;
+  const hasPredictions = predictions.length > 0;
+
+  if (!hasProducts && !hasRevenue && !hasPredictions) {
+    return (
+      <div className="text-xs text-gray-400 py-3">
+        Sin datos registrados para este cliente
+      </div>
+    );
+  }
+
+  const maxProductRevenue = hasProducts
+    ? Math.max(...products.map((p) => Number(p.total_revenue)))
+    : 0;
 
   return (
-    <div>
-      <h4 className="text-xs font-medium text-gray-500 mb-2">
-        Top 5 productos
-      </h4>
-      <div className="space-y-1.5">
-        {products.map((p, i) => (
-          <div
-            key={i}
-            className="flex items-center justify-between text-sm"
-          >
-            <span className="text-gray-700 truncate flex-1 mr-3">
-              {p.product_name}
-            </span>
-            <div className="flex gap-4 text-xs text-gray-500 shrink-0">
-              <span>{formatCurrency(Number(p.total_revenue))}</span>
-              <span>{Number(p.total_quantity)} uds</span>
-              <span>{p.times_ordered}x</span>
-            </div>
+    <div className="space-y-5">
+      {/* Seccion 1: Top 5 productos */}
+      {hasProducts && (
+        <div>
+          <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-3">
+            Top 5 productos
+          </h4>
+          <div className="space-y-2">
+            {products.map((p, i) => {
+              const pct =
+                maxProductRevenue > 0
+                  ? Math.round(
+                      (Number(p.total_revenue) / maxProductRevenue) * 100
+                    )
+                  : 0;
+              return (
+                <div key={i} className="flex items-center gap-3 text-sm">
+                  <span className="text-xs font-medium text-gray-300 w-4 text-right">
+                    {i + 1}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <span className="text-gray-700 truncate block">
+                      {p.product_name}
+                    </span>
+                    <div className="w-full h-1 bg-gray-100 rounded-full mt-1">
+                      <div
+                        className="h-full bg-indigo-400 rounded-full transition-all duration-300"
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex gap-3 text-xs text-gray-500 shrink-0">
+                    <span className="font-medium text-gray-700">
+                      {formatCurrency(Number(p.total_revenue))}
+                    </span>
+                    <span>{Number(p.total_quantity)} uds</span>
+                    <span>{p.times_ordered}x</span>
+                  </div>
+                </div>
+              );
+            })}
           </div>
-        ))}
-      </div>
+        </div>
+      )}
+
+      {/* Seccion 2: Facturacion mensual — mini bar chart */}
+      {hasRevenue && (
+        <div>
+          <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-3">
+            Facturacion mensual
+          </h4>
+          <div className="h-20">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={monthlyRevenue.map((m) => ({
+                  month: formatShortMonth(m.month),
+                  revenue: Number(m.revenue),
+                }))}
+              >
+                <XAxis
+                  dataKey="month"
+                  tick={{ fontSize: 10, fill: "#9ca3af" }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <Tooltip
+                  formatter={(value) => [
+                    formatCurrency(Number(value ?? 0)),
+                    "Facturacion",
+                  ]}
+                  contentStyle={{
+                    fontSize: 12,
+                    borderRadius: 8,
+                    border: "1px solid #e5e7eb",
+                  }}
+                />
+                <Bar
+                  dataKey="revenue"
+                  fill="#818cf8"
+                  radius={[4, 4, 0, 0]}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
+
+      {/* Seccion 3: Predicciones activas */}
+      {hasPredictions && (
+        <div>
+          <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-3">
+            Predicciones activas
+          </h4>
+          <div className="space-y-2">
+            {predictions.map((pred, i) => (
+              <div
+                key={i}
+                className="flex flex-wrap items-center gap-2 text-sm"
+              >
+                <span
+                  className={`px-2 py-0.5 rounded-full text-xs font-medium ${verticalColors[pred.vertical] ?? "bg-gray-100 text-gray-600"}`}
+                >
+                  {verticalLabels[pred.vertical] ?? pred.vertical}
+                </span>
+                <span className="text-xs text-gray-400">
+                  {new Date(pred.prediction_date + "T12:00:00").toLocaleDateString("es-AR", {
+                    day: "numeric",
+                    month: "short",
+                  })}
+                </span>
+                <span
+                  className={`text-xs px-1.5 py-0.5 rounded ${
+                    pred.status === "contacted"
+                      ? "bg-green-50 text-green-600"
+                      : "bg-gray-100 text-gray-500"
+                  }`}
+                >
+                  {statusLabels[pred.status] ?? pred.status}
+                </span>
+                {pred.message_text && (
+                  <span className="text-xs text-gray-400 truncate max-w-[200px]">
+                    {pred.message_text.slice(0, 60)}
+                    {pred.message_text.length > 60 ? "..." : ""}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
