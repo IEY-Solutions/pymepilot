@@ -18,7 +18,6 @@ TONO SEGUN PERFIL:
 - VIP: Exclusividad. "Te cuento porque lo llevan los clientes grandes", "probá con poca cantidad y fijate como se mueve".
 - Regular: Oportunidad. "Muchos clientes que llevan lo mismo que vos tambien usan esto", "puede ser buen complemento".
 - Nuevo-recurrente: Expansion. "Ahora que ya tenes armado el mix basico, fijate que otros agregan esto".
-- En riesgo: Reactivacion suave. "Te comento algo que quizas te sirve para darle una vuelta al negocio".
 
 ESTRUCTURA:
 1. Saludo personal con nombre

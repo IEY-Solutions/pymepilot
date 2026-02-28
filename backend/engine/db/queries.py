@@ -972,6 +972,10 @@ def get_cross_sell_candidates(
                 ca.missing_products_count DESC,
                 -- Clientes de mayor valor primero
                 c.total_purchases_amount DESC
+            -- FIX H-02: Limitar candidatos para control de costos Claude API.
+            -- Cada candidato = 1 llamada a Claude (~$0.02). Sin limite, un
+            -- lunes con buenas co-compras podria generar decenas de llamadas.
+            LIMIT 5
             """,
             {
                 'tenant_id': tenant_id,

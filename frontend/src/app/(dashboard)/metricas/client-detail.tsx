@@ -64,9 +64,13 @@ export function ClientDetail({ customerId }: { customerId: string }) {
   const [monthlyRevenue, setMonthlyRevenue] = useState<MonthlyRevenue[]>([]);
   const [predictions, setPredictions] = useState<ActivePrediction[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     const supabase = createClient();
+    setLoading(true);
+    setError(false);
 
     Promise.all([
       supabase.rpc("get_client_top_products", {
@@ -85,18 +89,41 @@ export function ClientDetail({ customerId }: { customerId: string }) {
         .order("prediction_date", { ascending: false })
         .limit(5),
     ]).then(([productsRes, revenueRes, predictionsRes]) => {
+      // Si alguna RPC retorno error, tratarlo como fallo
+      if (productsRes.error || revenueRes.error || predictionsRes.error) {
+        setError(true);
+        setLoading(false);
+        return;
+      }
       setProducts(productsRes.data ?? []);
       setMonthlyRevenue(revenueRes.data ?? []);
       setPredictions(predictionsRes.data ?? []);
       setLoading(false);
+    }).catch(() => {
+      setError(true);
+      setLoading(false);
     });
-  }, [customerId]);
+  }, [customerId, retryCount]);
 
   if (loading) {
     return (
       <div className="flex items-center gap-2 py-3">
         <div className="w-4 h-4 border-2 border-indigo-200 border-t-indigo-500 rounded-full animate-spin" />
         <span className="text-xs text-gray-400">Cargando detalle...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center gap-2 py-3">
+        <span className="text-xs text-red-500">Error al cargar detalle.</span>
+        <button
+          onClick={() => setRetryCount((c) => c + 1)}
+          className="text-xs text-indigo-600 hover:text-indigo-800 underline"
+        >
+          Reintentar
+        </button>
       </div>
     );
   }
