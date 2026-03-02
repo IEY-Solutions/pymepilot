@@ -23,7 +23,9 @@ CONCEPTO CLAVE - try/finally:
   No importa como termine run(): el finally se ejecuta SIEMPRE.
 """
 
+import re
 import time
+import unicodedata
 from datetime import date
 
 from backend.config.settings import (
@@ -315,8 +317,50 @@ class SyncEngine:
         """Upsert de clientes en tabla customers.
 
         Mapeo de campos [INFERIDO] — se ajusta en Test 5.
+
+        DEDUP (M-03 FIX): Clientes de Smart Upload (external_id con prefijo
+        'su_') se buscan por nombre normalizado contra clientes existentes.
+        Si hay match exacto, se reutiliza el external_id existente para que
+        el ON CONFLICT haga UPDATE en vez de INSERT duplicado.
+
+        Solo aplica a Smart Upload porque:
+        - Contabilium tiene IDs estables del ERP (nunca colisionan consigo)
+        - Smart Upload genera IDs basados en hash del nombre, que difieren
+          del ID numerico del ERP → causa duplicados
         """
+        # --- Pre-cargar mapa de nombres normalizados → external_id existentes ---
+        # Solo se usa para dedup de Smart Upload. Cargamos UNA vez al inicio
+        # (2 queries: customers existentes + el batch actual).
+        existing_by_name: dict[str, str] = {}
+        for row in conn.execute(
+            "SELECT external_id, name FROM customers WHERE tenant_id = %s",
+            (tenant_id,),
+        ).fetchall():
+            norm = normalize_customer_name(row[1] or "")
+            if norm:
+                existing_by_name[norm] = row[0]
+
+        dedup_count = 0
+
         for c in customers:
+            external_id = str(c.get('Id', ''))
+            name = c.get('RazonSocial') or c.get('Nombre', '')
+
+            # Dedup: solo para Smart Upload (prefijo 'su_')
+            if external_id.startswith('su_'):
+                norm_name = normalize_customer_name(name)
+                if norm_name and norm_name in existing_by_name:
+                    original_id = existing_by_name[norm_name]
+                    if original_id != external_id:
+                        logger.info(
+                            f"Dedup: '{name}' remap {external_id} → {original_id}"
+                        )
+                        external_id = original_id
+                        dedup_count += 1
+                # Registrar en el mapa para dedup dentro del mismo batch
+                elif norm_name:
+                    existing_by_name[norm_name] = external_id
+
             conn.execute(
                 """
                 INSERT INTO customers (
@@ -337,8 +381,8 @@ class SyncEngine:
                 """,
                 {
                     'tenant_id': tenant_id,
-                    'external_id': str(c.get('Id', '')),
-                    'name': c.get('RazonSocial') or c.get('Nombre', ''),
+                    'external_id': external_id,
+                    'name': name,
                     'email': c.get('Email'),
                     'phone': c.get('Telefono'),
                     'address': c.get('Domicilio'),
@@ -347,6 +391,8 @@ class SyncEngine:
                 },
             )
 
+        if dedup_count > 0:
+            logger.info(f"Dedup: {dedup_count} clientes remapeados a existentes")
         logger.info(f"Upsert clientes: {len(customers)} procesados")
 
     def _upsert_products(
@@ -571,3 +617,37 @@ class SyncEngine:
         )
 
         logger.info("Campos derivados de clientes actualizados")
+
+
+# --- Funciones helper (module-level) ---
+
+
+def normalize_customer_name(name: str) -> str:
+    """Normaliza un nombre de cliente para comparacion de dedup.
+
+    QUE HACE: Toma un nombre como "GARCÍA  SRL" y lo convierte a
+    "garcia srl" — sin acentos, minusculas, espacios colapsados.
+
+    POR QUE: Permite detectar que "GARCÍA SRL" (del ERP) y "garcia srl"
+    (del Excel) son el mismo cliente, evitando duplicados.
+
+    CONCEPTO - Normalizacion Unicode (NFKD):
+    Los caracteres con acento (á, é, ñ) se descomponen en "letra base +
+    marca de acento". Despues se filtran las marcas, dejando solo ASCII.
+    Es como quitar los acentos de una maquina de escribir vieja.
+
+    Args:
+        name: Nombre del cliente tal cual viene del ERP o Excel.
+
+    Returns:
+        Nombre normalizado: lowercase, sin acentos, espacios colapsados,
+        strip de espacios al inicio/final. String vacio si el input es vacio.
+    """
+    if not name:
+        return ""
+    # NFKD: descomponer caracteres con acento en base + marca
+    # encode ASCII ignore: quitar todo lo que no sea ASCII (las marcas)
+    normalized = unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode()
+    # Lowercase + colapsar espacios multiples en uno solo
+    normalized = re.sub(r'\s+', ' ', normalized.lower().strip())
+    return normalized

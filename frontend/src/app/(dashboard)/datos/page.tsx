@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { FileUpload } from "@/components/upload/file-upload";
 import { DriveConnection } from "@/components/drive/drive-connection";
+import { ErpStatusCard } from "@/components/datos/erp-status-card";
 import { getFreshnessInfo } from "@/lib/freshness";
 
 const statusConfig: Record<
@@ -32,8 +33,12 @@ function formatDate(dateStr: string): string {
 export default async function DatosPage() {
   const supabase = await createClient();
 
-  // Queries en paralelo (+ upload_jobs recientes)
-  const [syncsRes, customersRes, productsRes, ordersRes, predictionsRes, uploadsRes, driveRes] =
+  // Obtener tenant del usuario actual para la card de ERP
+  const { data: { user } } = await supabase.auth.getUser();
+  const tenantId = user?.app_metadata?.tenant_id as string | undefined;
+
+  // Queries en paralelo (+ upload_jobs recientes + tenant info)
+  const [syncsRes, customersRes, productsRes, ordersRes, predictionsRes, uploadsRes, driveRes, tenantRes] =
     await Promise.all([
       supabase
         .from("sync_log")
@@ -62,12 +67,28 @@ export default async function DatosPage() {
         .select("id, folder_id, status, last_synced_at, error_message")
         .limit(1)
         .maybeSingle(),
+      tenantId
+        ? supabase
+            .from("tenants")
+            .select("erp_type, erp_config")
+            .eq("id", tenantId)
+            .maybeSingle()
+        : Promise.resolve({ data: null }),
     ]);
 
   const syncs = syncsRes.data ?? [];
   const uploads = uploadsRes.data ?? [];
   const driveConnection = driveRes.data ?? null;
   const lastSync = syncs[0];
+  const tenantData = tenantRes.data as { erp_type: string | null; erp_config: Record<string, unknown> | null } | null;
+
+  // Datos para la card de ERP
+  const erpType = tenantData?.erp_type ?? null;
+  const hasCredentials = !!(tenantData?.erp_config && Object.keys(tenantData.erp_config).length > 0
+    && tenantData.erp_config.client_id);
+
+  // Ultimo sync exitoso (para la card de ERP)
+  const lastSuccessfulSync = syncs.find((s) => s.status === "completed") ?? null;
 
   // Indicador de frescura
   const freshness = getFreshnessInfo(lastSync?.started_at ?? null);
@@ -75,6 +96,19 @@ export default async function DatosPage() {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold text-gray-900">Estado de Datos</h1>
+
+      {/* Card de estado ERP */}
+      <ErpStatusCard
+        erpType={erpType}
+        hasCredentials={hasCredentials}
+        lastSync={lastSuccessfulSync ? {
+          status: lastSuccessfulSync.status,
+          started_at: lastSuccessfulSync.started_at,
+          customers_synced: lastSuccessfulSync.customers_synced,
+          products_synced: lastSuccessfulSync.products_synced,
+          orders_synced: lastSuccessfulSync.orders_synced,
+        } : null}
+      />
 
       {/* Indicador de frescura mejorado */}
       {freshness && (

@@ -41,7 +41,7 @@ from datetime import date
 from pathlib import Path
 
 from backend.engine.claude.client import ClaudeClient, DailyLimitExceeded
-from backend.engine.core.logger import get_logger
+from backend.engine.core.logger import get_logger, sanitize_text
 from backend.engine.db.connection import get_db_connection, get_db_connection_no_tenant
 from backend.engine.db.queries import (
     check_existing_prediction,
@@ -200,7 +200,7 @@ class VerticalBase(ABC):
                 stats['failed'] += 1
                 logger.error(
                     f"Error procesando candidato "
-                    f"'{candidate.get('name', '?')}': {exc}",
+                    f"'{candidate.get('name', '?')}': {sanitize_text(str(exc))}",
                     exc_info=True,
                 )
 
