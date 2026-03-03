@@ -914,6 +914,13 @@ def get_cross_sell_candidates(
                 AND co.product_a_name NOT IN ('SHIPPING', 'COMISIONES')
             ),
             all_recommendations AS (
+                -- UNION ALL combina ambas direcciones del par (A,B):
+                -- fwd recomienda B (porque el cliente tiene A),
+                -- rev recomienda A (porque el cliente tiene B).
+                -- Si un producto aparece por ambos caminos, COUNT(DISTINCT)
+                -- lo cuenta una vez, MAX toma la señal mas fuerte, y AVG
+                -- promedia los rates (mismo valor si es el mismo par,
+                -- impacto minimo si son pares distintos). Revisado Fase 9.
                 SELECT * FROM recommendations_fwd
                 UNION ALL
                 SELECT * FROM recommendations_rev

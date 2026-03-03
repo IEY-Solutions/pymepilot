@@ -9,21 +9,17 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import type { TooltipContentProps } from "recharts";
+import type { ValueType, NameType } from "recharts/types/component/DefaultTooltipContent";
 import type { RevenueRow } from "../metricas-content";
+import { formatCurrency } from "@/lib/format";
 
 function formatMonth(dateStr: string): string {
   const d = new Date(dateStr + "T12:00:00");
   return d.toLocaleDateString("es-AR", { month: "short" }).replace(".", "");
 }
 
-function formatCurrency(n: number): string {
-  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `$${Math.round(n / 1_000)}k`;
-  return `$${n}`;
-}
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-function CustomTooltip({ active, payload, label }: any) {
+function CustomTooltip({ active, payload, label }: TooltipContentProps<ValueType, NameType>) {
   if (!active || !payload?.length) return null;
   return (
     <div className="bg-white shadow-lg rounded-lg border border-gray-100 px-4 py-3">
@@ -109,7 +105,7 @@ export function RevenueChart({ data }: { data: RevenueRow[] }) {
             axisLine={false}
             tickLine={false}
           />
-          <Tooltip content={<CustomTooltip />} />
+          <Tooltip content={CustomTooltip} />
           <Line
             type="monotone"
             dataKey="Total"

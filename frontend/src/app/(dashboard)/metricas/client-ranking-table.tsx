@@ -10,12 +10,7 @@ import {
 } from "lucide-react";
 import type { RankingRow } from "./metricas-content";
 import { ClientDetail } from "./client-detail";
-
-function formatCurrency(n: number): string {
-  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `$${Math.round(n / 1_000)}k`;
-  return `$${Math.round(n)}`;
-}
+import { formatCurrency } from "@/lib/format";
 
 function daysAgo(dateStr: string | null): string {
   if (!dateStr) return "\u2014";

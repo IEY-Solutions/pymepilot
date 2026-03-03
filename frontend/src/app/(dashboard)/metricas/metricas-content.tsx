@@ -14,6 +14,7 @@ import { ChurnChart } from "./charts/churn-chart";
 import { TicketChart } from "./charts/ticket-chart";
 import { ValueChart } from "./charts/value-chart";
 import { ClientRankingTable } from "./client-ranking-table";
+import { formatCurrency } from "@/lib/format";
 
 // ============================================================
 // TIPOS
@@ -70,12 +71,6 @@ interface MetricasContentProps {
 // ============================================================
 // HELPERS
 // ============================================================
-
-function formatCurrency(n: number): string {
-  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `$${(n / 1_000).toFixed(0)}k`;
-  return `$${n.toFixed(0)}`;
-}
 
 function KpiCard({
   title,

@@ -10,6 +10,8 @@ import {
   ReferenceLine,
   ResponsiveContainer,
 } from "recharts";
+import type { TooltipContentProps } from "recharts";
+import type { ValueType, NameType } from "recharts/types/component/DefaultTooltipContent";
 import type { ChurnRow } from "../metricas-content";
 
 function formatMonth(dateStr: string): string {
@@ -17,8 +19,7 @@ function formatMonth(dateStr: string): string {
   return d.toLocaleDateString("es-AR", { month: "short" }).replace(".", "");
 }
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-function CustomTooltip({ active, payload, label }: any) {
+function CustomTooltip({ active, payload, label }: TooltipContentProps<ValueType, NameType>) {
   if (!active || !payload?.length) return null;
   const churnVal = Number(payload[0]?.value ?? 0);
   return (
@@ -85,7 +86,7 @@ export function ChurnChart({ data }: { data: ChurnRow[] }) {
             axisLine={false}
             tickLine={false}
           />
-          <Tooltip content={<CustomTooltip />} />
+          <Tooltip content={CustomTooltip} />
           <ReferenceLine
             y={10}
             stroke="#10b981"
