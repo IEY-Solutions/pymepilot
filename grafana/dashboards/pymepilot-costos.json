@@ -1,0 +1,226 @@
+{
+  "id": null,
+  "uid": "pymepilot-costos",
+  "title": "PymePilot — Costos Claude",
+  "description": "Consumo y costos de la API de Claude: tokens, USD, llamadas, alertas de limite",
+  "timezone": "America/Argentina/Buenos_Aires",
+  "editable": true,
+  "schemaVersion": 39,
+  "version": 0,
+  "refresh": "30m",
+  "time": {
+    "from": "now-30d",
+    "to": "now"
+  },
+  "tags": ["pymepilot", "costos"],
+  "templating": { "list": [] },
+  "annotations": { "list": [] },
+  "links": [],
+  "panels": [
+    {
+      "id": 1,
+      "title": "Gasto hoy (USD)",
+      "description": "Costo total en dolares de las llamadas a Claude hoy",
+      "type": "stat",
+      "gridPos": { "x": 0, "y": 0, "w": 8, "h": 5 },
+      "datasource": { "type": "postgres", "uid": "cfey1dua4dw5cf" },
+      "targets": [
+        {
+          "refId": "A",
+          "rawSql": "SELECT COALESCE(cost_usd, 0) AS cost_usd FROM monitoring_costs WHERE usage_date = CURRENT_DATE;",
+          "format": "table"
+        }
+      ],
+      "options": {
+        "graphMode": "none",
+        "textMode": "value",
+        "colorMode": "background",
+        "justifyMode": "center",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "decimals": 3,
+          "color": { "mode": "fixed", "fixedColor": "green" },
+          "noValue": "$0.000"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 2,
+      "title": "Tokens hoy vs limite (100k)",
+      "description": "Porcentaje del limite diario de tokens consumido hoy. Amarillo >70%, rojo >90%.",
+      "type": "gauge",
+      "gridPos": { "x": 8, "y": 0, "w": 8, "h": 5 },
+      "datasource": { "type": "postgres", "uid": "cfey1dua4dw5cf" },
+      "targets": [
+        {
+          "refId": "A",
+          "rawSql": "SELECT COALESCE(tokens_total, 0) AS tokens_hoy FROM monitoring_costs WHERE usage_date = CURRENT_DATE;",
+          "format": "table"
+        }
+      ],
+      "options": {
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "min": 0,
+          "max": 100000,
+          "noValue": "0",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": null, "color": "green" },
+              { "value": 70000, "color": "yellow" },
+              { "value": 90000, "color": "red" }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 3,
+      "title": "Gasto mensual acumulado (USD)",
+      "description": "Costo total acumulado en el mes actual",
+      "type": "stat",
+      "gridPos": { "x": 16, "y": 0, "w": 8, "h": 5 },
+      "datasource": { "type": "postgres", "uid": "cfey1dua4dw5cf" },
+      "targets": [
+        {
+          "refId": "A",
+          "rawSql": "SELECT COALESCE(SUM(cost_usd), 0) AS costo_mes FROM monitoring_costs WHERE usage_date >= date_trunc('month', CURRENT_DATE);",
+          "format": "table"
+        }
+      ],
+      "options": {
+        "graphMode": "none",
+        "textMode": "value",
+        "colorMode": "background",
+        "justifyMode": "center",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "decimals": 3,
+          "color": { "mode": "fixed", "fixedColor": "blue" },
+          "noValue": "$0.000"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 4,
+      "title": "Tokens por dia (30 dias)",
+      "description": "Consumo diario de tokens (input + output) en los ultimos 30 dias",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 5, "w": 12, "h": 8 },
+      "datasource": { "type": "postgres", "uid": "cfey1dua4dw5cf" },
+      "targets": [
+        {
+          "refId": "A",
+          "rawSql": "SELECT usage_date AS time, tokens_in AS \"Tokens input\", tokens_out AS \"Tokens output\" FROM monitoring_costs WHERE usage_date >= CURRENT_DATE - INTERVAL '30 days' ORDER BY usage_date;",
+          "format": "time_series"
+        }
+      ],
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 80,
+            "stacking": { "mode": "normal" },
+            "showPoints": "never"
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 5,
+      "title": "Costo USD por dia (30 dias)",
+      "description": "Gasto diario en dolares en los ultimos 30 dias",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 5, "w": 12, "h": 8 },
+      "datasource": { "type": "postgres", "uid": "cfey1dua4dw5cf" },
+      "targets": [
+        {
+          "refId": "A",
+          "rawSql": "SELECT usage_date AS time, cost_usd AS \"Costo USD\" FROM monitoring_costs WHERE usage_date >= CURRENT_DATE - INTERVAL '30 days' ORDER BY usage_date;",
+          "format": "time_series"
+        }
+      ],
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "single" }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "decimals": 3,
+          "color": { "mode": "fixed", "fixedColor": "orange" },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 30,
+            "pointSize": 6,
+            "showPoints": "always"
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 6,
+      "title": "Llamadas API por dia (30 dias)",
+      "description": "Cantidad de llamadas a la API de Claude por dia",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 13, "w": 24, "h": 7 },
+      "datasource": { "type": "postgres", "uid": "cfey1dua4dw5cf" },
+      "targets": [
+        {
+          "refId": "A",
+          "rawSql": "SELECT usage_date AS time, api_calls AS \"Llamadas\" FROM monitoring_costs WHERE usage_date >= CURRENT_DATE - INTERVAL '30 days' ORDER BY usage_date;",
+          "format": "time_series"
+        }
+      ],
+      "options": {
+        "legend": { "displayMode": "hidden" },
+        "tooltip": { "mode": "single" }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "fixed", "fixedColor": "purple" },
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 80,
+            "showPoints": "never"
+          }
+        },
+        "overrides": []
+      }
+    }
+  ]
+}
