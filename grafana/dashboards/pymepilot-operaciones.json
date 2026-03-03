@@ -1,0 +1,218 @@
+{
+  "id": null,
+  "uid": "pymepilot-operaciones",
+  "title": "PymePilot — Operaciones",
+  "description": "Salud operativa del sistema: orquestador, predicciones, syncs ERP, errores",
+  "timezone": "America/Argentina/Buenos_Aires",
+  "editable": true,
+  "schemaVersion": 39,
+  "version": 0,
+  "refresh": "30m",
+  "time": {
+    "from": "now-7d",
+    "to": "now"
+  },
+  "tags": ["pymepilot", "operaciones"],
+  "templating": { "list": [] },
+  "annotations": { "list": [] },
+  "links": [],
+  "panels": [
+    {
+      "id": 1,
+      "title": "Estado hoy",
+      "description": "Estado de la ultima ejecucion del orquestador hoy",
+      "type": "stat",
+      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 5 },
+      "datasource": { "type": "postgres", "uid": "cfey1dua4dw5cf" },
+      "targets": [
+        {
+          "refId": "A",
+          "rawSql": "SELECT status FROM monitoring_operations WHERE run_date = CURRENT_DATE ORDER BY started_at DESC LIMIT 1;",
+          "format": "table"
+        }
+      ],
+      "options": {
+        "graphMode": "none",
+        "textMode": "value",
+        "colorMode": "background",
+        "justifyMode": "center",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "completed": { "text": "OK", "color": "green", "index": 0 },
+                "running": { "text": "CORRIENDO", "color": "yellow", "index": 1 },
+                "partial": { "text": "PARCIAL", "color": "orange", "index": 2 },
+                "failed": { "text": "FALLO", "color": "red", "index": 3 },
+                "limit_exceeded": { "text": "LIMITE", "color": "orange", "index": 4 }
+              }
+            }
+          ],
+          "noValue": "SIN DATOS HOY"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 2,
+      "title": "Predicciones generadas hoy",
+      "description": "Total de predicciones generadas por el orquestador hoy",
+      "type": "stat",
+      "gridPos": { "x": 6, "y": 0, "w": 6, "h": 5 },
+      "datasource": { "type": "postgres", "uid": "cfey1dua4dw5cf" },
+      "targets": [
+        {
+          "refId": "A",
+          "rawSql": "SELECT COALESCE(SUM(prediction_count), 0) AS predicciones FROM monitoring_predictions WHERE prediction_date = CURRENT_DATE;",
+          "format": "table"
+        }
+      ],
+      "options": {
+        "graphMode": "none",
+        "textMode": "value",
+        "colorMode": "background",
+        "justifyMode": "center",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "fixed", "fixedColor": "blue" },
+          "noValue": "0"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 3,
+      "title": "Predicciones por vertical (7 dias)",
+      "description": "Cantidad de predicciones generadas por cada vertical en los ultimos 7 dias",
+      "type": "barchart",
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 9 },
+      "datasource": { "type": "postgres", "uid": "cfey1dua4dw5cf" },
+      "targets": [
+        {
+          "refId": "A",
+          "rawSql": "SELECT vertical, SUM(prediction_count) AS total FROM monitoring_predictions WHERE prediction_date >= CURRENT_DATE - INTERVAL '7 days' GROUP BY vertical ORDER BY total DESC;",
+          "format": "table"
+        }
+      ],
+      "options": {
+        "orientation": "horizontal",
+        "showValue": "always",
+        "xTickLabelRotation": 0,
+        "xField": "vertical",
+        "legend": { "displayMode": "hidden" }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 4,
+      "title": "Syncs ERP (7 dias)",
+      "description": "Sincronizaciones con el ERP en los ultimos 7 dias",
+      "type": "table",
+      "gridPos": { "x": 0, "y": 9, "w": 12, "h": 8 },
+      "datasource": { "type": "postgres", "uid": "cfey1dua4dw5cf" },
+      "targets": [
+        {
+          "refId": "A",
+          "rawSql": "SELECT sync_date AS \"Fecha\", sync_type AS \"Tipo\", source AS \"Fuente\", status AS \"Estado\", customers_synced AS \"Clientes\", products_synced AS \"Productos\", orders_synced AS \"Ordenes\", ROUND(duration_seconds::numeric, 0) AS \"Duracion (s)\" FROM monitoring_syncs WHERE sync_date >= CURRENT_DATE - INTERVAL '7 days' ORDER BY started_at DESC;",
+          "format": "table"
+        }
+      ],
+      "options": {
+        "showHeader": true,
+        "footer": { "show": false }
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      }
+    },
+    {
+      "id": 5,
+      "title": "Historial orquestador (30 dias)",
+      "description": "Predicciones generadas por ejecucion del orquestador en los ultimos 30 dias",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 9, "w": 12, "h": 8 },
+      "datasource": { "type": "postgres", "uid": "cfey1dua4dw5cf" },
+      "targets": [
+        {
+          "refId": "A",
+          "rawSql": "SELECT started_at AS time, predictions_generated AS \"Predicciones\", tenants_processed AS \"Tenants\" FROM monitoring_operations WHERE run_date >= CURRENT_DATE - INTERVAL '30 days' ORDER BY started_at;",
+          "format": "time_series"
+        }
+      ],
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 20,
+            "pointSize": 6,
+            "showPoints": "always"
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 6,
+      "title": "Errores recientes",
+      "description": "Ejecuciones del orquestador que tuvieron errores",
+      "type": "table",
+      "gridPos": { "x": 0, "y": 17, "w": 24, "h": 7 },
+      "datasource": { "type": "postgres", "uid": "cfey1dua4dw5cf" },
+      "targets": [
+        {
+          "refId": "A",
+          "rawSql": "SELECT run_date AS \"Fecha\", status AS \"Estado\", error_count AS \"Errores\", predictions_generated AS \"Predicciones\", tenants_processed AS \"Tenants\", ROUND(duration_seconds::numeric, 0) AS \"Duracion (s)\" FROM monitoring_operations WHERE error_count > 0 ORDER BY started_at DESC LIMIT 20;",
+          "format": "table"
+        }
+      ],
+      "options": {
+        "showHeader": true,
+        "footer": { "show": false }
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Errores" },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": { "type": "color-text" }
+              },
+              {
+                "id": "color",
+                "value": { "mode": "fixed", "fixedColor": "red" }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
