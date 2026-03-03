@@ -50,7 +50,7 @@ from backend.config.settings import (
     SUPABASE_URL,
 )
 from backend.engine.connectors.crypto import save_tenant_credentials, validate_fernet_key
-from backend.engine.core.logger import get_logger
+from backend.engine.core.logger import get_logger, sanitize_text
 from backend.engine.db.connection import get_db_connection, get_db_connection_no_tenant, close_pool
 
 logger = get_logger(__name__)
@@ -98,9 +98,9 @@ def _gotrue_request(method: str, path: str, data: dict | None = None) -> dict:
         with urlopen(req, timeout=30) as response:
             return json.loads(response.read().decode("utf-8"))
     except HTTPError as exc:
-        error_body = exc.read().decode("utf-8", errors="replace")
+        error_body = exc.read().decode("utf-8", errors="replace")[:500]
         raise ConnectionError(
-            f"GoTrue API error {exc.code}: {error_body}"
+            f"GoTrue API error {exc.code}: {sanitize_text(error_body)}"
         ) from exc
     except URLError as exc:
         raise ConnectionError(
@@ -203,13 +203,10 @@ def step2_create_tenant(data: dict) -> str:
                 sys.exit(0)
             return tenant_id
 
-        # Crear nuevo tenant
+        # Crear nuevo tenant via SECURITY DEFINER function
+        # (pymepilot_app no tiene INSERT directo en tenants — migration 023)
         result = conn.execute(
-            """
-            INSERT INTO tenants (name, slug, erp_type, active_verticals, active)
-            VALUES (%(name)s, %(slug)s, %(erp_type)s, %(verticals)s::jsonb, true)
-            RETURNING id
-            """,
+            "SELECT admin_create_tenant(%(name)s, %(slug)s, %(erp_type)s, %(verticals)s::jsonb)",
             {
                 "name": data["name"],
                 "slug": data["slug"],
@@ -296,22 +293,19 @@ def step3_create_user(tenant_id: str, data: dict) -> str | None:
                     print("  ADVERTENCIA: No se pudo encontrar el user_id. Continuar manualmente.")
                     return None
             except ConnectionError as inner_exc:
-                print(f"  ADVERTENCIA: {inner_exc}")
+                print(f"  ADVERTENCIA: {sanitize_text(str(inner_exc))}")
                 return None
         else:
-            print(f"\n  ERROR creando usuario: {exc}")
+            print(f"\n  ERROR creando usuario: {sanitize_text(str(exc))}")
             print("  Verificar SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY en .env")
             return None
 
-    # Crear user_profile en la DB
+    # Crear user_profile via SECURITY DEFINER function
+    # (user_profiles tiene RLS FORCE — pymepilot_app no puede INSERT directo sin contexto)
     print("  Creando perfil en user_profiles...")
     with get_db_connection_no_tenant() as conn:
         conn.execute(
-            """
-            INSERT INTO user_profiles (id, tenant_id, full_name, role)
-            VALUES (%(user_id)s, %(tenant_id)s, %(full_name)s, 'admin')
-            ON CONFLICT (id) DO NOTHING
-            """,
+            "SELECT admin_upsert_user_profile(%(user_id)s, %(tenant_id)s, %(full_name)s, 'admin')",
             {
                 "user_id": user_id,
                 "tenant_id": tenant_id,
@@ -476,7 +470,7 @@ def main() -> None:
         sys.exit(1)
     except Exception as exc:
         logger.error(f"Error en onboarding: {exc}", exc_info=True)
-        print(f"\nERROR: {exc}")
+        print(f"\nERROR: {sanitize_text(str(exc))}")
         print("Revisar logs en backend/logs/pymepilot.log para mas detalle.")
         sys.exit(1)
     finally:

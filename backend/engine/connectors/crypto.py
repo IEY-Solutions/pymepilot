@@ -104,10 +104,11 @@ def save_tenant_credentials(
         'client_secret_encrypted': ciphertext,
     })
 
+    # Usar SECURITY DEFINER function (pymepilot_app no tiene UPDATE en tenants)
     with get_db_connection_no_tenant() as conn:
         conn.execute(
-            "UPDATE tenants SET erp_config = %(config)s::jsonb WHERE slug = %(slug)s",
-            {'config': erp_config, 'slug': tenant_slug},
+            "SELECT admin_save_erp_config(%(slug)s, %(config)s::jsonb)",
+            {'slug': tenant_slug, 'config': erp_config},
         )
         conn.commit()
 
@@ -277,11 +278,11 @@ def rotate_encryption_key(old_key: str, new_key: str) -> None:
                     # Limpieza de bytearray por iteracion
                     secret_bytes[:] = b'\x00' * len(secret_bytes)
 
-                # UPDATE con new_ciphertext (str, no sensible)
+                # UPDATE via SECURITY DEFINER (pymepilot_app no tiene UPDATE en tenants)
                 erp_config['client_secret_encrypted'] = new_ciphertext
                 conn.execute(
-                    "UPDATE tenants SET erp_config = %s::jsonb WHERE id = %s",
-                    (json.dumps(erp_config), tenant_id),
+                    "SELECT admin_save_erp_config(%s, %s::jsonb)",
+                    (tenant_slug, json.dumps(erp_config)),
                 )
                 rotated_count += 1
 

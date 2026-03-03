@@ -33,10 +33,6 @@ function formatDate(dateStr: string): string {
 export default async function DatosPage() {
   const supabase = await createClient();
 
-  // Obtener tenant del usuario actual para la card de ERP
-  const { data: { user } } = await supabase.auth.getUser();
-  const tenantId = user?.app_metadata?.tenant_id as string | undefined;
-
   // Queries en paralelo (+ upload_jobs recientes + tenant info)
   const [syncsRes, customersRes, productsRes, ordersRes, predictionsRes, uploadsRes, driveRes, tenantRes] =
     await Promise.all([
@@ -67,25 +63,23 @@ export default async function DatosPage() {
         .select("id, folder_id, status, last_synced_at, error_message")
         .limit(1)
         .maybeSingle(),
-      tenantId
-        ? supabase
-            .from("tenants")
-            .select("erp_type, erp_config")
-            .eq("id", tenantId)
-            .maybeSingle()
-        : Promise.resolve({ data: null }),
+      // VIEW tenant_info_secure: solo columnas seguras, filtrada por JWT.
+      // NO expone erp_config (que contiene client_id + client_secret_encrypted).
+      supabase
+        .from("tenant_info_secure")
+        .select("erp_type, has_erp_credentials")
+        .maybeSingle(),
     ]);
 
   const syncs = syncsRes.data ?? [];
   const uploads = uploadsRes.data ?? [];
   const driveConnection = driveRes.data ?? null;
   const lastSync = syncs[0];
-  const tenantData = tenantRes.data as { erp_type: string | null; erp_config: Record<string, unknown> | null } | null;
+  const tenantData = tenantRes.data as { erp_type: string | null; has_erp_credentials: boolean } | null;
 
-  // Datos para la card de ERP
+  // Datos para la card de ERP (derivados de VIEW segura, sin erp_config)
   const erpType = tenantData?.erp_type ?? null;
-  const hasCredentials = !!(tenantData?.erp_config && Object.keys(tenantData.erp_config).length > 0
-    && tenantData.erp_config.client_id);
+  const hasCredentials = tenantData?.has_erp_credentials ?? false;
 
   // Ultimo sync exitoso (para la card de ERP)
   const lastSuccessfulSync = syncs.find((s) => s.status === "completed") ?? null;
