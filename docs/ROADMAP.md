@@ -1,501 +1,370 @@
 # PymePilot - Roadmap de Desarrollo
 
-**Version:** 1.0
-**Fecha:** 2026-02-19
-**Duracion estimada:** 22 semanas (5.5 meses)
+**Version:** 2.0
+**Fecha original:** 2026-02-19
+**Ultima actualizacion:** 2026-03-04
+**Duracion estimada original:** 22 semanas (5.5 meses)
+**Duracion real:** 13 dias (2026-02-19 a 2026-03-04)
 
 ---
 
 ## Vision General
 
 ```
-Sem 1     Sem 2-3      Sem 4-5        Sem 6-8       Sem 9
-  |          |            |              |             |
-  v          v            v              v             v
-[SETUP] -> [ERP] -> [MOTOR V2] -> [DASHBOARD] -> [AUTO]
-  DB      Conector   Predicciones    Next.js       Cron
-  Git    Contabilium  Reposicion     Login        Diario
-  Python  + Excel     + Claude AI    KPIs
+Feb 19    Feb 20-22    Feb 23       Feb 24-25       Feb 26
+  |          |           |             |               |
+  v          v           v             v               v
+[SETUP] -> [ERP+V2] -> [DASH] -> [INGESTA v2] -> [AUTO+V1+V4]
+  DB      Contabilium  Next.js   Smart Upload    Orquestador
+  Git     Motor V2     Login     Drive + Notif    Activacion
+  Python  Claude AI    Deploy    Incremental      Recuperacion
+                                                      |
+                                             HITO MVP -->
+                                             Sistema funciona
+                                             para IEY sin
+                                             intervencion manual
 
-                                              HITO MVP -->
-                                              Sistema funcionando
-                                              para IEY sin
-                                              intervencion manual
-
-Sem 10-12   Sem 13-14    Sem 15-17     Sem 18-20    Sem 21-22
-    |           |            |             |             |
-    v           v            v             v             v
- [V1+V4]  -> [WHATSAPP] -> [V3+KPI] -> [MULTI] -> [PRODUCCION]
-Activacion   Kommo CRM   Cross-Sell   2do tenant   Monitoreo
-Recuperacion  Envio msg   Graficos    Onboarding   Seguridad
+Feb 27      Feb 28        Mar 03       Mar 04
+  |            |             |            |
+  v            v             v            v
+[WHATSAPP] -> [V3+KPI] -> [MULTI] -> [PRODUCCION]
+Boton wa.me  Cross-Sell   Onboarding  Grafana
+Kommo CRM    8 RPCs      Isolation   Seguridad
+eliminado    Ranking      Tests      Documentacion
 ```
 
 ---
 
 ## Fase 0: Fundacion y Setup
 
-**Duracion:** Semana 1
-**Objetivo:** Tener el proyecto inicializado y la base de datos lista.
+**Fecha:** 2026-02-19 (1 dia)
+**Estado:** COMPLETADA
+**Estimacion original:** 1 semana
 
 ### Entregable
-Repositorio Git inicializado, base de datos con todas las tablas creadas, primer tenant (IEY) registrado, y un script Python que se conecta exitosamente a la DB.
+Repositorio Git inicializado, 10 migraciones SQL ejecutadas, tenant IEY registrado, connection pooling con tenant context.
 
-### Tareas
-
-#### 0.1 Inicializar repositorio Git
-- Crear `.gitignore` para Python, Node.js, y archivos sensibles
-- Primer commit con estructura de carpetas
-- **Concepto:** Git es el sistema de control de versiones. Cada cambio queda registrado y se puede volver atras si algo sale mal.
-
-#### 0.2 Crear estructura de carpetas
-```
-pymepilot/
-  backend/
-    engine/
-      verticales/       # Logica de cada vertical (V1, V2, V3, V4)
-      claude/            # Comunicacion con Claude API
-      db/                # Comunicacion con PostgreSQL
-      connectors/        # Conectores a ERPs (Contabilium, Excel)
-      core/              # Utilidades compartidas (logger, etc.)
-    config/
-      settings.py        # Configuracion del sistema
-      prompts/           # Textos que se le envian a Claude por vertical
-    scripts/             # Comandos ejecutables (sync, run vertical)
-    tests/               # Tests automatizados
-    main.py              # Punto de entrada principal
-    requirements.txt     # Dependencias de Python
-  database/
-    migrations/          # Scripts SQL para crear/modificar tablas
-    seed/                # Datos de prueba
-  frontend/              # Dashboard web (se crea en Fase 3)
-  scripts/               # Scripts de operaciones del servidor
-  docs/                  # Documentacion (PRD, Roadmap, etc.)
-```
-
-#### 0.3 Crear migraciones de base de datos
-Cada migracion es un archivo SQL que crea o modifica tablas. Tienen rollback (vuelta atras) por si algo sale mal.
-
-| Migracion | Que crea | Detalle |
-|---|---|---|
-| `001_setup_extensions.sql` | Extensiones PostgreSQL | uuid-ossp (generar IDs unicos), pgcrypto (encriptacion) |
-| `002_create_tenants.sql` | Tabla `tenants` | Registro de cada distribuidor, incluye tipo de ERP y config |
-| `003_create_user_profiles.sql` | Tabla `user_profiles` | Usuarios del dashboard con rol y tenant asignado |
-| `004_create_customers.sql` | Tabla `customers` | Clientes de cada distribuidor con datos de contacto |
-| `005_create_products.sql` | Tabla `products` | Catalogo de productos de cada distribuidor |
-| `006_create_orders.sql` | Tablas `orders` + `order_items` | Historial de compras (cabecera + detalle) |
-| `007_create_predictions.sql` | Tabla `predictions` | Predicciones generadas por el motor |
-| `008_create_sync_log.sql` | Tabla `sync_log` | Registro de cada sincronizacion con el ERP |
-| `009_create_indexes.sql` | Indices de rendimiento | Aceleran las consultas mas frecuentes |
-| `010_helper_functions.sql` | Funciones auxiliares | updated_at automatico, set_tenant_context |
-
-**Concepto:** Las migraciones son la forma profesional de gestionar cambios en la base de datos. En vez de modificar tablas a mano, escribimos scripts SQL que se ejecutan en orden y se pueden revertir.
-
-#### 0.4 Ejecutar migraciones y crear tenant IEY
-- Ejecutar cada migracion contra PostgreSQL (que ya esta corriendo en Docker)
-- Insertar IEY como primer tenant con `erp_type = 'contabilium'`
-
-#### 0.5 Setup del entorno Python
-- Crear `requirements.txt` con dependencias
-- Crear virtual environment (entorno aislado de Python)
-- Crear `.env.example` como template de variables de entorno
-
-#### 0.6 Script de conexion a la base de datos
-- Implementar `backend/engine/db/connection.py`
-- Connection pooling (reutilizar conexiones para mayor rendimiento)
-- Tenant context automatico (cada query sabe de que tenant es)
-
-### Verificacion
-```bash
-# Conectar a la DB y verificar que existen las tablas
-python -c "from engine.db.connection import get_db_connection; print('Conexion OK')"
-
-# Verificar que el tenant IEY existe
-# SELECT * FROM tenants WHERE slug = 'iey';
-```
-
-### Dependencias
-- Docker stack de Supabase corriendo (ya existe)
-- Python 3.11+ instalado en el servidor
+### Lo que se hizo
+- 10 migraciones (001-010): extensiones, tenants, user_profiles, customers, products, orders, predictions, sync_log, indexes, helpers
+- Tenant IEY creado con `erp_type = 'contabilium'`
+- `backend/engine/db/connection.py` con pool y `set_tenant_context()`
+- Virtual environment Python, `.gitignore`, estructura de carpetas
 
 ---
 
 ## Fase 1: Conectores ERP + Carga de Datos IEY
 
-**Duracion:** Semanas 2-3
-**Objetivo:** Conectar PymePilot al ERP de IEY y sincronizar datos automaticamente.
+**Fecha:** 2026-02-20 a 2026-02-25 (completada con sync full el 26)
+**Estado:** COMPLETADA + AUDITADA
+**Estimacion original:** 2 semanas
+**Commits:** `19d4940`, `c02f1f8`, `5955b35`, `890d58a`, `d39a245`, `fbba679`, `7c9a4ab`
 
 ### Entregable
-Conector de Contabilium funcionando, datos reales de IEY (clientes, productos, ordenes) sincronizados en PostgreSQL, y un conector de Excel como alternativa.
+3 conectores ERP operativos (Contabilium API, Excel, Smart File Upload), datos reales de IEY sincronizados.
 
-### Arquitectura de conectores
+### Lo que se hizo
+- **ERPConnector** (clase abstracta) con 3 implementaciones: Contabilium, Excel, SmartFile
+- **Contabilium:** OAuth2, IPv4HTTPAdapter para resolver Cloudflare, PV 0003 mayorista
+- **ExcelConnector:** lectura .xlsx/.csv con validacion de columnas
+- **SmartFileConnector:** Claude parsea cualquier Excel (Canal 2, Fase Smart Upload)
+- **SyncEngine:** upsert con deteccion de nuevos/actualizados, `sync_log` completo
+- **crypto.py:** encriptacion de credenciales ERP con Fernet
+- **Sync full IEY:** 229 clientes, 2,492 productos, 351 ordenes
+- **Auditoria:** 0C, 0H
 
-```
-                    ERPConnector (clase abstracta)
-                    Define QUE datos necesitamos
-                   /              |              \
-                  /               |               \
-  ContabiliumConnector    ExcelConnector    [Futuro: XubioConnector]
-  Sabe COMO obtenerlos    Sabe COMO leer    Cada nuevo ERP es
-  de la API de            un archivo         un nuevo conector
-  Contabilium             Excel/CSV
-```
-
-**Concepto:** Una "clase abstracta" es como un formulario en blanco que dice "aca va el nombre, aca va el telefono" pero no tiene datos. Cada conector concreto (Contabilium, Excel) "llena el formulario" con su propia logica de como obtener esos datos. Esto nos permite agregar nuevos ERPs sin tocar el resto del sistema.
-
-### Tareas
-
-#### 1.1 Investigar API de Contabilium
-- Conectarse con las credenciales de IEY
-- Documentar endpoints disponibles (clientes, productos, ventas)
-- Entender autenticacion y rate limits
-- Crear `docs/CONTABILIUM_API.md` con hallazgos
-
-#### 1.2 Implementar clase abstracta ERPConnector
-- `backend/engine/connectors/base.py`
-- Metodos: `authenticate()`, `fetch_customers()`, `fetch_products()`, `fetch_orders(since_date)`, `test_connection()`
-
-#### 1.3 Implementar ContabiliumConnector
-- `backend/engine/connectors/contabilium.py`
-- Autenticacion con API de Contabilium
-- Mapeo de datos (traducir formato de Contabilium al formato interno de PymePilot)
-- Manejo de paginacion (cuando hay muchos datos, vienen en "paginas")
-- Retry logic (si la API falla, reintentar automaticamente)
-
-#### 1.4 Implementar ExcelConnector (fallback)
-- `backend/engine/connectors/excel.py`
-- Lee archivos .xlsx o .csv
-- Valida que las columnas requeridas existan
-- Mapea al formato interno
-
-#### 1.5 Implementar motor de sincronizacion
-- `backend/engine/connectors/sync.py`
-- Detecta registros nuevos vs actualizados (upsert)
-- Registra cada sync en tabla `sync_log` (fecha, cantidad de registros, errores)
-- Calcula campos derivados post-sync
-
-#### 1.6 Script CLI para sincronizar
-- `backend/scripts/sync_erp.py --tenant-slug iey`
-- Ejecutable desde la terminal
-
-#### 1.7 Primera sincronizacion real con IEY
-- Ejecutar sync completo
-- Verificar datos en la DB
-
-#### 1.8 Datos de prueba para desarrollo
-- `database/seed/dev_data.sql`
-- 20 clientes ficticios, 10 productos, 100 ordenes
-
-### Verificacion
-```bash
-# Ejecutar sync
-python scripts/sync_erp.py --tenant-slug iey
-
-# Verificar en DB
-# SELECT COUNT(*) FROM customers WHERE tenant_id = '...';
-# SELECT COUNT(*) FROM orders WHERE tenant_id = '...';
-# SELECT * FROM sync_log ORDER BY created_at DESC LIMIT 1;
-```
-
-### Dependencias
-- Credenciales de API de Contabilium de IEY
-- Fase 0 completada (DB lista, tenant creado)
+### Datos reales IEY
+| Tabla | Registros |
+|-------|-----------|
+| customers | 229 (165 despues de dedup) |
+| products | 2,492 |
+| orders | 351 |
 
 ---
 
 ## Fase 2: Motor Inteligente - V2 Reposicion Predictiva
 
-**Duracion:** Semanas 4-5
-**Objetivo:** Analizar datos de IEY, detectar clientes que necesitan reponer, y generar mensajes personalizados.
+**Fecha:** 2026-02-22 (1 dia)
+**Estado:** COMPLETADA + AUDITADA
+**Estimacion original:** 2 semanas
+**Commit:** `4d9e92a` (13 archivos, 2,362 lineas)
 
 ### Entregable
-Script que genera predicciones de reposicion para clientes de IEY, con mensajes personalizados, y las guarda en la tabla `predictions`.
+Motor con V2 Reposicion, Claude API integrado con 4 capas de control de costos, script de atribucion.
 
-### Como funciona el motor
-
-```
-1. LEER DATOS           2. CALCULAR              3. GENERAR MENSAJE
-   Del PostgreSQL           Frecuencia               Con Claude API
-   (clientes +              de compra                 (personalizado)
-    ordenes)                 por producto
-
-[customers] ----+      +---> Promedio dias     +---> "Hola Juan,
-[orders]    ----|----->|     entre compras  --->|     hace 23 dias..."
-[products]  ----+      +---> Fecha estimada    +---> Prioridad: ALTA
-                              proxima compra          Confianza: 0.85
-
-                                                  4. GUARDAR
-                                                     En tabla predictions
-                                                     Para que el dashboard
-                                                     lo muestre
-```
-
-### Tareas
-
-#### 2.1 Implementar VerticalBase (clase abstracta)
-- `backend/engine/verticales/base.py`
-- Define el flujo que TODA vertical sigue: obtener candidatos -> construir prompt -> generar mensaje -> guardar prediccion
-- **Concepto:** Es el "molde" de todas las verticales. Cada vertical concreta (V1, V2, V3, V4) personaliza partes especificas pero el flujo general es el mismo.
-
-#### 2.2 Implementar ClaudeClient
-- `backend/engine/claude/client.py`
-- Se comunica con la API de Anthropic (Claude)
-- Retry logic (si falla, reintenta)
-- Tracking de tokens consumidos (para controlar costos)
-- Modelo por defecto: Claude Sonnet (balance costo/calidad)
-
-#### 2.3 Implementar queries de base de datos
-- `backend/engine/db/queries.py`
-- Consultas SQL optimizadas para obtener candidatos de cada vertical
-
-#### 2.4 Implementar logica de frecuencia de compra
-La matematica detras de la prediccion:
-- **Promedio:** Si Juan compro 5 veces con intervalos de 25, 30, 28, 32 dias -> promedio = 28.75 dias
-- **Varianza:** Que tan regular es. Baja varianza = patron predecible. Alta varianza = dificil de predecir.
-- **Fecha estimada:** Ultima compra + promedio de dias = fecha estimada de proxima compra
-- **Ventana de contacto:** 7-14 dias antes de la fecha estimada
-
-#### 2.5 Implementar VerticalReposicion
-- `backend/engine/verticales/reposicion.py`
-- Candidatos: clientes cuya proxima compra estimada cae en los proximos 7-14 dias
-- Prompt: incluye nombre del cliente, productos TOP, frecuencia, para que Claude genere mensaje personalizado
-- Confianza: basada en regularidad del patron y cantidad de datos disponibles
-
-#### 2.6 Implementar logging
-- `backend/engine/core/logger.py`
-- Registro de cada operacion en formato JSON
-- Util para debuggear problemas y medir rendimiento
-
-#### 2.7 Script CLI para ejecutar vertical
-- `backend/scripts/run_vertical.py --tenant-slug iey --vertical reposicion --limit 5`
-
-#### 2.8 Testing con datos reales
-- Ejecutar con limite de 5 clientes primero
-- Revisar predicciones con el equipo de IEY
-- Iterar prompts segun feedback
-
-### Verificacion
-```bash
-python scripts/run_vertical.py --tenant-slug iey --vertical reposicion --limit 5
-
-# Ver predicciones generadas
-# SELECT customer_id, confidence_score, LEFT(message_text, 100)
-# FROM predictions WHERE vertical = 'reposicion'
-# ORDER BY created_at DESC LIMIT 5;
-```
-
-### Dependencias
-- Fase 1 completada (datos de IEY cargados)
-- API key de Anthropic configurada
+### Lo que se hizo
+- **VerticalBase:** Template Method pattern (get_candidates → build_prompt → generate → save)
+- **VerticalReposicion:** 5 factores de confianza, ventana 7-14 dias
+- **ClaudeClient:** Anthropic SDK, retry con backoff, tracking de tokens
+- **4 capas costos:** limite diario DB → techo por llamada → registro finally → alertas log
+- **Modelo:** claude-sonnet-4-20250514
+- **Prompt:** conversacional, 3-6 productos, tono por perfil (VIP/Regular/Nuevo)
+- **Script atribucion:** `run_attribution.py` para medir valor generado
+- **Costo testing:** $0.014 USD (5 llamadas, 2,969 tokens)
+- **Auditoria:** 2 rondas, 4 fixes. Final: 0C/0H
 
 ---
 
 ## Fase 3: Dashboard MVP
 
-**Duracion:** Semanas 6-8
-**Objetivo:** Un dashboard web donde el vendedor ve la lista de clientes a contactar con mensajes sugeridos.
+**Fecha:** 2026-02-23 (1 dia)
+**Estado:** COMPLETADA + AUDITADA
+**Estimacion original:** 3 semanas
+**Commit deploy:** `5a5f52c`
 
 ### Entregable
-Aplicacion Next.js con login, vista de "Contactar Hoy" optimizada para celular, historial, y estado del sync.
+Dashboard Next.js en `app.pymepilot.cloud` con login, 4 paginas, mobile-first.
 
-### Tareas
+### Lo que se hizo
+- **Next.js 16** con App Router, TypeScript strict, Tailwind + shadcn/ui
+- **Supabase SSR auth** con middleware de proteccion de rutas
+- **4 paginas:** KPIs (home), Contactar Hoy, Historial, Estado de Datos
+- **Deploy:** Docker multi-stage + Traefik SSL en `app.pymepilot.cloud`
+- **GoTrue fixes:** aud, tokens, search_path, 43 migraciones de auth
+- **Kong:** JWTs reales firmados con JWT_SECRET (HS256)
+- **Auditoria:** 2H+6M+4L corregidos
 
-#### 3.1 Inicializar proyecto Next.js
-- `frontend/` con Next.js 14+, TypeScript, Tailwind CSS, shadcn/ui
-- **Concepto:** Next.js es un framework para crear aplicaciones web. TypeScript agrega "tipos" al codigo (como decir "esto es un numero, esto es texto") para evitar errores. Tailwind es un sistema de estilos. shadcn/ui son componentes visuales pre-hechos (botones, tarjetas, etc.).
+---
 
-#### 3.2 Implementar autenticacion
-- Login con email y password via Supabase Auth
-- El tenant_id del usuario se almacena en el JWT (token de sesion)
-- Middleware que protege rutas: si no estas logueado, te redirige al login
-- Crear usuario de prueba para IEY
+## Smart File Upload (entre Fase 3 y 4)
 
-#### 3.3 Pagina principal (dashboard home)
-- Cards con KPIs basicos: clientes activos, predicciones pendientes, tasa de contacto
-- Estado de la ultima sincronizacion
+**Fecha:** 2026-02-24 (1 dia)
+**Estado:** COMPLETADO
+**Commit:** `798a961` (10 archivos, 1,822 lineas)
 
-#### 3.4 Pagina "Contactar Hoy" (la mas importante)
-- Lista de predicciones pendientes para hoy
-- Cada tarjeta muestra:
-  - Nombre del cliente
-  - Productos que necesita reponer
-  - Mensaje sugerido (boton para copiar al portapapeles)
-  - Score de confianza (indicador visual)
-  - Botones: "Contactado" / "Posponer" / "Ignorar"
-- Ordenado por prioridad
-- **Diseño mobile-first** (el vendedor usa celular)
+### Entregable
+Canal 2 de ingesta: upload de Excel via dashboard, Claude parsea automaticamente.
 
-#### 3.5 API routes (endpoints del backend web)
-- GET /api/predictions — obtener predicciones pendientes
-- PATCH /api/predictions/[id] — marcar como contactado/ignorado
-- GET /api/kpis — obtener metricas basicas
-- GET /api/sync-status — estado de la ultima sincronizacion
+### Lo que se hizo
+- **Flujo:** Upload → Supabase Storage → Worker cron 1min → Claude analiza → SyncEngine importa
+- **SmartFileConnector:** Claude identifica columnas automaticamente
+- **Test E2E:** 32 clientes, 226 productos, 44 ordenes desde Excel IEY
+- **Costo por upload:** ~$0.009 USD (~2k tokens)
 
-#### 3.6 Pagina de historial
-- Lista de predicciones pasadas
-- Filtros por fecha, estado, cliente
+---
 
-#### 3.7 Pagina "Estado de Datos"
-- Muestra ultima sincronizacion exitosa
-- Cantidad de registros por tabla
-- Salud de la conexion con el ERP
-- Proxima sincronizacion programada
+## Ingesta Fase 2 (entre Fase 3 y 4)
 
-#### 3.8 Layout y navegacion
-- Sidebar en desktop, bottom navigation en celular
-- Header con logo, nombre del tenant, boton de logout
+**Fecha:** 2026-02-25 (1 dia)
+**Estado:** COMPLETADA + AUDITADA
+**Commits:** `601ff0c`, `d4805b9`, `c231c37`
 
-### Verificacion
-1. Login como vendedor de IEY
-2. Ver lista "Contactar Hoy" con predicciones reales
-3. Copiar mensaje sugerido
-4. Marcar como contactado
-5. Verificar que el estado cambia en la DB
-6. Probar desde celular
+### Entregable
+Upload incremental, Google Drive sync, notificaciones en dashboard.
 
-### Dependencias
-- Fase 2 completada (predicciones generadas)
-- Supabase Auth configurado
+### Lo que se hizo
+- **Incremental:** hash SHA256 evita reprocesar archivos identicos
+- **Google Drive:** Service Account, sync diario 4:30 AM, folder por tenant
+- **Notificaciones:** toast en dashboard con estado del upload
+- **Auditoria:** 3 rondas, 30 fixes. Final: 0C/0H
 
 ---
 
 ## Fase 4: Automatizacion
 
-**Duracion:** Semana 9
-**Objetivo:** Todo funciona automaticamente cada dia sin intervencion manual.
+**Fecha:** 2026-02-26 (1 dia)
+**Estado:** COMPLETADA + AUDITADA
+**Estimacion original:** 1 semana
+**Commit:** `3c39938`
 
 ### Entregable
-Cada manana: datos se sincronizan del ERP a las 5 AM, motor genera predicciones a las 6 AM, vendedor abre dashboard a las 8 AM y todo esta listo.
+Orquestador diario automatico, 5 jobs en crontab.
 
-### Tareas
+### Lo que se hizo
+- **Orquestador** `backend/main.py`: sync → atribucion → verticales, por tenant
+- **VERTICAL_REGISTRY** centralizado en `__init__.py`
+- **Migracion 024:** tabla `orchestrator_runs` + campo `active_verticals` en tenants
+- **Crontab 5 jobs:** backup 3AM, uploads 1min, Drive 4:30AM, orquestador 5AM con flock, freshness 5:30AM
+- **Datos IEY post-orquestador:** 229 clientes, 2,492 productos, 351 ordenes, 32 predicciones
+- **Auditoria:** 5 HIGH corregidos. Final: 0C/0H
 
-#### 4.1 Orquestador principal
-- `backend/main.py`
-- Flujo diario:
-  1. 5:00 AM — Sincronizar datos de todos los tenants activos
-  2. 6:00 AM — Ejecutar verticales activas para cada tenant
-- Si un tenant falla, sigue con el siguiente (no se frena todo)
-- Log completo de cada ejecucion
-
-#### 4.2 Configurar servicio automatico
-- Crontab o systemd timer en el servidor
-- Ejecuta `main.py` todos los dias a las 5 AM (horario Argentina)
-
-#### 4.3 Indicadores en el dashboard
-- "Ultima actualizacion: hoy 6:00 AM"
-- Alerta visual si no se actualizo en >24 horas (algo fallo)
-
-### Verificacion
-1. Dejar correr una noche completa
-2. Al dia siguiente, verificar:
-   - sync_log tiene un registro nuevo de hoy
-   - predictions tiene predicciones nuevas de hoy
-   - Dashboard muestra datos actualizados
-
-### Dependencias
-- Fases 0-3 completadas
-
----
-
-## HITO MVP (Semana 9)
+### HITO MVP ALCANZADO (2026-02-26)
 
 > **El sistema funciona para IEY sin intervencion manual.**
 >
-> Cada manana: datos se sincronizan automaticamente desde Contabilium ->
-> motor analiza y genera predicciones -> vendedor abre dashboard y ve
-> la lista de clientes a contactar hoy con mensajes personalizados.
-
-Este es el momento de validar con el equipo de IEY:
-- Son utiles las predicciones?
-- Los mensajes sugeridos son buenos?
-- Que mejorar?
+> Cada manana: datos se sincronizan automaticamente desde Contabilium →
+> motor analiza y genera predicciones → vendedor abre
+> `app.pymepilot.cloud` y ve la lista de clientes a contactar hoy
+> con mensajes personalizados.
+>
+> **Duracion hasta MVP:** 7 dias (estimacion original: 9 semanas).
 
 ---
 
 ## Fase 5: Verticales 1 y 4
 
-**Duracion:** Semanas 10-12
-**Objetivo:** Agregar seguimiento de clientes nuevos y recuperacion de inactivos.
+**Fecha:** 2026-02-26 (mismo dia que Fase 4)
+**Estado:** COMPLETADA + AUDITADA
+**Estimacion original:** 3 semanas
+**Commit:** `ddd4226` (10 archivos, 972 lineas)
 
-### Tareas principales
-- Implementar `VerticalActivacion` (V1) con secuencia dia 7/15/25
-- Implementar `VerticalRecuperacion` (V4) con ventanas 60/90/120 dias
-- Crear vistas en el dashboard para cada vertical
-- Vista unificada "Todas las acciones de hoy" (combina V1 + V2 + V4)
-- Navegacion entre verticales (tabs o sidebar)
-- Testing con datos reales de IEY
+### Entregable
+V1 Activacion y V4 Recuperacion operativas con dashboard actualizado.
 
----
-
-## Fase 6: Integracion WhatsApp/Kommo
-
-**Duracion:** Semanas 13-14
-**Objetivo:** Enviar mensajes por WhatsApp directamente desde el dashboard.
-
-### Tareas principales
-- Investigar Kommo CRM API (autenticacion OAuth 2.0, endpoints)
-- Implementar conector WhatsApp via Kommo
-- Boton "Enviar por WhatsApp" en cada tarjeta de prediccion
-- Confirmacion antes de enviar
-- Tracking de estado: enviado -> entregado -> leido
-- Fallback: deep link a `wa.me/` si Kommo no esta configurado
+### Lo que se hizo
+- **V1 Activacion:** secuencia 7/15/25 dias, 3 factores confianza, perfil='Nuevo'
+- **V4 Recuperacion:** ventanas 60/90/120 dias, 4 factores, classify_profile override
+- **Dashboard:** chips filtro por vertical, badges con color y contexto, ventana 3 dias
+- **IEY:** active_verticals incluye reposicion + activacion + recuperacion
+- **Testing:** V4 genero 2 mensajes reales ($0.008 USD)
+- **Limpieza:** 64 clientes duplicados eliminados
+- **Auditoria:** 4 HIGH corregidos. Final: 0C/0H
 
 ---
 
-## Fase 7: Vertical 3 + KPIs Avanzados
+## Fase 6: WhatsApp
 
-**Duracion:** Semanas 15-17
-**Objetivo:** Agregar Cross-Sell y metricas avanzadas de valor generado.
+**Fecha:** 2026-02-27 (1 dia)
+**Estado:** Parte 1 COMPLETADA, Parte 2 PENDIENTE (bloqueada por SIM chip)
+**Estimacion original:** 2 semanas
+**Commit:** `be1dc66`
 
-### Tareas principales
-- Implementar `VerticalCrossSell` (V3)
-- Dashboard de KPIs avanzados:
-  - Facturacion recurrente vs nueva (% y tendencia)
-  - Tasa de churn mensual
-  - Ticket promedio (recurrente vs nuevo)
-  - Valor generado por PymePilot (facturacion atribuible a predicciones)
-- Graficos interactivos
-- Reportes exportables (PDF/Excel)
+### Entregable
+Boton wa.me en cada prediccion del dashboard.
+
+### Lo que se hizo
+- **Kommo CRM ELIMINADO** del plan — ningun PyME argentino tiene CRM
+- **Boton wa.me:** copia mensaje + abre WhatsApp, vendedor busca contacto y pega
+- **Sin telefono en link:** 74% de clientes IEY sin dato de telefono
+- **3 iteraciones UX** con Pato hasta diseno final
+
+### Pendiente (Parte 2)
+- Notificacion diaria via WA Cloud API
+- Bloqueante: SIM chip para verificar numero en Meta Business
+- Arquitectura y tabla wa_notifications documentadas en design doc
+
+---
+
+## Fase 7: V3 Cross-Sell + KPIs Avanzados
+
+**Fecha:** 2026-02-27 a 2026-02-28 (2 dias)
+**Estado:** COMPLETADA + AUDITADA
+**Estimacion original:** 3 semanas
+**Commits:** `42a4192`, `ab4c93c`, `79b7a20`, `c499620`
+
+### Entregable
+V3 Cross-Sell operativa, pagina /metricas con 4 KPIs + 4 graficos + ranking, exports Excel y PDF.
+
+### Lo que se hizo
+- **V3 Cross-Sell:** co_purchases MV, semanal (lunes), 5 candidatos max, 3 productos por mensaje
+- **8 RPCs:** revenue_split, churn, ticket, value, top_products, client_trends, client_monthly_revenue
+- **VIEW:** client_rankings_secure (filtro tenant sobre MV sin RLS)
+- **4 charts Recharts:** facturacion mensual, churn, ticket promedio, valor atribuido
+- **4 KPI cards** con tendencia mensual
+- **Ranking expandible** con detalle por cliente (top 5 productos, predicciones activas)
+- **Exports:** Excel 4 hojas (SheetJS) + PDF resumen ejecutivo (react-pdf)
+- **Costo V3 IEY:** $0.011 USD por ejecucion
+- **Auditoria:** 2H + 3M corregidos. Final: 0C/0H
 
 ---
 
 ## Fase 8: Multi-Tenant Productivo
 
-**Duracion:** Semanas 18-20
-**Objetivo:** El sistema esta listo para recibir un segundo distribuidor.
+**Fecha:** 2026-03-03 (1 dia)
+**Estado:** COMPLETADA + AUDITADA
+**Estimacion original:** 3 semanas
+**Commits:** `3f11d79`, `c69bd29`
 
-### Tareas principales
-- Script automatizado de onboarding: crear tenant + configurar ERP + usuario admin
-- Pagina de configuracion de conector ERP en dashboard (admin conecta su propio ERP)
-- Upload de Excel como alternativa para clientes sin ERP
-- Testing exhaustivo de aislamiento entre tenants (tenant A no puede ver datos de tenant B)
-- Documentacion de proceso de onboarding
+### Entregable
+Sistema listo para segundo tenant con script de onboarding, testing de aislamiento, y deuda tecnica resuelta.
+
+### Lo que se hizo
+- **Script `create_tenant.py`:** 5 pasos interactivos (datos, DB, GoTrue, ERP, verificacion)
+- **Dashboard Card ERP:** `erp-status-card.tsx` con 5 estados visuales
+- **Testing aislamiento:** `tenant_isolation_test.sql` con 12 tests
+- **Migracion 031:** REVOKE SELECT tenants + VIEW tenant_info_secure + 3 SECURITY DEFINER functions
+- **Dedup resuelto:** normalize_customer_name() elimina duplicados cross-canal
+- **Documentacion:** `docs/ONBOARDING.md` guia completa
+- **Auditoria:** 1C + 3H corregidos. Final: 0C/0H
 
 ---
 
 ## Fase 9: Pulido y Produccion
 
-**Duracion:** Semanas 21-22
-**Objetivo:** Sistema estable, monitoreado, seguro, y documentado.
+**Fecha:** 2026-03-04 (1 dia)
+**Estado:** EN CURSO
+**Estimacion original:** 2 semanas
 
-### Tareas principales
-- Monitoreo con Grafana: predicciones/dia, tokens consumidos, syncs exitosos/fallidos
-- Auditoria de seguridad completa
-- Optimizacion de rendimiento (queries lentas, indexes)
-- Documentacion final (arquitectura, API, operaciones)
+### Entregable
+Monitoreo con Grafana, deuda tecnica de seguridad y calidad resuelta, documentacion actualizada.
+
+### Lo que se hizo
+
+#### Bloque 1+2: Grafana Monitoring + Dashboard Operaciones
+- **Migracion 032:** rol `grafana_reader` + 4 VIEWs de monitoreo (operaciones, costos, syncs, predicciones)
+- **Dashboard "PymePilot — Operaciones":** 6 paneles (estado, predicciones, syncs, historial, errores)
+- **Datasource PostgreSQL** configurado en Grafana
+
+#### Bloque 3: Dashboard Costos Claude
+- **Dashboard "PymePilot — Costos Claude":** 6 paneles (gasto diario, gauge tokens, acumulado mensual, tokens/dia, costo/dia, llamadas/dia)
+- **Gauge** con umbrales visuales: verde <70k, amarillo 70-90k, rojo >90k tokens
+
+#### Bloque 4: Deuda Tecnica de Seguridad
+- **Migracion 033:** 3 fixes SQL
+  - EXCEPTION WHEN OTHERS → excepciones especificas (feature_not_supported, lock_not_available)
+  - Cast inseguro attribution_amount → validacion regex antes de ::numeric
+  - DoS en parametros → LEAST(p_months, 24) en 6 RPCs
+- **CORS:** `origins: ["*"]` → `origins: ["https://app.pymepilot.cloud"]` en Kong
+
+#### Bloque 5: Deuda Tecnica de Calidad
+- **formatCurrency centralizado:** `frontend/src/lib/format.ts` reemplaza 7 copias
+- **Types fix:** `any` → `TooltipContentProps<ValueType, NameType>` en 4 charts
+- **loading.tsx:** skeleton para /metricas
+- **UNION ALL documentado** en cross_sell query
+
+#### Bloque 6: Documentacion (en curso)
+- Actualizar ROADMAP.md, PRD.md, crear ARCHITECTURE.md
+
+#### Bloque 7: Auditoria Final
+- Pendiente
 
 ---
 
 ## Resumen de Hitos
 
-| Semana | Hito | Que se puede hacer |
-|---|---|---|
-| 1 | Setup completo | DB lista, Python conecta, tenant IEY creado |
-| 3 | Datos sincronizados | Datos de IEY cargados desde Contabilium automaticamente |
-| 5 | Motor funcionando | Predicciones de reposicion generadas para clientes de IEY |
-| 8 | Dashboard operativo | Vendedor puede ver y actuar sobre predicciones desde el celular |
-| **9** | **MVP COMPLETO** | **Todo funciona automaticamente para IEY** |
-| 12 | 3 verticales activas | Activacion + Reposicion + Recuperacion operativas |
-| 14 | WhatsApp integrado | Mensajes se envian directamente desde el dashboard |
-| 17 | 4 verticales + KPIs | Sistema completo con metricas de valor |
-| 20 | Multi-tenant | Listo para segundo cliente |
-| 22 | Produccion | Sistema estable, seguro, monitoreado |
+| Fecha | Fase | Que se logro |
+|-------|------|-------------|
+| Feb 19 | 0 - Setup | DB lista, Python conecta, tenant IEY creado |
+| Feb 22 | 1+2 | Contabilium conectado, V2 Reposicion generando predicciones |
+| Feb 23 | 3 | Dashboard en app.pymepilot.cloud, login, mobile-first |
+| Feb 24-25 | Ingesta | Smart Upload + Drive + incremental |
+| **Feb 26** | **4+5 - MVP** | **Todo automatico para IEY. 3 verticales activas.** |
+| Feb 27 | 6 | WhatsApp via wa.me (Kommo eliminado) |
+| Feb 28 | 7 | V3 Cross-Sell + KPIs + ranking + exports |
+| Mar 03 | 8 | Multi-tenant productivo, onboarding script |
+| Mar 04 | 9 | Grafana, seguridad, calidad, docs |
+
+---
+
+## Comparativa: Estimacion vs Realidad
+
+| Fase | Estimacion | Real | Factor |
+|------|-----------|------|--------|
+| 0 Setup | 1 semana | 1 dia | 7x |
+| 1 ERP | 2 semanas | 2 dias | 7x |
+| 2 Motor V2 | 2 semanas | 1 dia | 14x |
+| 3 Dashboard | 3 semanas | 1 dia | 21x |
+| 4 Automatizacion | 1 semana | 1 dia | 7x |
+| 5 V1+V4 | 3 semanas | 1 dia | 21x |
+| 6 WhatsApp | 2 semanas | 1 dia | 14x |
+| 7 V3+KPIs | 3 semanas | 2 dias | 10.5x |
+| 8 Multi-tenant | 3 semanas | 1 dia | 21x |
+| 9 Produccion | 2 semanas | 1 dia | 14x |
+| **Total** | **22 semanas** | **13 dias** | **~12x** |
+
+---
+
+## Post-MVP: Proximos Pasos
+
+### Corto plazo (cuando se consiga SIM chip)
+- Fase 6 Parte 2: notificacion diaria via WA Cloud API
+
+### Mediano plazo (con segundo tenant)
+- Conector Xubio
+- Mejoras de UX basadas en feedback de uso real
+- Alerta Grafana con notificacion (email o Telegram)
+
+### Largo plazo
+- Conectores adicionales (Alegra, Colppy, sistemas propios)
+- API publica para integraciones
+- Mobile app nativa (si hay demanda)
+- ML para mejorar scores de confianza con datos historicos de atribucion

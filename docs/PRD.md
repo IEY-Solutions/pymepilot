@@ -1,9 +1,10 @@
 # PymePilot - Product Requirements Document (PRD)
 
-**Version:** 1.0
-**Fecha:** 2026-02-19
+**Version:** 2.0
+**Fecha original:** 2026-02-19
+**Ultima actualizacion:** 2026-03-04
 **Autor:** Pato (fundador) + Claude Code
-**Estado:** En desarrollo
+**Estado:** MVP operativo, en produccion para IEY
 
 ---
 
@@ -40,6 +41,18 @@ Este sistema fue validado manualmente durante 6 meses en **IEY** (Distribuidor #
 
 Estos resultados se lograron haciendo TODO manualmente: revisando planillas, calculando frecuencias a mano, y contactando uno por uno. PymePilot automatiza este proceso completo.
 
+### Estado actual del sistema (post-MVP)
+
+El MVP fue alcanzado el 2026-02-26, 7 dias despues de iniciar desarrollo. El sistema opera en produccion para IEY con:
+- **4 verticales activas** (Reposicion, Activacion, Cross-Sell, Recuperacion)
+- **165 clientes** en base de datos (post-deduplicacion)
+- **2,492 productos** sincronizados
+- **351 ordenes** historicas
+- **Ejecucion automatica diaria** a las 5 AM sin intervencion
+- **Dashboard operativo** en `app.pymepilot.cloud`
+- **Monitoreo Grafana** con 2 dashboards (operaciones + costos)
+- **Costo operativo Claude API:** ~$1.50-2.00/mes para IEY
+
 ---
 
 ## 2. Usuarios
@@ -52,9 +65,12 @@ Estos resultados se lograron haciendo TODO manualmente: revisando planillas, cal
 - Ver cada manana "a quien contactar hoy" con prioridad clara
 - Mensaje sugerido listo para copiar y enviar
 - Marcar como "contactado" o "ignorar" con un toque
+- Enviar por WhatsApp con un boton
 - Funciona bien en celular (su herramienta principal)
 
 **Frecuencia de uso:** Todos los dias laborales, primera hora de la manana.
+
+**Estado:** Implementado. Pagina `/contactar` con filtro por vertical, boton copiar, boton WhatsApp (wa.me), y acciones contactado/posponer/ignorar.
 
 ### 2.2 Admin del Distribuidor
 
@@ -62,11 +78,15 @@ Estos resultados se lograron haciendo TODO manualmente: revisando planillas, cal
 
 **Que necesita:**
 - Ver KPIs de valor generado (cuanto facturamos gracias a PymePilot)
-- Configurar que verticales estan activas
+- Ver metricas avanzadas: facturacion, churn, ticket promedio, valor atribuido
+- Ranking de clientes con tendencia y detalle
+- Exportar reportes a Excel y PDF
 - Ver el estado de sincronizacion de datos con el ERP
-- Gestionar acceso de su equipo
+- Configurar conexion ERP desde el dashboard
 
 **Frecuencia de uso:** Semanal/quincenal para revisar metricas.
+
+**Estado:** Implementado. Pagina `/metricas` con 4 KPI cards, 4 graficos Recharts, ranking expandible, exports Excel (4 hojas) y PDF. Pagina `/datos` con estado sync y card ERP.
 
 ### 2.3 Viewer
 
@@ -79,6 +99,8 @@ Estos resultados se lograron haciendo TODO manualmente: revisando planillas, cal
 
 **Frecuencia de uso:** Mensual.
 
+**Estado:** Cubierto por las paginas de metricas + exports del Admin.
+
 ### 2.4 Super Admin (Pato)
 
 **Quien es:** Administrador del sistema completo (plataforma multi-tenant).
@@ -90,6 +112,8 @@ Estos resultados se lograron haciendo TODO manualmente: revisando planillas, cal
 - Configurar conectores ERP
 
 **Frecuencia de uso:** Segun demanda.
+
+**Estado:** Implementado. Script `create_tenant.py` para onboarding. Grafana con dashboards de operaciones y costos. `docs/ONBOARDING.md` con guia completa.
 
 ---
 
@@ -111,42 +135,34 @@ CICLO DE VIDA DEL CLIENTE EN UN DISTRIBUIDOR B2B:
                              (Cross-Sell)
 ```
 
-### 3.1 Vertical 2: Reposicion Predictiva (MVP)
+**Estado:** Las 4 verticales estan implementadas y operativas para IEY.
 
-**Prioridad:** MAXIMA — Es la primera que se construye porque tiene la mayor validacion con datos reales.
+### 3.1 Vertical 2: Reposicion Predictiva
 
-**Objetivo:** Contactar al cliente ANTES de que se quede sin stock, antes que la competencia.
+**Estado:** OPERATIVA (desde Fase 2, 2026-02-22)
+**Frecuencia:** Diaria (5 AM)
 
 **Como funciona:**
 1. Analiza historial de compras de cada cliente (fechas, productos, cantidades)
-2. Calcula la frecuencia de compra por producto/categoria (ej: "Juan compra fundas cada 28 dias")
-3. Estima CUANDO va a necesitar reponer (ej: "proxima compra estimada: 25 de febrero")
-4. 7 dias antes de la fecha estimada, genera una alerta con mensaje personalizado
+2. Calcula la frecuencia de compra por producto/categoria
+3. Estima CUANDO va a necesitar reponer
+4. 7-14 dias antes de la fecha estimada, genera una alerta con mensaje personalizado
 5. El vendedor ve la alerta en el dashboard y contacta al cliente
 
-**Datos de entrada:**
-- Historial de ordenes de venta (del ERP)
-- Clientes y sus datos de contacto
-- Productos y categorias
+**Factores de confianza (5):** regularidad del patron, recencia de compra, volumen historico, antiguedad del cliente, varianza de intervalos.
 
 **Datos de salida (prediccion):**
 - Cliente a contactar
 - Fecha recomendada de contacto
 - Productos que necesita reponer (con cantidades estimadas)
-- Mensaje personalizado generado por IA
-- Score de confianza (que tan seguro estamos de la prediccion)
+- Mensaje personalizado generado por Claude
+- Score de confianza (0 a 1)
 - Prioridad (1=alta, 5=baja)
-
-**Metricas:**
-- % de predicciones que resultan en compra
-- Reduccion de dias entre compras
-- Aumento del ticket promedio
 
 ### 3.2 Vertical 1: Activacion de Clientes Nuevos
 
-**Prioridad:** Alta (se construye en Fase 5).
-
-**Objetivo:** Convertir un cliente que hizo su primera compra en un cliente recurrente.
+**Estado:** OPERATIVA (desde Fase 5, 2026-02-26)
+**Frecuencia:** Diaria (5 AM)
 
 **Como funciona:**
 1. Detecta automaticamente cuando un cliente hace su PRIMERA compra
@@ -157,92 +173,79 @@ CICLO DE VIDA DEL CLIENTE EN UN DISTRIBUIDOR B2B:
 3. Si el cliente compra de nuevo antes del dia 30, se "gradua" a recurrente
 4. Si NO compra en 30 dias, genera alerta urgente
 
-**Metricas:**
-- % de conversion nuevos a recurrentes (objetivo: >50%)
-- Tiempo promedio hasta segunda compra
+**Factores de confianza (3):** dias desde primera compra, monto primera compra, cantidad de productos en primera compra.
 
 ### 3.3 Vertical 4: Recuperacion de Clientes Inactivos
 
-**Prioridad:** Alta (se construye junto con V1 en Fase 5).
-
-**Objetivo:** Reactivar clientes que dejaron de comprar antes de perderlos para siempre.
+**Estado:** OPERATIVA (desde Fase 5, 2026-02-26)
+**Frecuencia:** Diaria (5 AM)
 
 **Como funciona:**
 1. Detecta clientes inactivos segun ventanas de tiempo:
    - **60 dias sin comprar:** Alerta temprana
    - **90 dias:** Alerta media
    - **120 dias:** Alerta critica
-2. Calcula un score de probabilidad de recuperacion basado en:
-   - Historial de compras previo (frecuencia, monto, antiguedad)
-   - Patron de la ultima compra (fue inusualmente baja? compro menos productos?)
-3. Genera mensajes escalonados segun nivel de urgencia:
-   - 60 dias: Recordatorio amigable ("hace rato que no nos ves...")
-   - 90 dias: Propuesta especial ("tenemos estos productos nuevos para vos...")
-   - 120 dias: Ultimo intento ("queremos saber si hay algo que podamos mejorar...")
+2. Calcula score de probabilidad de recuperacion
+3. Genera mensajes escalonados segun nivel de urgencia
 
-**Metricas:**
-- % de inactivos recuperados por ventana
-- Facturacion generada por clientes recuperados
-- Reduccion de churn mensual (objetivo: <10%)
+**Factores de confianza (4):** historial de compras previo, recencia, monto historico, tendencia de compra.
 
 ### 3.4 Vertical 3: Cross-Sell Inteligente
 
-**Prioridad:** Media (se construye en Fase 7, requiere mas datos para funcionar bien).
-
-**Objetivo:** Que clientes recurrentes compren MAS por pedido, agregando productos que nunca probaron.
+**Estado:** OPERATIVA (desde Fase 7, 2026-02-28)
+**Frecuencia:** Semanal (lunes)
 
 **Como funciona:**
-1. Analiza el catalogo completo del distribuidor
-2. Para cada cliente, identifica:
-   - Productos que NUNCA compro
-   - De esos, cuales compran otros clientes con perfil similar
-   - Cuales tienen mayor probabilidad de interes
-3. Genera recomendacion: "Juan compra fundas y cargadores, pero nunca compro protectores de pantalla. El 72% de clientes que compran fundas tambien compran protectores."
+1. Materialized View `co_purchases` identifica pares de productos comprados juntos por >=3 clientes diferentes
+2. Para cada cliente, encuentra productos que NUNCA compro pero que son comprados frecuentemente junto con los que SI compra
+3. Genera recomendacion personalizada con hasta 3 productos complementarios
+4. Maximo 5 candidatos por ejecucion (control de costos)
 
-**Metricas:**
-- Nuevas categorias incorporadas por cliente
-- Aumento del ticket promedio
-- Tasa de aceptacion de recomendaciones
+**Factores de confianza (4):** co_purchase_strength, customer_history, product_popularity, recency.
+
+**Costo por ejecucion:** ~$0.011 USD (5 candidatos)
 
 ---
 
-## 4. Ingesta de Datos (Pilar Fundamental)
+## 4. Ingesta de Datos
 
-La calidad del sistema depende 100% de la calidad y frescura de los datos. Sin datos actualizados, las predicciones no sirven.
+La calidad del sistema depende 100% de la calidad y frescura de los datos.
 
 ### 4.1 Arquitectura de Conectores
 
-PymePilot usa una **arquitectura de plugins** para ingesta de datos. Esto significa que cada fuente de datos (ERP, Excel, etc.) tiene su propio "conector" que traduce los datos al formato que PymePilot entiende.
-
 ```
-[Contabilium API] ---> [ContabiliumConnector] ---+
-                                                  |
-[Excel/CSV]       ---> [ExcelConnector]      ---+--> [Formato Interno] --> [PostgreSQL]
-                                                  |
-[Futuro: Xubio]   ---> [XubioConnector]     ---+
+Canal 1: [Contabilium API] ---> [ContabiliumConnector] ---+
+                                                           |
+Canal 2: [Excel Upload]    ---> [SmartFileConnector]  ---+--> [SyncEngine] --> [PostgreSQL]
+                                                           |
+Canal 3: [Google Drive]    ---> [SmartFileConnector]  ---+
 ```
 
-**Ventaja:** Para agregar un nuevo ERP, solo hay que crear un nuevo conector. El resto del sistema (motor de predicciones, dashboard, etc.) no cambia.
+### 4.2 Canal 1: Contabilium (API REST)
 
-### 4.2 Primer Conector: Contabilium
+**Estado:** OPERATIVO
+- **Frecuencia:** Diaria (5 AM, automatica via cron)
+- **Auth:** OAuth2 client_credentials
+- **Datos:** Clientes, productos, ordenes de venta (PV 0003 mayorista)
+- **Requisito:** Plan Full de Contabilium (incluye acceso API)
+- **Fix aplicado:** IPv4HTTPAdapter resuelve bloqueo de Cloudflare
 
-- **Tipo:** API REST (JSON)
-- **Frecuencia de sync:** Diaria (5:00 AM Argentina)
-- **Datos que se sincronizan:**
-  - Clientes (nombre, contacto, datos fiscales)
-  - Productos (nombre, SKU, categoria, precio)
-  - Ordenes de venta (fecha, cliente, productos, cantidades, montos)
-- **Requisito del cliente:** Plan Full de Contabilium (incluye acceso API)
+### 4.3 Canal 2: Smart File Upload
 
-### 4.3 Conector Fallback: Excel/CSV
+**Estado:** OPERATIVO
+- **Frecuencia:** Bajo demanda (upload manual via dashboard)
+- **Flujo:** Upload → Storage → Worker (cron 1min) → Claude parsea → SyncEngine
+- **Costo:** ~$0.009 USD por archivo
+- **Incremental:** hash SHA256 evita reprocesar archivos identicos
 
-Para clientes que no tienen ERP o prefieren cargar datos manualmente:
-- Upload de archivo Excel (.xlsx) o CSV
-- Formato estandarizado con columnas requeridas
-- Validacion automatica antes de importar
-- Mensajes de error claros si algo falta o esta mal formateado
+### 4.4 Canal 3: Google Drive
 
-### 4.4 Conectores Futuros
+**Estado:** OPERATIVO
+- **Frecuencia:** Diaria (4:30 AM, automatica via cron)
+- **Auth:** Service Account
+- **Estructura:** Un folder por tenant en Drive compartido
+
+### 4.5 Conectores Futuros
 
 ERPs populares en el mercado mayorista argentino a considerar:
 - Xubio
@@ -250,16 +253,16 @@ ERPs populares en el mercado mayorista argentino a considerar:
 - Colppy
 - Sistemas propios / bases de datos ad-hoc
 
+Cada nuevo ERP solo requiere crear un nuevo conector que implemente `ERPConnector` (clase abstracta). El resto del sistema no cambia.
+
 ---
 
 ## 5. Lo que NO es PymePilot
 
-Es importante definir que NO hace PymePilot para mantener el foco:
-
-- **No es un CRM** — No reemplaza Kommo, Salesforce ni HubSpot. Los complementa dandoles inteligencia sobre a quien contactar.
-- **No es un ERP** — No gestiona facturacion, stock, logistica ni contabilidad. LEE datos del ERP, no los modifica.
+- **No es un CRM** — No reemplaza Salesforce ni HubSpot. Los complementa dandoles inteligencia sobre a quien contactar.
+- **No es un ERP** — No gestiona facturacion, stock, logistica ni contabilidad. LEE datos del ERP, no los modifica. Solo GET, NUNCA escribe en el ERP del cliente.
 - **No es un chatbot** — No responde mensajes automaticamente. Sugiere mensajes que el vendedor revisa y envia manualmente.
-- **No envia mensajes sin aprobacion** — En el MVP, todo mensaje pasa por el vendedor antes de ser enviado.
+- **No envia mensajes sin aprobacion** — Todo mensaje pasa por el vendedor antes de ser enviado.
 - **No funciona sin historial** — Necesita al menos 3 meses de datos de compras para generar predicciones confiables.
 - **No gestiona pagos ni cobros** — No procesa transacciones financieras.
 
@@ -267,25 +270,25 @@ Es importante definir que NO hace PymePilot para mantener el foco:
 
 ## 6. Metricas de Exito
 
-### 6.1 MVP (Hito Semana 9)
+### 6.1 MVP (alcanzado 2026-02-26)
 
-| Metrica | Criterio de exito |
-|---|---|
-| Sync automatico | Datos de IEY se sincronizan desde Contabilium sin intervencion manual |
-| Predicciones generadas | Motor genera predicciones para al menos 10 clientes de IEY |
-| Usabilidad | Vendedor puede ver lista y copiar mensajes desde el celular |
-| Precision | Al menos 50% de predicciones confirmadas como utiles por equipo IEY |
-| Flujo completo | ERP -> sync -> prediccion -> mensaje -> dashboard funciona end-to-end |
+| Metrica | Criterio | Estado |
+|---|---|---|
+| Sync automatico | Datos de IEY se sincronizan sin intervencion | CUMPLIDO — 5 AM diario |
+| Predicciones generadas | Motor genera predicciones para clientes IEY | CUMPLIDO — 4 verticales |
+| Usabilidad | Vendedor puede ver lista y copiar desde celular | CUMPLIDO — mobile-first |
+| Flujo completo | ERP → sync → prediccion → mensaje → dashboard | CUMPLIDO — end-to-end |
+| Control de costos | <$5 USD/mes por tenant en Claude API | CUMPLIDO — ~$1.50-2.00/mes |
 
-### 6.2 Plataforma (6 meses)
+### 6.2 Plataforma (en progreso)
 
-| Metrica | Criterio de exito |
-|---|---|
-| Tenants | 2+ distribuidores operativos |
-| Churn | Reduccion medible de clientes perdidos en cada tenant |
-| Facturacion | Incremento medible de facturacion recurrente |
-| Onboarding | < 1 dia para activar nuevo distribuidor |
-| Verticales | Al menos 3 de 4 verticales operativas |
+| Metrica | Criterio | Estado |
+|---|---|---|
+| Tenants | 2+ distribuidores operativos | PENDIENTE — infraestructura lista |
+| Churn | Reduccion medible de clientes perdidos | MEDIBLE — dashboard /metricas |
+| Facturacion | Incremento medible de facturacion recurrente | MEDIBLE — KPIs + atribucion |
+| Onboarding | < 1 dia para activar nuevo distribuidor | LISTO — script + ONBOARDING.md |
+| Verticales | Al menos 3 de 4 verticales operativas | CUMPLIDO — 4/4 operativas |
 
 ---
 
@@ -293,53 +296,62 @@ Es importante definir que NO hace PymePilot para mantener el foco:
 
 ### 7.1 Stack
 
-| Componente | Tecnologia | Razon |
+| Componente | Tecnologia | Estado |
 |---|---|---|
-| Frontend | Next.js 14+ (App Router) + TypeScript + Tailwind + shadcn/ui | Performance, SEO, componentes modernos |
-| Base de datos | PostgreSQL 15 (via Supabase self-hosted) | Ya corriendo en produccion, RLS nativo |
-| Auth | Supabase GoTrue | Multi-tenant con tenant_id en JWT |
-| Motor IA | Python 3.11+ + Anthropic Claude API | Analisis de datos + generacion de mensajes |
-| Conectores | Python (requests + pandas) | Flexibilidad para diferentes ERPs |
-| Deploy | Docker en Contabo VPS | Ya configurado con Traefik SSL |
+| Frontend | Next.js 16 (App Router) + TypeScript + Tailwind + shadcn/ui | Operativo |
+| Base de datos | PostgreSQL 15 (Supabase self-hosted) | Operativo |
+| Auth | Supabase GoTrue con tenant_id en JWT | Operativo |
+| Motor IA | Python 3.11 + Anthropic Claude Sonnet | Operativo |
+| Conectores | Python (requests + pandas + openpyxl) | 3 conectores operativos |
+| Monitoreo | Grafana + Prometheus | 2 dashboards configurados |
+| Deploy | Docker + Traefik SSL en Contabo VPS | Operativo |
 
 ### 7.2 Multi-Tenant
 
-- Cada distribuidor es un "tenant" (inquilino) aislado
-- Todos los datos en las mismas tablas pero con `tenant_id` en cada fila
-- Row Level Security (RLS) garantiza que un tenant NUNCA vea datos de otro
-- Cada tenant puede tener su propio tipo de ERP y configuracion
+- Cada distribuidor es un "tenant" aislado
+- Todos los datos en las mismas tablas con `tenant_id` en cada fila
+- Row Level Security (RLS) con FORCE RLS garantiza aislamiento
+- Usuario DB `pymepilot_app` (nosuperuser) — nunca usa postgres
+- Testing de aislamiento con 12 tests automatizados
+- Onboarding automatizado via `create_tenant.py`
 
 ### 7.3 Seguridad
 
 - Autenticacion obligatoria para todas las rutas
-- RLS en TODAS las tablas con datos de tenant
+- RLS en TODAS las tablas con datos de tenant (9 tablas)
 - Secrets en variables de entorno (nunca en codigo)
-- Backups automaticos diarios (ya configurados)
-- Testing de aislamiento entre tenants antes de cada release
+- Backups automaticos diarios (3 AM, retencion 7 dias)
+- Testing de aislamiento entre tenants
+- CORS restringido a `app.pymepilot.cloud`
+- Credenciales ERP encriptadas en reposo (Fernet AES-128)
+- SanitizingFormatter previene leak de secrets en logs
+- Grafana con usuario read-only que solo ve VIEWs agregadas
+- Auditorias de seguridad en cada fase (0 CRITICAL, 0 HIGH en produccion)
 
 ---
 
 ## 8. Riesgos y Mitigaciones
 
-| Riesgo | Probabilidad | Impacto | Mitigacion |
-|---|---|---|---|
-| API de Contabilium con limitaciones no documentadas | Media | Alto | Investigar a fondo antes de implementar, tener Excel como fallback |
-| Claude API costosa a escala | Media | Medio | Usar Claude Sonnet (mas barato), prompt caching, limitar tokens |
-| Predicciones de baja calidad | Media | Alto | Validar manualmente con IEY, iterar prompts, calcular precision |
-| Supabase self-hosted requiere mantenimiento | Baja | Medio | Backups diarios, monitoreo con Grafana, documentar operaciones |
-| Clientes no exportan datos correctamente | Alta | Medio | Conector ERP automatico (no depende del cliente), validacion de datos |
-| Competencia con herramientas similares | Baja | Medio | Foco en nicho B2B mayorista argentino, ventaja de validacion real |
+| Riesgo | Estado | Resolucion |
+|---|---|---|
+| API de Contabilium con limitaciones | RESUELTO | IPv4HTTPAdapter para Cloudflare, OAuth2 OK |
+| Claude API costosa a escala | MITIGADO | 4 capas de control, ~$1.50-2.00/mes por tenant |
+| Predicciones de baja calidad | VALIDADO | Prompts iterados con feedback IEY, score de confianza |
+| Supabase self-hosted mantenimiento | MITIGADO | Backups diarios, Grafana monitoring, docs completos |
+| Clientes no exportan datos | RESUELTO | 3 canales: API, Smart Upload, Google Drive |
+| Aislamiento entre tenants | VERIFICADO | 12 tests automatizados, RLS + FORCE RLS |
 
 ---
 
 ## 9. Dependencias Externas
 
-| Dependencia | Tipo | Riesgo |
+| Dependencia | Tipo | Estado |
 |---|---|---|
-| Contabilium API | Critica para MVP | Investigar limites y disponibilidad |
-| Anthropic Claude API | Critica para motor | Tener modelo fallback (Sonnet -> Haiku) |
-| Kommo CRM API | Para Fase 6 | No bloquea MVP, deep link como fallback |
-| Supabase stack (Docker) | Infraestructura base | Ya corriendo y estable |
+| Contabilium API | Critica | CONECTADA y operativa |
+| Anthropic Claude API | Critica | OPERATIVA, Sonnet, $5 cargados |
+| Google Drive API | Opcional | CONECTADA, Service Account |
+| WhatsApp Cloud API | Opcional | PENDIENTE (necesita SIM chip) |
+| Supabase stack (Docker) | Infraestructura | OPERATIVO y estable |
 
 ---
 
@@ -357,3 +369,6 @@ Es importante definir que NO hace PymePilot para mantener el foco:
 | **Churn** | Tasa de perdida de clientes. % de clientes que dejan de comprar en un periodo. |
 | **Cross-Sell** | Vender productos adicionales/complementarios a un cliente existente. |
 | **Score de confianza** | Numero de 0 a 1 que indica que tan seguro esta el motor de una prediccion. |
+| **Atribucion** | Proceso de conectar una prediccion con una compra real que ocurrio despues. |
+| **co_purchases** | Materialized View que identifica productos comprados frecuentemente juntos. |
+| **Orquestador** | Script que ejecuta automaticamente sync + verticales cada dia a las 5 AM. |
