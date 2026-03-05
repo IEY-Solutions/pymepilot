@@ -239,7 +239,7 @@ def _run_attribution(tenant_id: str, tenant_slug: str) -> int:
     try:
         with get_db_connection(tenant_id) as conn:
             matches_raw = get_predictions_for_attribution(
-                conn, tenant_id, attribution_window_days=14
+                conn, tenant_id, attribution_window_days=30
             )
 
             if not matches_raw:

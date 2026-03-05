@@ -5,7 +5,7 @@ Script CLI para atribucion automatica de predicciones.
 QUE HACE ESTE SCRIPT:
 Despues de cada sync del ERP (que trae compras nuevas), este script cruza
 las predicciones pendientes con las compras reales. Si PymePilot predijo
-que Juan iba a comprar, y Juan compro dentro de los 14 dias siguientes,
+que Juan iba a comprar, y Juan compro dentro de los 30 dias siguientes,
 la prediccion se marca como "completed" automaticamente.
 
 CONCEPTO CLAVE - Atribucion:
@@ -19,7 +19,7 @@ la primera compra (la mas cercana a la prediccion). Asi evitamos inflar
 las metricas contando una prediccion como 2 conversiones.
 
 USO:
-  python backend/scripts/run_attribution.py --tenant-slug iey                 # Atribucion con ventana default (14 dias)
+  python backend/scripts/run_attribution.py --tenant-slug iey                 # Atribucion con ventana default (30 dias)
   python backend/scripts/run_attribution.py --tenant-slug iey --dry-run       # Mostrar matches sin modificar DB
   python backend/scripts/run_attribution.py --tenant-slug iey --window-days 7 # Ventana mas corta
 
@@ -112,8 +112,8 @@ def main() -> None:
     parser.add_argument(
         '--window-days',
         type=int,
-        default=14,
-        help='Ventana de atribucion en dias (default: 14)',
+        default=30,
+        help='Ventana de atribucion en dias (default: 30)',
     )
     parser.add_argument(
         '--dry-run',

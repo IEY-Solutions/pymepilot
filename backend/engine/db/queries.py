@@ -419,8 +419,7 @@ def save_prediction(
 def get_predictions_for_attribution(
     conn,
     tenant_id: str,
-    attribution_window_days: int = 14,
-    vertical: str = 'reposicion',
+    attribution_window_days: int = 30,
 ) -> list[dict]:
     """Busca predicciones activas que tengan compras recientes del cliente.
 
@@ -435,13 +434,15 @@ def get_predictions_for_attribution(
     que el vendedor confirme nada. Es como un gol que se cuenta solo
     si la pelota entro en el arco (la compra existe en el ERP).
 
+    Busca en TODAS las verticales (reposicion, activacion, cross_sell,
+    recuperacion). La atribucion es transversal: no importa que vertical
+    genero la prediccion, si el cliente compro, se cuenta.
+
     Args:
         conn: Conexion con tenant context.
         tenant_id: UUID del tenant.
         attribution_window_days: Dias despues de la prediccion para
-            buscar compras (default 14).
-        vertical: Tipo de vertical a buscar (default 'reposicion').
-            Permite atribuir predicciones de cualquier vertical.
+            buscar compras (default 30).
 
     Returns:
         Lista de dicts con prediccion + datos de la compra.
@@ -453,6 +454,7 @@ def get_predictions_for_attribution(
                 pred.id AS prediction_id,
                 pred.customer_id,
                 pred.prediction_date,
+                pred.vertical,
                 pred.confidence_score,
                 pred.priority,
                 -- Datos de la compra atribuible
@@ -472,14 +474,12 @@ def get_predictions_for_attribution(
               AND o.order_date <= pred.prediction_date
                   + %(window)s
             WHERE pred.tenant_id = %(tenant_id)s
-              AND pred.vertical = %(vertical)s
               AND pred.status IN ('pending', 'contacted')
             ORDER BY pred.prediction_date
             """,
             {
                 'tenant_id': tenant_id,
                 'window': attribution_window_days,
-                'vertical': vertical,
             },
         )
         results = cur.fetchall()
