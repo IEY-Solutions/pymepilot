@@ -15,6 +15,7 @@ echo ">> Construyendo imagen Docker (sin cache)..."
 docker build --no-cache \
   --build-arg NEXT_PUBLIC_SUPABASE_URL="$NEXT_PUBLIC_SUPABASE_URL" \
   --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY="$NEXT_PUBLIC_SUPABASE_ANON_KEY" \
+  --build-arg NEXT_PUBLIC_VAPID_PUBLIC_KEY="$NEXT_PUBLIC_VAPID_PUBLIC_KEY" \
   -t pymepilot-frontend:latest .
 
 # 3. Reemplazar container

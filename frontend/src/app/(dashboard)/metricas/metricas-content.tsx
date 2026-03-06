@@ -8,6 +8,7 @@ import {
   Zap,
   Download,
   ChevronDown,
+  Receipt,
 } from "lucide-react";
 import { RevenueChart } from "./charts/revenue-chart";
 import { ChurnChart } from "./charts/churn-chart";
@@ -48,6 +49,12 @@ export interface ValueRow {
   predictions_converted: number;
 }
 
+export interface SalesRow {
+  month: string;
+  total_orders: number;
+  total_revenue: number;
+}
+
 export interface RankingRow {
   customer_id: string;
   name: string;
@@ -65,6 +72,7 @@ interface MetricasContentProps {
   churn: ChurnRow[];
   ticket: TicketRow[];
   value: ValueRow[];
+  sales: SalesRow[];
   rankings: RankingRow[];
 }
 
@@ -110,6 +118,7 @@ export function MetricasContent({
   churn,
   ticket,
   value,
+  sales,
   rankings,
 }: MetricasContentProps) {
   const [activeTab, setActiveTab] = useState<"rendimiento" | "clientes">(
@@ -167,6 +176,16 @@ export function MetricasContent({
   const churnTrend =
     lastChurn && prevChurn
       ? Number(lastChurn.churn_rate) - Number(prevChurn.churn_rate)
+      : 0;
+
+  // Ventas del mes: ultimo vs penultimo
+  const lastSales = sales.length > 0 ? sales[sales.length - 1] : null;
+  const prevSales = sales.length > 1 ? sales[sales.length - 2] : null;
+  const salesPctChange =
+    lastSales && prevSales && Number(prevSales.total_orders) > 0
+      ? ((Number(lastSales.total_orders) - Number(prevSales.total_orders)) /
+          Number(prevSales.total_orders)) *
+        100
       : 0;
 
   return (
@@ -236,7 +255,30 @@ export function MetricasContent({
       {activeTab === "rendimiento" && (
         <div className="space-y-6">
           {/* KPI Cards */}
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-4 md:gap-5">
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-5 md:gap-5">
+            <KpiCard
+              title="Ventas del mes"
+              value={
+                lastSales
+                  ? `${Number(lastSales.total_orders)} ordenes`
+                  : "—"
+              }
+              subtitle={
+                lastSales
+                  ? `${formatCurrency(Number(lastSales.total_revenue))}${
+                      prevSales
+                        ? ` | ${salesPctChange > 0 ? "+" : ""}${salesPctChange.toFixed(0)}% vs ant.`
+                        : ""
+                    }`
+                  : "Sin datos"
+              }
+              icon={Receipt}
+              color={
+                salesPctChange >= 0
+                  ? "bg-gradient-to-br from-blue-50 to-blue-100 text-blue-600"
+                  : "bg-gradient-to-br from-red-50 to-red-100 text-red-600"
+              }
+            />
             <KpiCard
               title="% Recurrente"
               value={

@@ -5,13 +5,14 @@ import type { RankingRow } from "./metricas-content";
 export default async function MetricasPage() {
   const supabase = await createClient();
 
-  // 4 RPCs + ranking + tendencias en paralelo
-  const [revenueRes, churnRes, ticketRes, valueRes, rankingRes, trendsRes] =
+  // 5 RPCs + ranking + tendencias en paralelo
+  const [revenueRes, churnRes, ticketRes, valueRes, salesRes, rankingRes, trendsRes] =
     await Promise.all([
       supabase.rpc("get_monthly_revenue_split", { p_months: 6 }),
       supabase.rpc("get_monthly_churn", { p_months: 6 }),
       supabase.rpc("get_monthly_ticket", { p_months: 6 }),
       supabase.rpc("get_monthly_value", { p_months: 6 }),
+      supabase.rpc("get_total_sales", { p_months: 2 }),
       supabase
         .from("client_rankings_secure")
         .select("*")
@@ -42,6 +43,7 @@ export default async function MetricasPage() {
       churn={churnRes.data ?? []}
       ticket={ticketRes.data ?? []}
       value={valueRes.data ?? []}
+      sales={salesRes.data ?? []}
       rankings={rankingsWithTrend}
     />
   );

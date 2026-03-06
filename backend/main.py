@@ -70,6 +70,7 @@ from backend.engine.db.queries import (
     refresh_materialized_views,
     update_prediction_attribution,
 )
+from backend.engine.push.sender import send_push_to_tenant
 from backend.engine.verticales import VERTICAL_REGISTRY
 
 logger = get_logger(__name__)
@@ -409,6 +410,55 @@ def _run_verticals(tenant: dict, dry_run: bool) -> dict:
     return result
 
 
+def _send_push_notifications(
+    tenant_id: str,
+    tenant_slug: str,
+    predictions_count: int,
+    attributed_count: int,
+) -> None:
+    """Envia push notifications post-pipeline a un tenant.
+
+    CONCEPTO: Notificaciones push como "empujon" diario.
+    El vendedor recibe un resumen: cuantos clientes contactar
+    y cuantas ventas se concretaron. Sin push, el vendedor
+    tiene que acordarse de entrar al dashboard por su cuenta.
+
+    Solo envia si hay algo que notificar (predictions o attributions).
+    """
+    messages = []
+
+    if predictions_count > 0:
+        messages.append(
+            f"Tenes {predictions_count} cliente"
+            f"{'s' if predictions_count != 1 else ''} para contactar hoy"
+        )
+
+    if attributed_count > 0:
+        plural = "s" if attributed_count != 1 else ""
+        messages.append(
+            f"{attributed_count} venta{plural} concretada{plural}"
+        )
+
+    if not messages:
+        return
+
+    title = "PymePilot"
+    body = " | ".join(messages)
+    url = "/contactar" if predictions_count > 0 else "/logros"
+
+    try:
+        sent = send_push_to_tenant(tenant_id, title, body, url)
+        if sent > 0:
+            logger.info(
+                f"[{tenant_slug}] Push enviadas: {sent}"
+            )
+    except Exception as e:
+        # Push es best-effort: si falla, no bloquea la pipeline
+        logger.warning(
+            f"[{tenant_slug}] Push fallido: {sanitize_text(str(e))}"
+        )
+
+
 # ================================================================
 # FUNCION PRINCIPAL
 # ================================================================
@@ -509,12 +559,14 @@ def main() -> None:
                 continue  # Siguiente tenant
 
             # 3b. Atribucion (siempre real, no usa Claude)
-            _run_attribution(tenant_id, tenant_slug)
+            attributed_count = _run_attribution(tenant_id, tenant_slug)
 
             # 3c. Verticales
+            tenant_predictions = 0
             if not daily_limit_hit:
                 vresult = _run_verticals(tenant, dry_run=args.dry_run)
-                total_predictions += vresult['predictions']
+                tenant_predictions = vresult['predictions']
+                total_predictions += tenant_predictions
 
                 if vresult['limit_exceeded']:
                     daily_limit_hit = True
@@ -532,6 +584,13 @@ def main() -> None:
                     f"[{tenant_slug}] Verticales skip: "
                     f"limite diario ya alcanzado"
                 )
+
+            # 3d. Push notifications (post-verticales + atribucion)
+            _send_push_notifications(
+                tenant_id, tenant_slug,
+                tenant_predictions,
+                attributed_count,
+            )
 
             tenants_ok += 1
 
