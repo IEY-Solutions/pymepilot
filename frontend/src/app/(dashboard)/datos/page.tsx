@@ -63,19 +63,17 @@ export default async function DatosPage() {
         .select("id, folder_id, status, last_synced_at, error_message")
         .limit(1)
         .maybeSingle(),
-      // VIEW tenant_info_secure: solo columnas seguras, filtrada por JWT.
+      // RPC SECURITY DEFINER: solo columnas seguras, filtrada por tenant del JWT.
       // NO expone erp_config (que contiene client_id + client_secret_encrypted).
-      supabase
-        .from("tenant_info_secure")
-        .select("erp_type, has_erp_credentials")
-        .maybeSingle(),
+      supabase.rpc("get_tenant_info_secure"),
     ]);
 
   const syncs = syncsRes.data ?? [];
   const uploads = uploadsRes.data ?? [];
   const driveConnection = driveRes.data ?? null;
   const lastSync = syncs[0];
-  const tenantData = tenantRes.data as { erp_type: string | null; has_erp_credentials: boolean } | null;
+  const tenantRows = tenantRes.data as { erp_type: string | null; has_erp_credentials: boolean }[] | null;
+  const tenantData = tenantRows?.[0] ?? null;
 
   // Datos para la card de ERP (derivados de VIEW segura, sin erp_config)
   const erpType = tenantData?.erp_type ?? null;

@@ -10,7 +10,7 @@ const navItems = [
   { href: "/contactar", label: "Contactar", icon: MessageSquare },
   { href: "/historial", label: "Historial", icon: Clock },
   { href: "/metricas", label: "Metricas", icon: BarChart3 },
-  { href: "/logros", label: "Logros", icon: Trophy },
+  { href: "/logros", label: "Mis ventas", icon: Trophy },
   { href: "/datos", label: "Datos", icon: Database },
 ];
 
