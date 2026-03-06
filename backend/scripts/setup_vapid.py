@@ -15,14 +15,14 @@ import base64
 import os
 import sys
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from py_vapid import Vapid
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 
 
 def main():
-    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     env_path = os.path.join(project_root, ".env")
     frontend_env_path = os.path.join(project_root, "frontend", ".env.local")
 
