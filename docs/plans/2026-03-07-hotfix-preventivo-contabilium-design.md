@@ -1,8 +1,8 @@
 # Design Doc: Correcciones preventivas post-incidente Contabilium
 
-**Fecha:** 2026-03-07
-**Tipo:** Hotfix preventivo (9 correcciones)
-**Origen:** Incidente DNS Contabilium + auditoria de codigo
+**Fecha:** 2026-03-07 (actualizado 2026-03-07 noche)
+**Tipo:** Hotfix preventivo (15 correcciones)
+**Origen:** Incidente DNS Contabilium + auditoria de codigo + documentacion oficial de rate limiting
 **Estado:** Aprobado por Pato
 
 ---
@@ -17,7 +17,45 @@ En paralelo, un bug en `setup_vapid.py` creo un archivo `backend/.env` espurio q
 causo 22 horas de caida silenciosa de todos los cron jobs (conectaban a 127.0.0.1
 en vez de 172.18.0.10).
 
-Este plan corrige las 9 vulnerabilidades identificadas, organizadas en 3 bloques.
+Adicionalmente, Pato encontro la documentacion oficial de Contabilium sobre limites
+de uso, que revela que nuestro conector opera al filo del limite permitido:
+
+### Limites oficiales de Contabilium
+
+| Pais | Limite |
+|------|--------|
+| Argentina | 25 peticiones cada 10 segundos |
+| Chile/Uruguay | 15 peticiones cada 10 segundos |
+
+**Bloqueo ante exceso (429):** Por IP, dura ~1 minuto.
+**Alcance critico:** "Si un proceso de sincronizacion de stock excede el limite,
+tambien se vera afectada tu capacidad de emitir facturas electronicas desde esa misma red."
+
+### Volumen real del ultimo sync exitoso (5 de marzo)
+
+```
+ 24 paginas clientes     (GET clientes/search)
+ 38 paginas productos    (GET conceptos/search)
+ ~6 paginas comprobantes (GET comprobantes/search)
+283 GETs individuales    (GET comprobantes/?id=XXX para Items)
+  2 POST /token          (doble auth — bug 1.2)
+---
+~353 requests por sync
+```
+
+Con `SYNC_RATE_LIMIT_DELAY = 0.5s`, el ritmo es ~12-20 req/10s (limite: 25).
+Solo 20% de margen. Cualquier retry o variacion en latencia puede superarlo.
+El 5 de marzo se corrieron 3 syncs → ~1,060+ requests reales (1,383 contando retries).
+
+### Recomendaciones oficiales de Contabilium vs estado actual
+
+| Recomendacion | Estado actual | Gap |
+|---------------|---------------|-----|
+| Retry con delay >= 10s entre bloques | `SYNC_RATE_LIMIT_DELAY = 0.5s` | Delay 20x menor al recomendado |
+| Sincronizacion selectiva con `fechaDesde` | Solo `fetch_orders` usa `fechaDesde`. Clientes y productos: sync full siempre | Requests innecesarios cada dia |
+| Monitoreo del 429 | Manejo con retry en codigo, pero sin registro en DB ni alerta | Fallo silencioso |
+
+Este plan corrige las 15 vulnerabilidades identificadas, organizadas en 4 bloques.
 
 ---
 
@@ -25,10 +63,13 @@ Este plan corrige las 9 vulnerabilidades identificadas, organizadas en 3 bloques
 
 | Decision | Opcion elegida | Alternativas descartadas |
 |----------|---------------|-------------------------|
-| Prioridad de implementacion | Contabilium primero (crons desactivados, urgencia es tenerlos listos antes de reactivar) | Estabilidad interna primero, todo mezclado |
+| Prioridad de implementacion | Estabilidad interna primero (Fase A), luego Contabilium (Fase B), luego observabilidad (Fase C) | Todo mezclado, Contabilium primero |
 | Rate limiting: donde guardar control | sync_log en DB (ya existe, auditable) | Lock file local, ambos |
 | Alertas de fallo de cron | Push + dashboard (push a las 3 fallas consecutivas, dashboard al primer fallo) | Solo push, solo dashboard |
 | Guard de env vars: que hacer cuando falta | Fail-fast + log al archivo (se integra con alertas de cron) | Fail-fast solo, fail-fast + push |
+| Delay entre requests | 2s fijo + batch pacing 10s cada 20 req (doble capa) | Solo subir delay, solo batch pacing |
+| Sync incremental | `fechaDesde` con fallback a sync full si no hay fecha previa | Siempre incremental (riesgo de datos huerfanos) |
+| Alerta en 429 | Push inmediato (ya existe infra) | Solo log, email |
 
 ---
 
@@ -155,24 +196,124 @@ backend/venv/bin/python backend/scripts/cron_wrapper.py --name upload-worker -- 
 
 ---
 
+## Bloque 4 — Rate limiting y best practices Contabilium (ALTA)
+
+> **Origen:** Documentacion oficial de Contabilium encontrada por Pato el 2026-03-07.
+> Limite Argentina: 25 peticiones/10 segundos. Bloqueo por IP afecta facturacion.
+
+### 4.1 Subir delay entre requests
+
+**Que:** Cambiar `SYNC_RATE_LIMIT_DELAY` de 0.5s a 2s en `settings.py`.
+
+**Efecto:** Reduce de ~12-20 req/10s a ~5 req/10s. Amplio margen bajo el limite
+de 25. El sync completo tarda ~12 min en vez de ~3 min, pero corre a las 5 AM
+sin impacto para nadie.
+
+**Donde:** `backend/config/settings.py` (1 linea).
+
+### 4.2 Batch pacing (pausa entre bloques)
+
+**Que:** Agregar pausa de 10s cada 20 requests, alineado con la ventana de 10
+segundos que Contabilium usa para medir. Implementar como contador interno en
+`_get()` que incrementa por cada request y duerme al llegar a 20.
+
+**Donde:** `backend/engine/connectors/contabilium.py` — atributo `_request_count`
+en `__init__`, logica en `_get()`.
+
+**Interaccion con 4.1:** Son complementarios. El delay de 2s entre requests
+(4.1) limita la velocidad sostenida. El batch pacing (4.2) agrega una pausa
+larga cada 20 requests como red de seguridad. Con ambos, el peor caso seria
+~5 req/10s con pausas forzadas cada 20.
+
+### 4.3 Sync incremental de clientes
+
+**Que:** Agregar parametro `since_date` a `fetch_customers()`. Cuando se provee,
+usar `fechaDesde` en el endpoint `clientes/search` para descargar solo clientes
+modificados desde el ultimo sync exitoso.
+
+**Donde:** `contabilium.py` (fetch_customers) + `sync.py` (pasar
+`last_sync_date` desde sync_log).
+
+**Impacto:** Reduce de ~24 paginas (126 clientes) a ~1-2 paginas en syncs diarios
+normales (solo clientes nuevos o modificados desde ayer).
+
+**Sync full:** Se mantiene como fallback si no hay fecha previa (primer sync)
+o si se usa `--force`.
+
+### 4.4 Sync incremental de productos
+
+**Que:** Idem 4.3 para `fetch_products()` con `conceptos/search` y `fechaDesde`.
+
+**Donde:** `contabilium.py` (fetch_products) + `sync.py`.
+
+**Impacto:** Reduce de ~38 paginas (2021 productos) a ~1-5 paginas. IEY no
+agrega productos diariamente, asi que la mayoria de los dias seria 0-1 paginas.
+
+### 4.5 Registro de 429 en sync_log
+
+**Que:** Cuando `_get()` recibe un HTTP 429, registrar en sync_log o tabla
+dedicada: timestamp, endpoint, retry_after recibido, request_count acumulado.
+
+**Donde:** `contabilium.py` (_get, bloque 429) + migration nueva (si tabla
+dedicada) o columna extra en sync_log.
+
+**Beneficio:** Permite monitorear via Grafana si estamos recibiendo 429s.
+Tendencia creciente = hay que reducir mas el ritmo.
+
+### 4.6 Alerta push en 429
+
+**Que:** Si se recibe un HTTP 429, enviar push notification a Pato
+inmediatamente. Ya tenemos el sistema de push funcionando (3 suscripciones
+activas).
+
+**Donde:** `contabilium.py` (importar sender) + `backend/engine/push/sender.py`.
+
+**Mensaje:** "Contabilium devolvio 429 (rate limit) durante el sync.
+El sistema espero y reintento. Revisar logs si se repite."
+
+---
+
 ## Orden de implementacion
+
+### Fase A — Estabilidad interna (prerequisito, no toca Contabilium)
 
 | Orden | Fix | Archivos | Complejidad |
 |-------|-----|----------|-------------|
 | 1 | load_dotenv explicito (2.1) | 10 scripts | Baja |
 | 2 | Guard env vars (2.2) | Nuevo env_guard.py + 10 scripts | Baja |
 | 3 | connection.py usa settings.py (2.3) | connection.py | Baja |
-| 4 | Fix doble auth (1.2) | contabilium.py + sync.py | Baja |
-| 5 | Rate limiting sync_log (1.1) | sync.py + sync_erp.py | Media |
-| 6 | Contador requests diario (1.3) | contabilium.py + sync.py | Media |
-| 7 | setup_vapid.py backup (2.4) | setup_vapid.py | Baja |
-| 8 | Cron wrapper alertas (3.1) | Nuevo cron_wrapper.py + crontab | Media |
-| 9 | Reactivacion controlada | Crontab | — |
+| 4 | setup_vapid.py backup (2.4) | setup_vapid.py | Baja |
+
+### Fase B — Proteccion contra Contabilium (aplicar ANTES de reactivar crons)
+
+| Orden | Fix | Archivos | Complejidad |
+|-------|-----|----------|-------------|
+| 5 | Subir delay a 2s (4.1) | settings.py | Trivial |
+| 6 | Fix doble auth (1.2) | contabilium.py + sync.py | Baja |
+| 7 | Batch pacing 10s cada 20 req (4.2) | contabilium.py | Media |
+| 8 | Rate limiting sync_log (1.1) | sync.py + sync_erp.py | Media |
+| 9 | Contador requests diario (1.3) | contabilium.py + sync.py | Media |
+| 10 | Sync incremental clientes (4.3) | contabilium.py + sync.py | Media |
+| 11 | Sync incremental productos (4.4) | contabilium.py + sync.py | Media |
+
+### Fase C — Observabilidad (puede aplicarse antes o despues de reactivar)
+
+| Orden | Fix | Archivos | Complejidad |
+|-------|-----|----------|-------------|
+| 12 | Registro de 429 en sync_log (4.5) | contabilium.py + migration | Media |
+| 13 | Alerta push en 429 (4.6) | contabilium.py + sender.py | Baja |
+| 14 | Cron wrapper alertas (3.1) | Nuevo cron_wrapper.py + crontab | Media |
+
+### Fase D — Reactivacion
+
+| Orden | Fix | Archivos | Complejidad |
+|-------|-----|----------|-------------|
+| 15 | Reactivacion controlada | Crontab | — |
 
 **Entregables:**
 - 2 archivos nuevos: env_guard.py, cron_wrapper.py
+- 1 migration nueva (registro 429)
 - ~14 archivos modificados
-- 0 migraciones SQL
 - Crontab actualizado como paso final
 
 ---
