@@ -41,12 +41,16 @@ from urllib.request import Request, urlopen
 from urllib.error import URLError
 
 # Entry point boilerplate (mismo patron que sync_erp.py)
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+_project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, _project_root)
 
 from dotenv import load_dotenv
-load_dotenv()
+load_dotenv(os.path.join(_project_root, ".env"))
 
 os.umask(0o077)  # Archivos temporales solo legibles por el owner
+
+from backend.engine.core.env_guard import validate_env, DB_VARS, SUPABASE_VARS
+validate_env(DB_VARS + SUPABASE_VARS)
 
 from backend.config.settings import SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
 from backend.engine.connectors.smart import SmartFileConnector

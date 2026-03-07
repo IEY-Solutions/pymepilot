@@ -30,12 +30,16 @@ import sys
 from datetime import datetime, timezone
 
 # Entry point boilerplate (mismo patron que process_uploads.py)
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+_project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, _project_root)
 
 from dotenv import load_dotenv
-load_dotenv()
+load_dotenv(os.path.join(_project_root, ".env"))
 
 os.umask(0o077)
+
+from backend.engine.core.env_guard import validate_env, DB_VARS
+validate_env(DB_VARS)
 
 from backend.engine.core.logger import get_logger
 from backend.engine.db.connection import get_db_connection_no_tenant, close_pool

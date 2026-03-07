@@ -22,12 +22,16 @@ import os
 from psycopg import sql
 
 # Agregar la raiz del proyecto al path para que encuentre el paquete "backend".
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+_project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, _project_root)
 
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(os.path.join(_project_root, ".env"))
 os.umask(0o077)
+
+from backend.engine.core.env_guard import validate_env, DB_VARS
+validate_env(DB_VARS)
 
 from backend.engine.db.connection import (
     get_pool,

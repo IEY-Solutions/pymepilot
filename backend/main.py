@@ -47,15 +47,21 @@ from decimal import Decimal
 
 # Agregar la raiz del proyecto al path de Python.
 # main.py esta en backend/, asi que subimos 1 nivel para llegar a pymepilot/
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+_project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, _project_root)
 
 from dotenv import load_dotenv
 
-# load_dotenv ANTES de imports del proyecto
-load_dotenv()
+# load_dotenv con path EXPLICITO para evitar que un .env espurio en otro
+# directorio (como backend/.env) sobrescriba las variables reales.
+# Origen: incidente del 7 de marzo — 22 horas de falla silenciosa.
+load_dotenv(os.path.join(_project_root, ".env"))
 
 # umask ANTES de crear archivos (logs, etc.)
 os.umask(0o077)
+
+from backend.engine.core.env_guard import validate_env, DB_VARS
+validate_env(DB_VARS)
 
 from backend.engine.claude.client import DailyLimitExceeded
 from backend.engine.connectors.sync import SyncEngine

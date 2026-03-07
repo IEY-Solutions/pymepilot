@@ -13,6 +13,7 @@ QUE HACE:
 
 import base64
 import os
+import shutil
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
@@ -52,6 +53,13 @@ def main():
     assert derived == pub_b64, "ERROR: las claves no coinciden!"
     print("Verificacion: claves coinciden OK")
     print()
+
+    # Backup de .env antes de modificar (prevencion: incidente 7 de marzo)
+    for path in [env_path, frontend_env_path]:
+        if os.path.exists(path):
+            backup_path = path + ".bak"
+            shutil.copy2(path, backup_path)
+            print(f"Backup creado: {backup_path}")
 
     # Limpiar entradas VAPID viejas del .env
     for path in [env_path, frontend_env_path]:

@@ -21,13 +21,19 @@ y solo vemos los del tenant correcto.
 NOTA: load_dotenv() se ejecuta en los ENTRY POINTS (scripts), NO aca.
 """
 
-import os
 from contextlib import contextmanager
 from uuid import UUID
 
 import psycopg
 from psycopg_pool import ConnectionPool
 
+from backend.config.settings import (
+    DATABASE_HOST,
+    DATABASE_NAME,
+    DATABASE_PASSWORD,
+    DATABASE_PORT,
+    DATABASE_USER,
+)
 from backend.engine.core.logger import get_logger
 
 logger = get_logger(__name__)
@@ -38,18 +44,16 @@ _pool: ConnectionPool | None = None
 
 def _build_conninfo() -> str:
     """
-    Construye el string de conexion a PostgreSQL desde variables de entorno.
+    Construye el string de conexion a PostgreSQL desde settings.py.
 
-    En vez de un solo DATABASE_URL, usamos variables separadas para mayor
-    flexibilidad y seguridad (mas facil de configurar por entorno).
+    Usa settings.py como unica fuente de verdad para la configuracion de DB.
+    Antes leia os.getenv() directamente, duplicando defaults con settings.py.
+    Fix del incidente 7 de marzo: una sola fuente de verdad.
     """
-    host = os.getenv("DATABASE_HOST", "localhost")
-    port = os.getenv("DATABASE_PORT", "5432")
-    dbname = os.getenv("DATABASE_NAME", "postgres")
-    user = os.getenv("DATABASE_USER", "postgres")
-    password = os.getenv("DATABASE_PASSWORD", "")
-
-    return f"host={host} port={port} dbname={dbname} user={user} password={password}"
+    return (
+        f"host={DATABASE_HOST} port={DATABASE_PORT} dbname={DATABASE_NAME} "
+        f"user={DATABASE_USER} password={DATABASE_PASSWORD}"
+    )
 
 
 def _reset_connection(conn: psycopg.Connection) -> None:

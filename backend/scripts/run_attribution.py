@@ -37,15 +37,19 @@ from decimal import Decimal
 
 # Agregar la raiz del proyecto al path de Python para que encuentre
 # el paquete "backend". Sin esto, "from backend.config..." falla.
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+_project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, _project_root)
 
 from dotenv import load_dotenv
 
-# load_dotenv ANTES de imports del proyecto (las variables de entorno vienen de aca)
-load_dotenv()
+# load_dotenv con path EXPLICITO (incidente 7 de marzo)
+load_dotenv(os.path.join(_project_root, ".env"))
 
 # umask ANTES de crear archivos (logs, etc.)
 os.umask(0o077)
+
+from backend.engine.core.env_guard import validate_env, DB_VARS
+validate_env(DB_VARS)
 
 from backend.engine.core.logger import get_logger
 from backend.engine.db.connection import (

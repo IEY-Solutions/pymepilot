@@ -37,12 +37,16 @@ from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 # Entry point boilerplate (mismo patron que sync_erp.py)
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+_project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, _project_root)
 
 from dotenv import load_dotenv
-load_dotenv()
+load_dotenv(os.path.join(_project_root, ".env"))
 
 os.umask(0o077)
+
+from backend.engine.core.env_guard import validate_env, DB_VARS, SUPABASE_VARS
+validate_env(DB_VARS + SUPABASE_VARS)
 
 from backend.config.settings import (
     ERP_ENCRYPTION_KEY,
