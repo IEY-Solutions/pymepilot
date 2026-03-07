@@ -211,7 +211,7 @@ class SmartFileConnector(ERPConnector):
 
     # --- Metodos ERPConnector ---
 
-    def fetch_customers(self, limit: int | None = None, client_ids: set[str] | None = None) -> tuple[list[dict], bool]:
+    def fetch_customers(self, limit: int | None = None, client_ids: set[str] | None = None, since_date=None) -> tuple[list[dict], bool]:
         """Extrae clientes segun el mapping de Claude.
 
         Dependiendo del entity_type:
@@ -227,7 +227,7 @@ class SmartFileConnector(ERPConnector):
         logger.info(f"fetch_customers(): {len(records)} clientes de Smart Upload")
         return records, False
 
-    def fetch_products(self, limit: int | None = None) -> tuple[list[dict], bool]:
+    def fetch_products(self, limit: int | None = None, since_date=None) -> tuple[list[dict], bool]:
         """Extrae productos segun el mapping de Claude.
 
         Dependiendo del entity_type:

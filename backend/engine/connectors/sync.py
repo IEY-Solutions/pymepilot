@@ -51,6 +51,10 @@ class SyncEngine:
         engine.run('iey', since_date=date(2026, 1, 1))  # sync incremental
     """
 
+    # Techo diario de requests a Contabilium (sumando todos los syncs del dia).
+    # 600 = ~460 (1 sync normal) + 30% buffer.
+    DAILY_REQUEST_CEILING = 600
+
     def run(
         self,
         tenant_slug: str,
@@ -59,6 +63,7 @@ class SyncEngine:
         test_only: bool = False,
         connector_override: ERPConnector | None = None,
         source_override: str | None = None,
+        force: bool = False,
     ) -> None:
         """Ejecuta sincronizacion completa para un tenant.
 
@@ -93,6 +98,63 @@ class SyncEngine:
                 (tenant_id,)
             ).fetchone()
         erp_type = row[0] if row else None
+
+        # Determinar la fuente real para los checks
+        effective_source = source_override or erp_type or 'unknown'
+
+        # --- GUARD: Rate limiting para syncs API (Fix 8) ---
+        # Solo aplica a fuentes API (contabilium, xubio, etc.)
+        # NO aplica a: excel, upload, drive (el usuario puede subir cuando quiera)
+        non_api_sources = ('excel', 'upload', 'drive')
+        if (
+            effective_source not in non_api_sources
+            and connector_override is None
+            and not test_only
+            and not force
+        ):
+            with get_db_connection(tenant_id) as conn:
+                # Check 1: Ya hubo sync exitoso hoy para este tenant?
+                already_synced = conn.execute(
+                    """
+                    SELECT id FROM sync_log
+                    WHERE tenant_id = %s
+                      AND source = %s
+                      AND status = 'completed'
+                      AND started_at::date = CURRENT_DATE
+                    LIMIT 1
+                    """,
+                    (tenant_id, effective_source),
+                ).fetchone()
+
+                if already_synced:
+                    logger.warning(
+                        f"Rate limit: ya hubo sync exitoso hoy para "
+                        f"'{tenant_slug}' (source={effective_source}). "
+                        f"Usar --force para forzar."
+                    )
+                    return
+
+                # Check 2 (Fix 9): Contador de requests diario con techo
+                daily_total = conn.execute(
+                    """
+                    SELECT COALESCE(
+                        SUM(customers_synced + products_synced + orders_synced), 0
+                    )
+                    FROM sync_log
+                    WHERE tenant_id = %s
+                      AND source = %s
+                      AND started_at::date = CURRENT_DATE
+                    """,
+                    (tenant_id, effective_source),
+                ).fetchone()[0]
+
+                if daily_total >= self.DAILY_REQUEST_CEILING:
+                    logger.error(
+                        f"Rate limit: techo diario alcanzado para "
+                        f"'{tenant_slug}' ({daily_total} requests estimados, "
+                        f"techo={self.DAILY_REQUEST_CEILING}). Bloqueado."
+                    )
+                    return
 
         # Paso 3: Registrar sync en sync_log
         sync_id = None
@@ -174,8 +236,8 @@ class SyncEngine:
                         raise ValueError(f"Tipo de ERP no soportado: {erp_type}")
 
                     # Paso 6: test_connection
-                    if erp_type == 'contabilium':
-                        connector.authenticate()
+                    # authenticate() se llama DENTRO de test_connection()
+                    # si no hay token — evita doble POST /token.
                     connector.test_connection()
                     logger.info("test_connection(): OK")
 
@@ -193,11 +255,36 @@ class SyncEngine:
                             conn.commit()
                         return
 
+                    # --- Calcular fecha para sync incremental (Fix 10+11) ---
+                    # Si no se paso since_date explicitamente, buscar la fecha
+                    # del ultimo sync exitoso para hacer incremental automatico.
+                    # Primer sync (sin historial) → sync full (since_date=None).
+                    incremental_since = since_date
+                    if incremental_since is None:
+                        with get_db_connection(tenant_id) as inc_conn:
+                            last_sync = inc_conn.execute(
+                                """
+                                SELECT started_at::date FROM sync_log
+                                WHERE tenant_id = %s
+                                  AND source = %s
+                                  AND status = 'completed'
+                                ORDER BY started_at DESC LIMIT 1
+                                """,
+                                (tenant_id, effective_source),
+                            ).fetchone()
+                        if last_sync:
+                            incremental_since = last_sync[0]
+                            logger.info(
+                                f"Sync incremental automatico desde {incremental_since}"
+                            )
+                        else:
+                            logger.info("Sin sync previo — sync full")
+
                     # Pasos 7-9: Fetch datos con rate limiting entre entidades
                     # ORDEN: ordenes PRIMERO para saber que clientes descargar.
                     # Esto evita descargar 5000+ clientes cuando solo necesitamos
                     # los ~138 del canal mayorista.
-                    orders_data, o_truncated = connector.fetch_orders(since_date, limit=limit)
+                    orders_data, o_truncated = connector.fetch_orders(incremental_since, limit=limit)
                     logger.info(f"Ordenes obtenidas: {len(orders_data)}")
                     time.sleep(SYNC_RATE_LIMIT_DELAY)
 
@@ -211,11 +298,15 @@ class SyncEngine:
                     customers_data, c_truncated = connector.fetch_customers(
                         limit=limit,
                         client_ids=client_external_ids or None,
+                        since_date=incremental_since,
                     )
                     logger.info(f"Clientes obtenidos: {len(customers_data)}")
                     time.sleep(SYNC_RATE_LIMIT_DELAY)
 
-                    products_data, p_truncated = connector.fetch_products(limit=limit)
+                    products_data, p_truncated = connector.fetch_products(
+                        limit=limit,
+                        since_date=incremental_since,
+                    )
                     logger.info(f"Productos obtenidos: {len(products_data)}")
 
                 # Al salir del with, credenciales se limpian automaticamente

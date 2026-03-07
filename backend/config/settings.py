@@ -57,7 +57,7 @@ ERP_ENCRYPTION_KEY = os.getenv("ERP_ENCRYPTION_KEY", "")
 # --- Sync ERP ---
 SYNC_PAGE_SIZE = 50           # Registros por pagina en paginacion de API
 SYNC_MAX_RETRIES = 3          # Maximo reintentos en errores temporales
-SYNC_RATE_LIMIT_DELAY = 0.5   # Segundos de espera entre requests (rate limiting respetuoso)
+SYNC_RATE_LIMIT_DELAY = 2.0   # Segundos entre requests (~5 req/10s, limite Contabilium: 25 req/10s)
 
 # --- Supabase Storage (para Smart File Upload) ---
 # URL interna del API gateway de Supabase (Kong).

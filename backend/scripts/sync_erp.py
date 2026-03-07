@@ -94,6 +94,11 @@ def main() -> None:
         default=None,
         help='Ruta al archivo Excel (.xlsx). Requiere --connector excel.'
     )
+    parser.add_argument(
+        '--force',
+        action='store_true',
+        help='Forzar sync aunque ya haya habido uno exitoso hoy (bypass rate limit).'
+    )
 
     args = parser.parse_args()
 
@@ -134,6 +139,7 @@ def main() -> None:
             test_only=args.test_only,
             connector_override=connector_override,
             source_override=source_override,
+            force=args.force,
         )
     except Exception as e:
         logger.error(f"Sync fallido: {sanitize_text(str(e))}")

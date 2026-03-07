@@ -84,6 +84,7 @@ class ERPConnector(ABC):
         self,
         limit: int | None = None,
         client_ids: set[str] | None = None,
+        since_date: date | None = None,
     ) -> tuple[list[dict], bool]:
         """Obtiene clientes del ERP.
 
@@ -93,17 +94,27 @@ class ERPConnector(ABC):
                 (por external_id). Util para no descargar 5000+ clientes
                 cuando solo necesitamos los del canal mayorista (~138).
                 Si es None, descarga todos.
+            since_date: Si se provee, solo trae clientes modificados desde
+                esa fecha (sync incremental). Ignorado por conectores que
+                no soportan filtro por fecha (Excel, SmartFile).
 
         Retorna:
             tuple[list[dict], bool]: (clientes, truncated)
         """
 
     @abstractmethod
-    def fetch_products(self, limit: int | None = None) -> tuple[list[dict], bool]:
+    def fetch_products(
+        self,
+        limit: int | None = None,
+        since_date: date | None = None,
+    ) -> tuple[list[dict], bool]:
         """Obtiene todos los productos del ERP.
 
         Args:
             limit: Si se provee, retorna como maximo esta cantidad.
+            since_date: Si se provee, solo trae productos modificados desde
+                esa fecha (sync incremental). Ignorado por conectores que
+                no soportan filtro por fecha (Excel, SmartFile).
 
         Retorna:
             tuple[list[dict], bool]: (productos, truncated)

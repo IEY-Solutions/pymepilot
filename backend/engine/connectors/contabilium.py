@@ -113,6 +113,11 @@ class ContabiliumConnector(ERPConnector):
             customers, truncated = connector.fetch_customers()
     """
 
+    # Batch pacing: pausa forzada cada N requests para respetar ventana
+    # de rate limit de Contabilium (25 req/10s en Argentina).
+    _BATCH_SIZE = 20       # Requests antes de pausar
+    _BATCH_PAUSE_SECS = 10  # Segundos de pausa (= ventana de Contabilium)
+
     def __init__(self, credentials: TenantCredentials) -> None:
         self._credentials = credentials
         self._access_token: str | None = None
@@ -120,6 +125,7 @@ class ContabiliumConnector(ERPConnector):
         self._session.mount('https://', IPv4HTTPAdapter())
         # Solo HTTPS — no montar http:// para prevenir envio
         # accidental de credenciales sin encriptar.
+        self._request_count = 0  # Contador para batch pacing
 
     def authenticate(self) -> None:
         """Obtiene un Bearer token via OAuth2 client_credentials.
@@ -185,6 +191,17 @@ class ContabiliumConnector(ERPConnector):
         _retries = 0
 
         while True:
+            # Batch pacing: pausa forzada cada _BATCH_SIZE requests
+            # para no exceder la ventana de 25 req/10s de Contabilium.
+            if self._request_count > 0 and self._request_count % self._BATCH_SIZE == 0:
+                logger.info(
+                    f"Batch pacing: {self._request_count} requests acumulados, "
+                    f"pausa de {self._BATCH_PAUSE_SECS}s"
+                )
+                time.sleep(self._BATCH_PAUSE_SECS)
+
+            self._request_count += 1
+
             try:
                 response = self._session.get(
                     f"{CONTABILIUM_API_URL}/{endpoint}",
@@ -317,6 +334,7 @@ class ContabiliumConnector(ERPConnector):
         self,
         limit: int | None = None,
         client_ids: set[str] | None = None,
+        since_date: date | None = None,
     ) -> tuple[list[dict], bool]:
         """Obtiene clientes de Contabilium.
 
@@ -325,6 +343,9 @@ class ContabiliumConnector(ERPConnector):
         necesitamos ~138 del canal mayorista.
 
         Si client_ids es None, descarga todos (paginado). Util para sync full.
+
+        Si since_date se provee, usa fechaDesde para sync incremental
+        (solo clientes modificados desde esa fecha). Reduce de ~24 paginas a ~1-2.
         """
         if client_ids:
             # Modo dirigido: solo clientes especificos (mayorista)
@@ -343,20 +364,35 @@ class ContabiliumConnector(ERPConnector):
                 f"(de {len(client_ids)} solicitados)"
             )
         else:
-            # Modo completo: todos los clientes (paginado)
-            raw, truncated = self._get_paginated("clientes/search", limit=limit)
+            # Modo completo o incremental (paginado)
+            params = {}
+            if since_date:
+                params['fechaDesde'] = since_date.strftime("%Y-%m-%d")
+                logger.info(f"fetch_customers(): incremental desde {since_date}")
+            raw, truncated = self._get_paginated("clientes/search", params=params or None, limit=limit)
 
         valid = self._validate_records(raw, "clientes", ["Id", "RazonSocial"])
         return valid, truncated
 
-    def fetch_products(self, limit: int | None = None) -> tuple[list[dict], bool]:
+    def fetch_products(
+        self,
+        limit: int | None = None,
+        since_date: date | None = None,
+    ) -> tuple[list[dict], bool]:
         """Obtiene productos de Contabilium.
 
         Campos validados: ["Id", "Nombre"] — ambos necesarios para el upsert.
         "Nombre" mapea a products.name (NOT NULL sin DEFAULT).
         Si limit se provee, corta la paginacion apenas tenga suficientes.
+
+        Si since_date se provee, usa fechaDesde para sync incremental
+        (solo productos modificados desde esa fecha). Reduce de ~38 paginas a ~1-5.
         """
-        raw, truncated = self._get_paginated("conceptos/search", limit=limit)
+        params = {}
+        if since_date:
+            params['fechaDesde'] = since_date.strftime("%Y-%m-%d")
+            logger.info(f"fetch_products(): incremental desde {since_date}")
+        raw, truncated = self._get_paginated("conceptos/search", params=params or None, limit=limit)
         valid = self._validate_records(raw, "productos", ["Id", "Nombre"])
         return valid, truncated
 
@@ -480,11 +516,14 @@ class ContabiliumConnector(ERPConnector):
             return None
 
     def test_connection(self) -> bool:
-        """Prueba la conexion: autenticar + leer 1 cliente.
+        """Prueba la conexion: autenticar (si no hay token) + leer 1 cliente.
 
         Si falla, lanza excepcion con detalle del error.
+        Solo autentica si no hay token previo — evita POST /token redundante
+        cuando sync.py ya llamo authenticate() antes.
         """
-        self.authenticate()
+        if not self._access_token:
+            self.authenticate()
         # Intentar leer al menos 1 cliente como prueba
         data = self._get("clientes/search", params={"page": 1, "pageSize": 1})
         logger.info("test_connection(): conexion a Contabilium OK")
