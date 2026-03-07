@@ -118,14 +118,16 @@ class ContabiliumConnector(ERPConnector):
     _BATCH_SIZE = 20       # Requests antes de pausar
     _BATCH_PAUSE_SECS = 10  # Segundos de pausa (= ventana de Contabilium)
 
-    def __init__(self, credentials: TenantCredentials) -> None:
+    def __init__(self, credentials: TenantCredentials, tenant_id: str | None = None) -> None:
         self._credentials = credentials
         self._access_token: str | None = None
         self._session = requests.Session()
         self._session.mount('https://', IPv4HTTPAdapter())
         # Solo HTTPS — no montar http:// para prevenir envio
         # accidental de credenciales sin encriptar.
-        self._request_count = 0  # Contador para batch pacing
+        self._request_count = 0   # Contador para batch pacing
+        self._rate_limit_hits = 0  # Contador de 429s recibidos en esta sesion
+        self._tenant_id = tenant_id  # Para alertas push en 429
 
     def authenticate(self) -> None:
         """Obtiene un Bearer token via OAuth2 client_credentials.
@@ -229,16 +231,21 @@ class ContabiliumConnector(ERPConnector):
                     continue
                 raise AuthenticationError("Credenciales invalidas (401 persistente post re-auth)")
 
-            # 429: respetar Retry-After, max 60s
+            # 429: respetar Retry-After, max 60s + registrar + alertar
             if response.status_code == 429:
+                self._rate_limit_hits += 1
                 _retries += 1
+
+                # Registrar en sync_log y enviar push (Fix 12+13)
+                self._handle_rate_limit_event(endpoint)
+
                 if _retries > SYNC_MAX_RETRIES:
                     raise RateLimitError(f"Rate limit excedido tras {SYNC_MAX_RETRIES} reintentos")
                 try:
                     retry_after = max(1, min(int(response.headers.get("Retry-After", "30")), 60))
                 except (ValueError, TypeError):
                     retry_after = 30  # Fallback si header es fecha HTTP o formato inesperado
-                logger.warning(f"GET {endpoint} -> 429. Esperando {retry_after}s")
+                logger.warning(f"GET {endpoint} -> 429. Esperando {retry_after}s (hit #{self._rate_limit_hits})")
                 time.sleep(retry_after)
                 continue
 
@@ -528,6 +535,56 @@ class ContabiliumConnector(ERPConnector):
         data = self._get("clientes/search", params={"page": 1, "pageSize": 1})
         logger.info("test_connection(): conexion a Contabilium OK")
         return True
+
+    def _handle_rate_limit_event(self, endpoint: str) -> None:
+        """Registra un evento 429 en sync_log y envia push alert.
+
+        Se ejecuta la PRIMERA vez que recibimos 429 en esta sesion.
+        No bloquea el flujo: si falla el registro o el push, solo loguea warning.
+        """
+        # Solo alertar en el primer 429 de la sesion (no spamear)
+        if self._rate_limit_hits > 1:
+            return
+
+        # Registrar en DB
+        if self._tenant_id:
+            try:
+                from backend.engine.db.connection import get_db_connection
+                with get_db_connection(self._tenant_id) as conn:
+                    conn.execute(
+                        """
+                        INSERT INTO sync_log
+                            (tenant_id, sync_type, source, status, error_message, started_at, completed_at)
+                        VALUES
+                            (%s, 'rate_limit_event', 'contabilium', 'failed',
+                             %s, NOW(), NOW())
+                        """,
+                        (
+                            self._tenant_id,
+                            f"HTTP 429 en endpoint {endpoint}. "
+                            f"Request #{self._request_count} de la sesion.",
+                        ),
+                    )
+                    conn.commit()
+                logger.info(f"429 registrado en sync_log para tenant {self._tenant_id[:8]}...")
+            except Exception as e:
+                logger.warning(f"No se pudo registrar 429 en sync_log: {e}")
+
+            # Enviar push notification
+            try:
+                from backend.engine.push.sender import send_push_to_tenant
+                send_push_to_tenant(
+                    self._tenant_id,
+                    title="Alerta: Rate limit Contabilium",
+                    body=(
+                        "Contabilium devolvio 429 (rate limit) durante el sync. "
+                        "El sistema espero y reintento. Revisar logs si se repite."
+                    ),
+                    url="/datos",
+                    tag="pymepilot-rate-limit",
+                )
+            except Exception as e:
+                logger.warning(f"No se pudo enviar push de 429: {e}")
 
     def __reduce__(self):
         raise TypeError("ContabiliumConnector no es serializable")

@@ -226,7 +226,7 @@ class SyncEngine:
                 with TenantCredentials.load(tenant_slug) as creds:
                     # Paso 5: Crear conector apropiado
                     if erp_type == 'contabilium':
-                        connector = ContabiliumConnector(creds)
+                        connector = ContabiliumConnector(creds, tenant_id=tenant_id)
                     elif erp_type == 'excel':
                         # Excel no usa TenantCredentials, pero el with sigue
                         # manejando limpieza por consistencia
