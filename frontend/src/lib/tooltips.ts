@@ -113,4 +113,22 @@ export const TOOLTIPS = {
     "Ventas que vinieron de clientes que PymePilot te recomendo contactar y despues compraron. Es el valor directo que te genera la herramienta.",
   "logros.racha":
     "Dias consecutivos en los que cerraste al menos una venta. PymePilot te ayuda a mantener la racha con recomendaciones diarias.",
+
+  // ============================================================
+  // PIPELINE
+  // ============================================================
+  "pipeline.a_contactar":
+    "Clientes que PymePilot recomienda contactar. Si pasan 3 dias sin contacto, se marcan como vencidas.",
+  "pipeline.contactado":
+    "Clientes que ya contactaste. Desde aca se generan los seguimientos automaticos.",
+  "pipeline.en_seguimiento":
+    "Clientes con seguimientos programados. PymePilot te avisa cuando toca el proximo contacto.",
+  "pipeline.por_cotizar":
+    "Clientes que pidieron cotizacion. El proximo paso es enviarles la cotizacion.",
+  "pipeline.cotizacion_enviada":
+    "Cotizaciones enviadas esperando respuesta del cliente.",
+  "pipeline.vendido":
+    "Ventas cerradas. El cliente compro y el ciclo del pipeline se completo.",
+  "pipeline.vencida":
+    "Esta card tiene mas de 3 dias sin ser contactada. Todavia podes contactarla o descartarla.",
 } as const;
