@@ -17,7 +17,8 @@ CONCEPTO CLAVE - Contador de fallas consecutivas:
 Se guarda en /tmp/ (no en DB) porque:
 1. Si la DB esta caida, no podemos escribir ahi (y esa es la falla)
 2. /tmp/ se limpia al reiniciar el server (reset natural)
-3. Es atomico por archivo (no necesita locks)
+3. Operaciones read/write no son atomicas, pero el peor caso es
+   perder 1 incremento — aceptable para un contador de alertas
 
 POR QUE EXISTE:
 El 7 de marzo, los crons fallaron 22 horas sin que nadie se enterara.
@@ -33,6 +34,7 @@ USO manual:
 
 import argparse
 import os
+import re
 import subprocess
 import sys
 
@@ -56,8 +58,16 @@ _COUNTER_DIR = "/tmp/pymepilot-cron-failures"
 _DEFAULT_THRESHOLD = 3
 
 
+_SAFE_NAME_RE = re.compile(r"^[a-zA-Z0-9_-]+$")
+
+
 def _get_counter_path(name: str) -> str:
     """Path al archivo contador de fallas para un cron job."""
+    if not _SAFE_NAME_RE.match(name):
+        raise ValueError(
+            f"Nombre de cron invalido: '{name}'. "
+            f"Solo se permiten letras, numeros, guion y guion bajo."
+        )
     os.makedirs(_COUNTER_DIR, exist_ok=True)
     return os.path.join(_COUNTER_DIR, f"{name}.count")
 
@@ -151,6 +161,12 @@ def main() -> None:
         default=_DEFAULT_THRESHOLD,
         help=f"Fallas consecutivas antes de alertar (default: {_DEFAULT_THRESHOLD})",
     )
+    parser.add_argument(
+        "--timeout",
+        type=int,
+        default=300,
+        help="Timeout en segundos para el comando hijo (default: 300)",
+    )
 
     # Separar args del wrapper de los del comando hijo
     args, remaining = parser.parse_known_args()
@@ -167,11 +183,11 @@ def main() -> None:
     try:
         result = subprocess.run(
             remaining,
-            timeout=300,  # 5 minutos max por defecto
+            timeout=args.timeout,
         )
         exit_code = result.returncode
     except subprocess.TimeoutExpired:
-        logger.error(f"Cron '{args.name}': timeout (5 min)")
+        logger.error(f"Cron '{args.name}': timeout ({args.timeout}s)")
         exit_code = 124  # Convencion Unix para timeout
     except FileNotFoundError:
         logger.error(f"Cron '{args.name}': comando no encontrado: {remaining[0]}")

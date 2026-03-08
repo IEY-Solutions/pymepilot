@@ -51,9 +51,10 @@ class SyncEngine:
         engine.run('iey', since_date=date(2026, 1, 1))  # sync incremental
     """
 
-    # Techo diario de requests a Contabilium (sumando todos los syncs del dia).
-    # 600 = ~460 (1 sync normal) + 30% buffer.
-    DAILY_REQUEST_CEILING = 600
+    # Techo diario de registros sincronizados (clientes + productos + ordenes).
+    # Proxy conservador: un sync normal de IEY produce ~2500 registros.
+    # 5000 = ~2 syncs completos. Proteccion contra loops descontrolados.
+    DAILY_RECORD_CEILING = 5000
 
     def run(
         self,
@@ -148,11 +149,11 @@ class SyncEngine:
                     (tenant_id, effective_source),
                 ).fetchone()[0]
 
-                if daily_total >= self.DAILY_REQUEST_CEILING:
+                if daily_total >= self.DAILY_RECORD_CEILING:
                     logger.error(
-                        f"Rate limit: techo diario alcanzado para "
-                        f"'{tenant_slug}' ({daily_total} requests estimados, "
-                        f"techo={self.DAILY_REQUEST_CEILING}). Bloqueado."
+                        f"Rate limit: techo diario de registros alcanzado para "
+                        f"'{tenant_slug}' ({daily_total} registros sincronizados, "
+                        f"techo={self.DAILY_RECORD_CEILING}). Bloqueado."
                     )
                     return
 

@@ -16,14 +16,18 @@ import os
 import shutil
 import sys
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+_project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, _project_root)
+
+# umask restrictivo: este script escribe claves criptograficas en .env
+os.umask(0o077)
 
 from py_vapid import Vapid
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 
 
 def main():
-    project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    project_root = _project_root
     env_path = os.path.join(project_root, ".env")
     frontend_env_path = os.path.join(project_root, "frontend", ".env.local")
 
