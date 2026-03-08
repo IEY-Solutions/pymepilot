@@ -23,10 +23,18 @@ interface Props {
 export function PipelineBoard({ initialCards }: Props) {
   const [cards, setCards] = useState<PipelineCard[]>(initialCards);
   const [activeCard, setActiveCard] = useState<PipelineCard | null>(null);
-  const [modalCard, setModalCard] = useState<PipelineCard | null>(null);
   const [modalFollowup, setModalFollowup] = useState<Followup | null>(null);
   const [modalNotes, setModalNotes] = useState<ContactNote[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [generatingCardIds, setGeneratingCardIds] = useState<Set<string>>(new Set());
+
+  // Mantener modalCard sincronizada con cards state
+  // Cuando refreshBoard() actualiza cards, el modal abierto se actualiza también
+  const [modalCardId, setModalCardId] = useState<string | null>(null);
+  const modalCard = useMemo(
+    () => (modalCardId ? cards.find((c) => c.id === modalCardId) ?? null : null),
+    [cards, modalCardId]
+  );
 
   const pointerSensor = useSensor(PointerSensor, {
     activationConstraint: { distance: 8 },
@@ -75,12 +83,13 @@ export function PipelineBoard({ initialCards }: Props) {
       const card = cards.find((c) => c.id === cardId);
       if (!card || card.column_name === toColumn) return;
 
-      // Mover optimisticamente
+      // Mover optimisticamente y marcar como "generando"
       setCards((prev) =>
         prev.map((c) =>
           c.id === cardId ? { ...c, column_name: toColumn } : c
         )
       );
+      setGeneratingCardIds((prev) => new Set(prev).add(cardId));
 
       try {
         const res = await fetch("/api/pipeline", {
@@ -95,7 +104,7 @@ export function PipelineBoard({ initialCards }: Props) {
             )
           );
         } else {
-          // Refrescar para traer stage_message_text generado por Claude
+          // Refrescar para traer stage_messages generado por Claude
           await refreshBoard();
         }
       } catch {
@@ -104,6 +113,12 @@ export function PipelineBoard({ initialCards }: Props) {
             c.id === cardId ? { ...c, column_name: card.column_name } : c
           )
         );
+      } finally {
+        setGeneratingCardIds((prev) => {
+          const next = new Set(prev);
+          next.delete(cardId);
+          return next;
+        });
       }
     },
     [cards]
@@ -132,7 +147,7 @@ export function PipelineBoard({ initialCards }: Props) {
       // Si falla el fetch de notas, mostrar el modal sin timeline
     }
 
-    setModalCard(card);
+    setModalCardId(card.id);
     setModalFollowup(followup);
     setModalNotes(notes);
   }, []);
@@ -145,7 +160,7 @@ export function PipelineBoard({ initialCards }: Props) {
   );
 
   const closeModal = useCallback(() => {
-    setModalCard(null);
+    setModalCardId(null);
     setModalFollowup(null);
     setModalNotes([]);
   }, []);
@@ -168,6 +183,10 @@ export function PipelineBoard({ initialCards }: Props) {
   // Accion genérica: llama API, refresca board, cierra modal
   const apiAction = useCallback(
     async (payload: Record<string, unknown>) => {
+      const cardId = payload.card_id as string | undefined;
+      if (cardId) {
+        setGeneratingCardIds((prev) => new Set(prev).add(cardId));
+      }
       try {
         const res = await fetch("/api/pipeline", {
           method: "POST",
@@ -179,6 +198,14 @@ export function PipelineBoard({ initialCards }: Props) {
         }
       } catch (err) {
         console.error("Error en accion pipeline:", err);
+      } finally {
+        if (cardId) {
+          setGeneratingCardIds((prev) => {
+            const next = new Set(prev);
+            next.delete(cardId);
+            return next;
+          });
+        }
       }
       closeModal();
     },
@@ -312,6 +339,7 @@ export function PipelineBoard({ initialCards }: Props) {
               key={column}
               column={column}
               cards={cardsByColumn[column]}
+              generatingCardIds={generatingCardIds}
               onCardClick={handleCardClick}
               onCardDiscard={handleCardDiscard}
             />

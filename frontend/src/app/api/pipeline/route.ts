@@ -51,7 +51,7 @@ export async function GET(): Promise<Response> {
     .from("pipeline_cards")
     .select(
       `id, tenant_id, prediction_id, customer_id, column_name, vertical,
-       priority, is_expired, stage_message_text, created_at, updated_at,
+       priority, is_expired, stage_messages, created_at, updated_at,
        customer:customers!inner(name, phone, email),
        prediction:predictions(message_text, confidence_score)`
     )
@@ -116,6 +116,16 @@ export async function GET(): Promise<Response> {
     followups: followupsByCard.get(c.id) ?? [],
     latest_note: latestNoteByCard.get(c.id) ?? null,
   }));
+
+  // Debug temporal: ver si stage_messages llega al response
+  const cardsWithMessages = enrichedCards.filter((c) => {
+    const sm = c.stage_messages as Record<string, string> | null;
+    return sm && Object.keys(sm).length > 0;
+  });
+  if (cardsWithMessages.length > 0) {
+    console.log(`[pipeline-GET] ${cardsWithMessages.length} cards con stage_messages:`,
+      cardsWithMessages.map((c) => ({ id: c.id, col: c.column_name, keys: Object.keys(c.stage_messages as Record<string, string>) })));
+  }
 
   return Response.json({ cards: enrichedCards });
 }
@@ -624,10 +634,29 @@ async function generateStageCopy(
   notes: { result: string; note_text: string | null; created_at: string }[]
 ): Promise<void> {
   // Solo generar para etapas que lo necesitan
-  if (!STAGE_COPY_COLUMNS.includes(targetColumn)) return;
+  if (!STAGE_COPY_COLUMNS.includes(targetColumn)) {
+    console.log(`[stage-copy] Etapa ${targetColumn} no requiere copy — skip`);
+    return;
+  }
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) return;
+  if (!apiKey) {
+    console.error("[stage-copy] ANTHROPIC_API_KEY no disponible — no se puede generar copy");
+    return;
+  }
+
+  // Verificar cache: si ya existe copy para esta etapa, no regenerar
+  const { data: currentCard } = await supabase
+    .from("pipeline_cards")
+    .select("stage_messages")
+    .eq("id", cardId)
+    .single();
+
+  const existingMessages = (currentCard?.stage_messages as Record<string, string>) ?? {};
+  if (existingMessages[targetColumn]) {
+    console.log(`[stage-copy] Cache hit para card=${cardId} etapa=${targetColumn} — no regenera`);
+    return;
+  }
 
   const intention = STAGE_INTENTIONS[targetColumn] ?? "";
 
@@ -656,6 +685,8 @@ Genera SOLO el mensaje (sin comillas, sin explicacion, sin "Hola" duplicado). 2-
   let totalInputTokens = 0;
   let totalOutputTokens = 0;
 
+  console.log(`[stage-copy] Generando copy para card=${cardId} etapa=${targetColumn} cliente=${customerName}`);
+
   try {
     const anthropic = new Anthropic({ apiKey });
     const response = await anthropic.messages.create({
@@ -670,15 +701,28 @@ Genera SOLO el mensaje (sin comillas, sin explicacion, sin "Hola" duplicado). 2-
     const textBlock = response.content.find(
       (b): b is Anthropic.TextBlock => b.type === "text"
     );
-    if (!textBlock || !textBlock.text.trim()) return;
+    if (!textBlock || !textBlock.text.trim()) {
+      console.warn(`[stage-copy] Claude respondio sin texto para card=${cardId}`);
+      return;
+    }
 
-    // Guardar el copy generado en la card
-    await supabase
+    console.log(`[stage-copy] Claude genero ${textBlock.text.trim().length} chars para card=${cardId}`);
+
+    // Merge el copy nuevo con los existentes (cache por etapa)
+    const updatedMessages = { ...existingMessages, [targetColumn]: textBlock.text.trim() };
+
+    const { error: updateError } = await supabase
       .from("pipeline_cards")
-      .update({ stage_message_text: textBlock.text.trim() })
+      .update({ stage_messages: updatedMessages })
       .eq("id", cardId);
+
+    if (updateError) {
+      console.error(`[stage-copy] Error UPDATE stage_messages card=${cardId}:`, updateError);
+    } else {
+      console.log(`[stage-copy] UPDATE exitoso para card=${cardId} etapa=${targetColumn}`);
+    }
   } catch (err) {
-    console.error("Error generando stage copy:", err);
+    console.error("[stage-copy] Error generando stage copy:", err);
     // Fallback silencioso: se mantiene el copy anterior
   } finally {
     if (totalInputTokens > 0 || totalOutputTokens > 0) {
@@ -709,14 +753,24 @@ async function generateStageCopyForCard(
   cardId: string,
   targetColumn: ColumnName
 ): Promise<void> {
-  // Obtener card con cliente y prediction
-  const { data: card } = await supabase
+  console.log(`[stage-copy-for-card] Iniciando para card=${cardId} etapa=${targetColumn}`);
+
+  // Obtener card con cliente, prediction y cache de copies
+  const { data: card, error: cardError } = await supabase
     .from("pipeline_cards")
-    .select("vertical, customer:customers!inner(name), prediction:predictions(message_text)")
+    .select("vertical, stage_messages, customer:customers!inner(name), prediction:predictions(message_text)")
     .eq("id", cardId)
     .single();
 
-  if (!card) return;
+  if (cardError) {
+    console.error(`[stage-copy-for-card] Error obteniendo card=${cardId}:`, cardError);
+    return;
+  }
+
+  if (!card) {
+    console.warn(`[stage-copy-for-card] Card no encontrada: ${cardId}`);
+    return;
+  }
 
   const customerName = Array.isArray(card.customer)
     ? (card.customer as unknown as { name: string }[])[0]?.name

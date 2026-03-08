@@ -145,9 +145,10 @@ function formatRelativeDate(dateStr: string): string {
 function SuggestedMessage({ card }: { card: PipelineCard }) {
   const [copied, setCopied] = useState(false);
 
-  // Priorizar stage_message_text, fallback a prediction.message_text
-  const message = card.stage_message_text ?? card.prediction?.message_text ?? null;
-  const isStageMessage = !!card.stage_message_text;
+  // Buscar copy cacheado para la etapa actual, fallback a prediction.message_text
+  const stageMessage = card.stage_messages?.[card.column_name] ?? null;
+  const message = stageMessage ?? card.prediction?.message_text ?? null;
+  const isStageMessage = !!stageMessage;
 
   if (!message) return null;
 
@@ -428,7 +429,7 @@ export function ContactModal({
 
         {/* Scrollable content */}
         <div className="flex-1 overflow-y-auto">
-          {/* Mensaje sugerido — stage_message_text o prediction.message_text */}
+          {/* Mensaje sugerido — stage_messages[etapa] o prediction.message_text */}
           <SuggestedMessage card={card} />
 
           {/* Timeline de actividad */}

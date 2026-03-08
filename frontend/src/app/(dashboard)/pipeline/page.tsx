@@ -22,7 +22,7 @@ export default async function PipelinePage() {
     .from("pipeline_cards")
     .select(
       `id, tenant_id, prediction_id, customer_id, column_name, vertical,
-       priority, is_expired, stage_message_text, created_at, updated_at,
+       priority, is_expired, stage_messages, created_at, updated_at,
        customer:customers!inner(name, phone, email),
        prediction:predictions(message_text, confidence_score)`
     )

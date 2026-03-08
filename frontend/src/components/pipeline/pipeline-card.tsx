@@ -2,7 +2,7 @@
 
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
-import { Phone, Mail, Clock, X } from "lucide-react";
+import { Phone, Mail, Clock, X, Sparkles } from "lucide-react";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { TOOLTIPS } from "@/lib/tooltips";
 import type { PipelineCard as PipelineCardType } from "@/lib/pipeline/types";
@@ -69,11 +69,12 @@ function followupLabel(card: PipelineCardType) {
 
 interface Props {
   card: PipelineCardType;
+  isGenerating?: boolean;
   onClick: () => void;
   onDiscard?: () => void;
 }
 
-export function PipelineCard({ card, onClick, onDiscard }: Props) {
+export function PipelineCard({ card, isGenerating, onClick, onDiscard }: Props) {
   const { attributes, listeners, setNodeRef, transform, isDragging } =
     useDraggable({ id: card.id });
 
@@ -183,10 +184,18 @@ export function PipelineCard({ card, onClick, onDiscard }: Props) {
       </div>
 
       {/* Ultima nota (truncada) */}
-      {card.latest_note?.note_text && (
+      {card.latest_note?.note_text && !isGenerating && (
         <p className="text-[10px] text-gray-500 truncate italic">
           {card.latest_note.note_text}
         </p>
+      )}
+
+      {/* Indicador de generacion de propuesta */}
+      {isGenerating && (
+        <div className="flex items-center gap-1.5 text-[10px] text-blue-600 animate-pulse">
+          <Sparkles className="h-3 w-3" />
+          <span>Actualizando propuesta...</span>
+        </div>
       )}
     </div>
   );

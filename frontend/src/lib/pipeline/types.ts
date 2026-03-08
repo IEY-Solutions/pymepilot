@@ -76,7 +76,8 @@ export interface PipelineCard {
   vertical: Vertical;
   priority: number;
   is_expired: boolean;
-  stage_message_text: string | null;
+  /** Cache de copies de venta por etapa. Keys: en_seguimiento, por_cotizar, cotizacion_enviada */
+  stage_messages: Record<string, string>;
   created_at: string;
   updated_at: string;
   // Relaciones

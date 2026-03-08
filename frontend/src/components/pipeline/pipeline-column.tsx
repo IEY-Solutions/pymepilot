@@ -10,11 +10,12 @@ import { COLUMN_LABELS, COLUMN_COLORS } from "@/lib/pipeline/types";
 interface Props {
   column: ColumnName;
   cards: PipelineCardType[];
+  generatingCardIds: Set<string>;
   onCardClick: (card: PipelineCardType) => void;
   onCardDiscard: (card: PipelineCardType) => void;
 }
 
-export function PipelineColumn({ column, cards, onCardClick, onCardDiscard }: Props) {
+export function PipelineColumn({ column, cards, generatingCardIds, onCardClick, onCardDiscard }: Props) {
   const { setNodeRef, isOver } = useDroppable({ id: column });
 
   const label = COLUMN_LABELS[column];
@@ -52,6 +53,7 @@ export function PipelineColumn({ column, cards, onCardClick, onCardDiscard }: Pr
           <PipelineCard
             key={card.id}
             card={card}
+            isGenerating={generatingCardIds.has(card.id)}
             onClick={() => onCardClick(card)}
             onDiscard={() => onCardDiscard(card)}
           />
