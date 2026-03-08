@@ -10,6 +10,8 @@ import { FileUpload } from "@/components/upload/file-upload";
 import { DriveConnection } from "@/components/drive/drive-connection";
 import { ErpStatusCard } from "@/components/datos/erp-status-card";
 import { getFreshnessInfo } from "@/lib/freshness";
+import { InfoTooltip } from "@/components/ui/info-tooltip";
+import { TOOLTIPS } from "@/lib/tooltips";
 
 const statusConfig: Record<
   string,
@@ -143,6 +145,7 @@ export default async function DatosPage() {
       <div>
         <h2 className="text-sm font-medium text-gray-500 mb-3">
           Registros en base de datos
+          <InfoTooltip text={TOOLTIPS["datos.registros"]} />
         </h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {[
@@ -242,6 +245,7 @@ export default async function DatosPage() {
                     <p>
                       {sync.customers_synced}C / {sync.products_synced}P /{" "}
                       {sync.orders_synced}O
+                      <InfoTooltip text={TOOLTIPS["datos.sync_counts"]} />
                     </p>
                     {sync.error_message && (
                       <p className="text-red-500 mt-0.5 max-w-48 truncate">

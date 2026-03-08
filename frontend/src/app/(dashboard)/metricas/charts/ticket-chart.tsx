@@ -13,6 +13,8 @@ import type { TooltipContentProps } from "recharts";
 import type { ValueType, NameType } from "recharts/types/component/DefaultTooltipContent";
 import type { TicketRow } from "../metricas-content";
 import { formatCurrency } from "@/lib/format";
+import { InfoTooltip } from "@/components/ui/info-tooltip";
+import { TOOLTIPS } from "@/lib/tooltips";
 
 function formatMonth(dateStr: string): string {
   const d = new Date(dateStr + "T12:00:00");
@@ -62,6 +64,7 @@ export function TicketChart({ data }: { data: TicketRow[] }) {
       <div className="mb-4">
         <h3 className="text-base font-semibold text-gray-900">
           Ticket promedio
+          <InfoTooltip text={TOOLTIPS["metricas.chart_ticket"]} />
         </h3>
         <p className="text-xs text-gray-400 mt-0.5">
           Valor promedio por compra, recurrente vs nuevo

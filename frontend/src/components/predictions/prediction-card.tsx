@@ -1,6 +1,8 @@
 import { WhatsAppButton } from "./whatsapp-button";
 import { PredictionActions } from "./prediction-actions";
 import { Phone, Mail, Calendar, TrendingUp, MessageCircle } from "lucide-react";
+import { InfoTooltip } from "@/components/ui/info-tooltip";
+import { TOOLTIPS } from "@/lib/tooltips";
 
 interface PredictionMetadata {
   sequence_day?: number;
@@ -89,16 +91,19 @@ export function PredictionCard({ prediction }: { prediction: Prediction }) {
               className={`text-xs font-medium px-2 py-0.5 rounded-full ${priority.color}`}
             >
               {priority.label}
+              <InfoTooltip text={TOOLTIPS["contactar.prioridad"]} />
             </span>
             <span
               className={`text-xs font-medium px-2 py-0.5 rounded-full ${verticalStyle.color}`}
             >
               {verticalBadgeText}
+              <InfoTooltip text={TOOLTIPS["contactar.vertical"]} />
             </span>
             {prediction.confidence_score !== null && (
               <span className="flex items-center gap-0.5 text-xs text-gray-500">
                 <TrendingUp className="h-3 w-3" />
                 {Math.round(prediction.confidence_score * 100)}%
+                <InfoTooltip text={TOOLTIPS["contactar.confianza"]} />
               </span>
             )}
           </div>

@@ -5,6 +5,8 @@ import { Trophy, DollarSign, Flame, ShoppingBag } from "lucide-react";
 import { AchievementCard } from "./components/achievement-card";
 import { VerticalFilter } from "@/components/predictions/vertical-filter";
 import { formatCurrency } from "@/lib/format";
+import { InfoTooltip } from "@/components/ui/info-tooltip";
+import { TOOLTIPS } from "@/lib/tooltips";
 
 // ============================================================
 // TIPOS
@@ -58,18 +60,21 @@ function KpiCard({
   subtitle,
   icon: Icon,
   color,
+  tooltip,
 }: {
   title: string;
   value: string;
   subtitle: string;
   icon: React.ComponentType<{ className?: string }>;
   color: string;
+  tooltip?: string;
 }) {
   return (
     <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 p-5">
       <div className="flex items-center justify-between mb-3">
         <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">
           {title}
+          {tooltip && <InfoTooltip text={tooltip} />}
         </span>
         <div className={`p-2.5 rounded-full ${color}`}>
           <Icon className="h-4 w-4" />
@@ -121,6 +126,7 @@ export function LogrosContent({
           }
           icon={ShoppingBag}
           color="bg-gradient-to-br from-blue-50 to-blue-100 text-blue-600"
+          tooltip={TOOLTIPS["logros.ventas_mes"]}
         />
         <KpiCard
           title="Ventas con PymePilot"
@@ -136,6 +142,7 @@ export function LogrosContent({
           }
           icon={Trophy}
           color="bg-gradient-to-br from-amber-50 to-amber-100 text-amber-600"
+          tooltip={TOOLTIPS["logros.ventas_pymepilot"]}
         />
         <KpiCard
           title="Racha de ventas"
@@ -147,6 +154,7 @@ export function LogrosContent({
               ? "bg-gradient-to-br from-orange-50 to-orange-100 text-orange-600"
               : "bg-gradient-to-br from-gray-50 to-gray-100 text-gray-500"
           }
+          tooltip={TOOLTIPS["logros.racha"]}
         />
       </div>
 

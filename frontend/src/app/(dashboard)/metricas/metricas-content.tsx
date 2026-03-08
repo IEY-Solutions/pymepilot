@@ -16,6 +16,8 @@ import { TicketChart } from "./charts/ticket-chart";
 import { ValueChart } from "./charts/value-chart";
 import { ClientRankingTable } from "./client-ranking-table";
 import { formatCurrency } from "@/lib/format";
+import { InfoTooltip } from "@/components/ui/info-tooltip";
+import { TOOLTIPS } from "@/lib/tooltips";
 
 // ============================================================
 // TIPOS
@@ -86,18 +88,21 @@ function KpiCard({
   subtitle,
   icon: Icon,
   color,
+  tooltip,
 }: {
   title: string;
   value: string;
   subtitle: string;
   icon: React.ComponentType<{ className?: string }>;
   color: string;
+  tooltip?: string;
 }) {
   return (
     <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 p-5">
       <div className="flex items-center justify-between mb-3">
         <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">
           {title}
+          {tooltip && <InfoTooltip text={tooltip} />}
         </span>
         <div className={`p-2.5 rounded-full ${color}`}>
           <Icon className="h-4 w-4" />
@@ -278,6 +283,7 @@ export function MetricasContent({
                   ? "bg-gradient-to-br from-blue-50 to-blue-100 text-blue-600"
                   : "bg-gradient-to-br from-red-50 to-red-100 text-red-600"
               }
+              tooltip={TOOLTIPS["metricas.ventas_mes"]}
             />
             <KpiCard
               title="% Recurrente"
@@ -297,6 +303,7 @@ export function MetricasContent({
                   ? "bg-gradient-to-br from-green-50 to-green-100 text-green-600"
                   : "bg-gradient-to-br from-red-50 to-red-100 text-red-600"
               }
+              tooltip={TOOLTIPS["metricas.recurrente"]}
             />
             <KpiCard
               title="Churn"
@@ -318,6 +325,7 @@ export function MetricasContent({
                     ? "bg-gradient-to-br from-amber-50 to-amber-100 text-amber-600"
                     : "bg-gradient-to-br from-red-50 to-red-100 text-red-600"
               }
+              tooltip={TOOLTIPS["metricas.churn"]}
             />
             <KpiCard
               title="Ticket promedio"
@@ -333,6 +341,7 @@ export function MetricasContent({
               }
               icon={ShoppingCart}
               color="bg-gradient-to-br from-purple-50 to-purple-100 text-purple-600"
+              tooltip={TOOLTIPS["metricas.ticket"]}
             />
             <KpiCard
               title="Valor PymePilot"
@@ -344,6 +353,7 @@ export function MetricasContent({
               }
               icon={Zap}
               color="bg-gradient-to-br from-indigo-50 to-indigo-100 text-indigo-600"
+              tooltip={TOOLTIPS["metricas.valor_pymepilot"]}
             />
           </div>
 

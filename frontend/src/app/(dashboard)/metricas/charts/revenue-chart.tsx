@@ -13,6 +13,8 @@ import type { TooltipContentProps } from "recharts";
 import type { ValueType, NameType } from "recharts/types/component/DefaultTooltipContent";
 import type { RevenueRow } from "../metricas-content";
 import { formatCurrency } from "@/lib/format";
+import { InfoTooltip } from "@/components/ui/info-tooltip";
+import { TOOLTIPS } from "@/lib/tooltips";
 
 function formatMonth(dateStr: string): string {
   const d = new Date(dateStr + "T12:00:00");
@@ -63,6 +65,7 @@ export function RevenueChart({ data }: { data: RevenueRow[] }) {
       <div className="mb-4">
         <h3 className="text-base font-semibold text-gray-900">
           Facturacion mensual
+          <InfoTooltip text={TOOLTIPS["metricas.chart_revenue"]} />
         </h3>
         <p className="text-xs text-gray-400 mt-0.5">
           Total, recurrente y nueva facturacion por mes

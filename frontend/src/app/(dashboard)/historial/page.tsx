@@ -7,6 +7,8 @@ import {
   AlertCircle,
   Search,
 } from "lucide-react";
+import { InfoTooltip } from "@/components/ui/info-tooltip";
+import { TOOLTIPS } from "@/lib/tooltips";
 
 const statusConfig: Record<
   string,
@@ -68,7 +70,10 @@ export default async function HistorialPage({
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold text-gray-900">Historial</h1>
+      <h1 className="text-2xl font-bold text-gray-900">
+        Historial
+        <InfoTooltip text={TOOLTIPS["historial.status"]} />
+      </h1>
 
       {/* Filtros */}
       <div className="flex flex-col sm:flex-row gap-2">

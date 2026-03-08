@@ -11,6 +11,8 @@ import {
 import type { RankingRow } from "./metricas-content";
 import { ClientDetail } from "./client-detail";
 import { formatCurrency } from "@/lib/format";
+import { InfoTooltip } from "@/components/ui/info-tooltip";
+import { TOOLTIPS } from "@/lib/tooltips";
 
 function daysAgo(dateStr: string | null): string {
   if (!dateStr) return "\u2014";
@@ -106,12 +108,12 @@ export function ClientRankingTable({
       <div className="hidden md:grid md:grid-cols-[3rem_1fr_2.5rem_8.5rem_5rem_5rem_5rem_5rem] gap-2 px-5 py-3 bg-gray-50/80 border-b border-gray-100 text-[11px] font-semibold uppercase tracking-wider text-gray-400">
         <span>#</span>
         <span>Cliente</span>
-        <span className="text-center">Tend.</span>
-        <span className="text-right">Facturacion</span>
-        <span className="text-right">Compras</span>
-        <span className="text-right">Ticket</span>
-        <span className="text-right">Ult. compra</span>
-        <span className="text-right">Freq.</span>
+        <span className="text-center">Tend.<InfoTooltip text={TOOLTIPS["metricas.ranking_tendencia"]} /></span>
+        <span className="text-right">Facturacion<InfoTooltip text={TOOLTIPS["metricas.ranking_facturacion"]} /></span>
+        <span className="text-right">Compras<InfoTooltip text={TOOLTIPS["metricas.ranking_compras"]} /></span>
+        <span className="text-right">Ticket<InfoTooltip text={TOOLTIPS["metricas.ranking_ticket"]} /></span>
+        <span className="text-right">Ult. compra<InfoTooltip text={TOOLTIPS["metricas.ranking_ultima_compra"]} /></span>
+        <span className="text-right">Freq.<InfoTooltip text={TOOLTIPS["metricas.ranking_freq"]} /></span>
       </div>
 
       {/* Filas */}

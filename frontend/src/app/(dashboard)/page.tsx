@@ -10,6 +10,8 @@ import {
   Zap,
 } from "lucide-react";
 import { getFreshnessInfo } from "@/lib/freshness";
+import { InfoTooltip } from "@/components/ui/info-tooltip";
+import { TOOLTIPS } from "@/lib/tooltips";
 
 function KpiCard({
   title,
@@ -17,17 +19,22 @@ function KpiCard({
   subtitle,
   icon: Icon,
   color,
+  tooltip,
 }: {
   title: string;
   value: string | number;
   subtitle: string;
   icon: React.ComponentType<{ className?: string }>;
   color: string;
+  tooltip?: string;
 }) {
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-4">
       <div className="flex items-center justify-between mb-2">
-        <span className="text-sm font-medium text-gray-500">{title}</span>
+        <span className="text-sm font-medium text-gray-500">
+          {title}
+          {tooltip && <InfoTooltip text={tooltip} />}
+        </span>
         <div className={`p-2 rounded-lg ${color}`}>
           <Icon className="h-4 w-4" />
         </div>
@@ -152,6 +159,7 @@ export default async function HomePage() {
           subtitle="Predicciones para contactar"
           icon={MessageSquare}
           color="bg-blue-50 text-blue-600"
+          tooltip={TOOLTIPS["home.pendientes"]}
         />
         <KpiCard
           title="Tasa contacto"
@@ -159,6 +167,7 @@ export default async function HomePage() {
           subtitle={`${contactedCount} de ${totalPredictions} total`}
           icon={UserCheck}
           color="bg-green-50 text-green-600"
+          tooltip={TOOLTIPS["home.tasa_contacto"]}
         />
         <KpiCard
           title="Clientes activos"
@@ -166,6 +175,7 @@ export default async function HomePage() {
           subtitle="Con compras recientes"
           icon={Users}
           color="bg-purple-50 text-purple-600"
+          tooltip={TOOLTIPS["home.clientes_activos"]}
         />
         <KpiCard
           title="Ultima sync"
@@ -173,6 +183,7 @@ export default async function HomePage() {
           subtitle={lastSync?.status === "completed" ? "OK" : lastSync?.status ?? "Sin datos"}
           icon={RefreshCw}
           color="bg-orange-50 text-orange-600"
+          tooltip={TOOLTIPS["home.ultima_sync"]}
         />
       </div>
 

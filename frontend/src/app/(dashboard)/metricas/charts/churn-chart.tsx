@@ -13,6 +13,8 @@ import {
 import type { TooltipContentProps } from "recharts";
 import type { ValueType, NameType } from "recharts/types/component/DefaultTooltipContent";
 import type { ChurnRow } from "../metricas-content";
+import { InfoTooltip } from "@/components/ui/info-tooltip";
+import { TOOLTIPS } from "@/lib/tooltips";
 
 function formatMonth(dateStr: string): string {
   const d = new Date(dateStr + "T12:00:00");
@@ -57,7 +59,10 @@ export function ChurnChart({ data }: { data: ChurnRow[] }) {
   return (
     <div className="bg-white rounded-xl shadow-sm p-5">
       <div className="mb-4">
-        <h3 className="text-base font-semibold text-gray-900">Churn mensual</h3>
+        <h3 className="text-base font-semibold text-gray-900">
+          Churn mensual
+          <InfoTooltip text={TOOLTIPS["metricas.chart_churn"]} />
+        </h3>
         <p className="text-xs text-gray-400 mt-0.5">
           Porcentaje de clientes que dejan de comprar
         </p>
