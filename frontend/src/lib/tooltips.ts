@@ -118,11 +118,11 @@ export const TOOLTIPS = {
   // PIPELINE
   // ============================================================
   "pipeline.a_contactar":
-    "Clientes que PymePilot recomienda contactar. Si pasan 3 dias sin contacto, se marcan como vencidas.",
+    "Clientes que PymePilot recomienda contactar. Abri la card, contacta al cliente y registra el resultado. Si pasan 3 dias sin contacto, se marcan como vencidas.",
   "pipeline.contactado":
-    "Clientes que ya contactaste. Desde aca se generan los seguimientos automaticos.",
+    "Ya contactaste a este cliente, esperando su respuesta. Cuando conteste, abri la card y registra como fue.",
   "pipeline.en_seguimiento":
-    "Clientes con seguimientos programados. PymePilot te avisa cuando toca el proximo contacto.",
+    "Clientes que no respondieron al primer contacto. PymePilot programa una secuencia de seguimiento para insistir.",
   "pipeline.por_cotizar":
     "Clientes que pidieron cotizacion. El proximo paso es enviarles la cotizacion.",
   "pipeline.cotizacion_enviada":

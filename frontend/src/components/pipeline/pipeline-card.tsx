@@ -147,7 +147,7 @@ export function PipelineCard({ card, isGenerating, onClick, onDiscard }: Props) 
       </div>
 
       {/* Followup badge (solo en "en_seguimiento") */}
-      {followup && (
+      {card.column_name === "en_seguimiento" && followup && (
         <div
           className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${followup.color}`}
         >

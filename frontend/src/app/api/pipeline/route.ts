@@ -241,7 +241,16 @@ async function handleMove(
     );
   }
 
-  // 1. Mover la card
+  // 1. Obtener columna actual (para limpiar followups si sale de en_seguimiento)
+  const { data: currentCard } = await supabase
+    .from("pipeline_cards")
+    .select("column_name")
+    .eq("id", cardId)
+    .single();
+
+  const fromColumn = currentCard?.column_name as ColumnName | undefined;
+
+  // 2. Mover la card
   const { error } = await supabase
     .from("pipeline_cards")
     .update({ column_name: toColumn })
@@ -255,7 +264,16 @@ async function handleMove(
     );
   }
 
-  // 2. Si va a "en_seguimiento", crear followups automáticos (secuencia default)
+  // 3. Si sale de "en_seguimiento", marcar followups pendientes como skipped
+  if (fromColumn === "en_seguimiento" && toColumn !== "en_seguimiento") {
+    await supabase
+      .from("followups")
+      .update({ status: "skipped" })
+      .eq("card_id", cardId)
+      .eq("status", "pending");
+  }
+
+  // 4. Si va a "en_seguimiento", crear followups automáticos (secuencia default)
   if (toColumn === "en_seguimiento") {
     // Verificar que no tenga followups pendientes ya
     const { data: existingFollowups } = await supabase
@@ -346,10 +364,10 @@ async function handleContact(
     );
   }
 
-  // 1. Obtener la card con datos del cliente y mensaje original
+  // 1. Obtener la card con datos del cliente, mensaje original y columna actual
   const { data: card, error: cardError } = await supabase
     .from("pipeline_cards")
-    .select("id, vertical, prediction_id, customer:customers!inner(name), prediction:predictions(message_text)")
+    .select("id, vertical, prediction_id, column_name, customer:customers!inner(name), prediction:predictions(message_text)")
     .eq("id", cardId)
     .single();
 
@@ -376,14 +394,22 @@ async function handleContact(
     );
   }
 
-  // 3. Determinar a donde mover la card
+  // 3. Determinar a donde mover la card (depende de columna actual + resultado)
+  const fromColumn = card.column_name as ColumnName;
   let targetColumn: ColumnName;
 
   if (result === "pidio_cotizacion") {
-    // Salto directo a "por_cotizar"
+    // Desde cualquier columna, "pidio cotizacion" salta a "por_cotizar"
     targetColumn = "por_cotizar";
+  } else if (fromColumn === "a_contactar") {
+    // Primer contacto hecho → mover a "contactado" (esperando respuesta)
+    targetColumn = "contactado";
+  } else if (fromColumn === "contactado" && result === "contesto") {
+    // Cliente respondio desde "contactado" → quedarse (vendedor decide)
+    targetColumn = "contactado";
   } else {
-    // Generar seguimientos y mover a "en_seguimiento"
+    // "no_contesto" desde "contactado" o contacto desde "en_seguimiento"
+    // → mover a "en_seguimiento" con secuencia de followups
     targetColumn = "en_seguimiento";
 
     const vertical = card.vertical as Vertical;
@@ -410,7 +436,6 @@ async function handleContact(
 
       if (claudeResult) {
         if (claudeResult.target_column) {
-          // Claude dice saltar a otra columna directamente
           claudeTargetColumn = claudeResult.target_column;
         }
         if (claudeResult.days && claudeResult.days.length > 0) {
@@ -419,7 +444,6 @@ async function handleContact(
       }
     }
 
-    // Si Claude dice saltar a otra columna, respetar eso
     if (claudeTargetColumn) {
       targetColumn = claudeTargetColumn;
     } else {
@@ -489,11 +513,15 @@ async function handleContact(
     notesForCopy
   );
 
+  const messageMap: Record<string, string> = {
+    por_cotizar: "Movido a Por cotizar",
+    contactado: "Contacto registrado",
+    en_seguimiento: "Seguimientos programados",
+  };
+
   return Response.json({
     success: true,
-    message: result === "pidio_cotizacion"
-      ? "Movido a Por cotizar"
-      : "Seguimientos programados",
+    message: messageMap[targetColumn] ?? "Contacto registrado",
   } satisfies PipelineResponse);
 }
 
@@ -609,10 +637,11 @@ Reglas:
 // ============================================================
 
 /** Etapas donde se genera copy dinámico */
-const STAGE_COPY_COLUMNS: ColumnName[] = ["en_seguimiento", "por_cotizar", "cotizacion_enviada"];
+const STAGE_COPY_COLUMNS: ColumnName[] = ["contactado", "en_seguimiento", "por_cotizar", "cotizacion_enviada"];
 
 /** Intención del mensaje según la etapa */
 const STAGE_INTENTIONS: Record<string, string> = {
+  contactado: "Primer contacto hecho. Mensaje breve para confirmar que se hizo el contacto y dejar la puerta abierta para que el cliente responda.",
   en_seguimiento: "Follow-up calido. Referir a la conversacion anterior, mantener el interes del cliente, preguntar si tiene novedades.",
   por_cotizar: "Confirmar que se esta preparando la cotizacion. Si faltan datos, pedirlos. Transmitir profesionalismo y rapidez.",
   cotizacion_enviada: "Recordar la cotizacion enviada, preguntar si tiene dudas, generar urgencia suave para cerrar la venta.",

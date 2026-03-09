@@ -4,6 +4,7 @@ import { useState } from "react";
 import {
   X, Phone, PhoneOff, FileText, MessageCircle, Send,
   CheckCircle2, XCircle, StickyNote, Mail, Copy, Check,
+  Info,
 } from "lucide-react";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { TOOLTIPS } from "@/lib/tooltips";
@@ -240,28 +241,6 @@ function ContactActions({
   );
 }
 
-function NoteOnlyActions({
-  onSubmit,
-  isSubmitting,
-}: {
-  onSubmit: (note: string) => void;
-  isSubmitting: boolean;
-}) {
-  const [note, setNote] = useState("");
-
-  return (
-    <div className="space-y-3">
-      <p className="text-xs font-medium text-gray-700 uppercase tracking-wide">Agregar nota</p>
-      <NoteField value={note} onChange={setNote} placeholder="Ej: quedo en confirmar la semana que viene" />
-      <SubmitButton
-        disabled={!note.trim() || isSubmitting}
-        isSubmitting={isSubmitting}
-        label="Guardar nota"
-        onClick={() => onSubmit(note)}
-      />
-    </div>
-  );
-}
 
 function AdvanceActions({
   options,
@@ -451,6 +430,47 @@ export function ContactModal({
 }
 
 // =============================================================================
+// Banner de contexto por etapa
+// =============================================================================
+
+const STAGE_CONTEXT: Record<string, string> = {
+  a_contactar: "Contacta a este cliente y registra como fue.",
+  contactado: "Ya hiciste el primer contacto. Cuando el cliente responda, registra el resultado.",
+  en_seguimiento: "El cliente no respondio. Segui la secuencia de seguimiento programada.",
+  por_cotizar: "Este cliente pidio cotizacion. Enviala y avanza la card.",
+  cotizacion_enviada: "Cotizacion enviada. Esperando respuesta del cliente.",
+  vendido: "Venta cerrada. El ciclo del pipeline se completo.",
+};
+
+function StageContextBanner({ card, activeFollowup }: { card: PipelineCard; activeFollowup?: Followup | null }) {
+  let text = STAGE_CONTEXT[card.column_name] ?? "";
+
+  // En "en_seguimiento" con followup activo, mostrar detalle del seguimiento
+  if (card.column_name === "en_seguimiento" && activeFollowup) {
+    const total = card.followups.length;
+    const completed = card.followups.filter((f) => f.status === "completed").length;
+    const current = completed + 1;
+
+    const today = new Date().toISOString().split("T")[0];
+    const diffDays = Math.ceil(
+      (new Date(activeFollowup.scheduled_date).getTime() - new Date(today).getTime()) / 86_400_000
+    );
+    const timing = diffDays <= 0 ? "hoy" : diffDays === 1 ? "manana" : `en ${diffDays} dias`;
+
+    text = `Seguimiento ${current}/${total} — programado para ${timing}. Contacta al cliente y registra como fue.`;
+  }
+
+  if (!text) return null;
+
+  return (
+    <div className="flex items-start gap-2 px-3 py-2 bg-blue-50 rounded-lg mb-3">
+      <Info className="h-3.5 w-3.5 text-blue-500 mt-0.5 shrink-0" />
+      <p className="text-xs text-blue-700">{text}</p>
+    </div>
+  );
+}
+
+// =============================================================================
 // Renderizar acciones segun la etapa
 // =============================================================================
 
@@ -464,78 +484,95 @@ function renderActions(
   onAddNote: (noteText: string) => Promise<void>,
   onAdvance: (toColumn: ColumnName, noteText: string) => Promise<void>,
 ) {
+  const banner = <StageContextBanner card={card} activeFollowup={activeFollowup} />;
+
   switch (card.column_name) {
     case "a_contactar":
       return (
-        <ContactActions
-          isSubmitting={isSubmitting}
-          onSubmit={(result, note) => withLoading(() => onContactSubmit(result, note))}
-        />
+        <>
+          {banner}
+          <ContactActions
+            isSubmitting={isSubmitting}
+            onSubmit={(result, note) => withLoading(() => onContactSubmit(result, note))}
+          />
+        </>
       );
 
     case "contactado":
       return (
-        <NoteOnlyActions
-          isSubmitting={isSubmitting}
-          onSubmit={(note) => withLoading(() => onAddNote(note))}
-        />
+        <>
+          {banner}
+          <ContactActions
+            isSubmitting={isSubmitting}
+            onSubmit={(result, note) => withLoading(() => onContactSubmit(result, note))}
+          />
+        </>
       );
 
     case "en_seguimiento":
       return (
-        <ContactActions
-          isSubmitting={isSubmitting}
-          onSubmit={(result, note) => {
-            if (activeFollowup) {
-              withLoading(() => onFollowupSubmit(result, note));
-            } else {
-              withLoading(() => onContactSubmit(result, note));
-            }
-          }}
-        />
+        <>
+          {banner}
+          <ContactActions
+            isSubmitting={isSubmitting}
+            onSubmit={(result, note) => {
+              if (activeFollowup) {
+                withLoading(() => onFollowupSubmit(result, note));
+              } else {
+                withLoading(() => onContactSubmit(result, note));
+              }
+            }}
+          />
+        </>
       );
 
     case "por_cotizar":
       return (
-        <AdvanceActions
-          isSubmitting={isSubmitting}
-          options={[
-            { label: "Cotizacion enviada", column: "cotizacion_enviada", icon: Send, color: "bg-indigo-100 text-indigo-700 border-indigo-300 hover:bg-indigo-200" },
-            { label: "No avanza", column: "por_cotizar", icon: StickyNote, color: "bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-200" },
-          ]}
-          onSubmit={(toColumn, note) => {
-            if (toColumn === "por_cotizar") {
-              withLoading(() => onAddNote(note));
-            } else {
-              withLoading(() => onAdvance(toColumn, note));
-            }
-          }}
-        />
+        <>
+          {banner}
+          <AdvanceActions
+            isSubmitting={isSubmitting}
+            options={[
+              { label: "Cotizacion enviada", column: "cotizacion_enviada", icon: Send, color: "bg-indigo-100 text-indigo-700 border-indigo-300 hover:bg-indigo-200" },
+              { label: "No avanza", column: "por_cotizar", icon: StickyNote, color: "bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-200" },
+            ]}
+            onSubmit={(toColumn, note) => {
+              if (toColumn === "por_cotizar") {
+                withLoading(() => onAddNote(note));
+              } else {
+                withLoading(() => onAdvance(toColumn, note));
+              }
+            }}
+          />
+        </>
       );
 
     case "cotizacion_enviada":
       return (
-        <AdvanceActions
-          isSubmitting={isSubmitting}
-          options={[
-            { label: "Vendido", column: "vendido", icon: CheckCircle2, color: "bg-green-100 text-green-700 border-green-300 hover:bg-green-200" },
-            { label: "Rechazada", column: "cotizacion_enviada", icon: XCircle, color: "bg-red-100 text-red-700 border-red-300 hover:bg-red-200" },
-          ]}
-          onSubmit={(toColumn, note) => {
-            if (toColumn === "cotizacion_enviada") {
-              withLoading(() => onAddNote(note));
-            } else {
-              withLoading(() => onAdvance(toColumn, note));
-            }
-          }}
-        />
+        <>
+          {banner}
+          <AdvanceActions
+            isSubmitting={isSubmitting}
+            options={[
+              { label: "Vendido", column: "vendido", icon: CheckCircle2, color: "bg-green-100 text-green-700 border-green-300 hover:bg-green-200" },
+              { label: "Rechazada", column: "cotizacion_enviada", icon: XCircle, color: "bg-red-100 text-red-700 border-red-300 hover:bg-red-200" },
+            ]}
+            onSubmit={(toColumn, note) => {
+              if (toColumn === "cotizacion_enviada") {
+                withLoading(() => onAddNote(note));
+              } else {
+                withLoading(() => onAdvance(toColumn, note));
+              }
+            }}
+          />
+        </>
       );
 
     case "vendido":
       return (
-        <p className="text-xs text-gray-500 text-center py-2">
-          Venta cerrada. Sin acciones pendientes.
-        </p>
+        <>
+          {banner}
+        </>
       );
 
     default:
