@@ -36,6 +36,7 @@ function getActiveFollowup(card: PipelineCardType) {
   return pending[0] ?? null;
 }
 
+/** Label del badge para "en_seguimiento" (followup activo) */
 function followupLabel(card: PipelineCardType) {
   const active = getActiveFollowup(card);
   if (!active) return null;
@@ -64,7 +65,39 @@ function followupLabel(card: PipelineCardType) {
     badgeColor = "bg-gray-100 text-gray-600";
   }
 
-  return { text: `Seguimiento ${current}/${total} — ${timing}`, color: badgeColor };
+  // Agregar origen si es distinto de "contactado"
+  const originLabel = active.origin_stage && active.origin_stage !== "contactado"
+    ? ` (post-${active.origin_stage === "por_cotizar" ? "cotiz." : "envio"})`
+    : "";
+
+  return { text: `Seguimiento ${current}/${total} — ${timing}${originLabel}`, color: badgeColor };
+}
+
+/** Badge de espera para etapas con timer (contactado, por_cotizar, cotizacion_enviada) */
+function deadlineBadge(card: PipelineCardType): { text: string; color: string } | null {
+  if (!card.stage_deadline) return null;
+
+  const today = new Date().toISOString().split("T")[0];
+  const diffDays = Math.ceil(
+    (new Date(card.stage_deadline).getTime() - new Date(today).getTime()) / 86_400_000
+  );
+
+  const stageLabels: Record<string, string> = {
+    contactado: "respuesta",
+    por_cotizar: "cotizacion",
+    cotizacion_enviada: "cierre",
+  };
+  const label = stageLabels[card.column_name] ?? "respuesta";
+
+  if (diffDays < 0) {
+    return { text: `Sin ${label} — vencido hace ${Math.abs(diffDays)}d`, color: "bg-red-100 text-red-700" };
+  } else if (diffDays === 0) {
+    return { text: `Esperando ${label} — vence hoy`, color: "bg-orange-100 text-orange-700" };
+  } else if (diffDays === 1) {
+    return { text: `Esperando ${label} — vence manana`, color: "bg-yellow-100 text-yellow-700" };
+  } else {
+    return { text: `Esperando ${label} — ${diffDays}d restantes`, color: "bg-gray-100 text-gray-600" };
+  }
 }
 
 interface Props {
@@ -92,6 +125,7 @@ export function PipelineCard({ card, isGenerating, onClick, onDiscard }: Props) 
     color: "bg-purple-100 text-purple-700",
   };
   const followup = followupLabel(card);
+  const deadline = deadlineBadge(card);
 
   return (
     <div
@@ -146,12 +180,21 @@ export function PipelineCard({ card, isGenerating, onClick, onDiscard }: Props) 
         )}
       </div>
 
-      {/* Followup badge (solo en "en_seguimiento") */}
+      {/* Followup badge (en "en_seguimiento") */}
       {card.column_name === "en_seguimiento" && followup && (
         <div
           className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${followup.color}`}
         >
           {followup.text}
+        </div>
+      )}
+
+      {/* Deadline badge (contactado, por_cotizar, cotizacion_enviada) */}
+      {card.column_name !== "en_seguimiento" && deadline && (
+        <div
+          className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${deadline.color}`}
+        >
+          {deadline.text}
         </div>
       )}
 

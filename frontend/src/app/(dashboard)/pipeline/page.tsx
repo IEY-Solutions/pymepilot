@@ -22,9 +22,9 @@ export default async function PipelinePage() {
     .from("pipeline_cards")
     .select(
       `id, tenant_id, prediction_id, customer_id, column_name, vertical,
-       priority, is_expired, stage_messages, created_at, updated_at,
+       priority, is_expired, stage_messages, stage_deadline, created_at, updated_at,
        customer:customers!inner(name, phone, email),
-       prediction:predictions(message_text, confidence_score)`
+       prediction:predictions(message_text, confidence_score, next_reposition_estimate)`
     )
     .order("is_expired", { ascending: true })
     .order("priority", { ascending: true })
@@ -48,7 +48,7 @@ export default async function PipelinePage() {
     ? await Promise.all([
         supabase
           .from("followups")
-          .select("id, card_id, sequence_number, scheduled_date, status, completed_at")
+          .select("id, card_id, sequence_number, scheduled_date, status, completed_at, origin_stage")
           .in("card_id", cardIds)
           .order("sequence_number", { ascending: true }),
         supabase
@@ -81,8 +81,8 @@ export default async function PipelinePage() {
       ? (c.customer as unknown as { name: string; phone: string | null; email: string | null }[])[0]
       : c.customer as { name: string; phone: string | null; email: string | null },
     prediction: Array.isArray(c.prediction)
-      ? (c.prediction as unknown as { message_text: string | null; confidence_score: number | null }[])[0] ?? null
-      : c.prediction as { message_text: string | null; confidence_score: number | null } | null,
+      ? (c.prediction as unknown as { message_text: string | null; confidence_score: number | null; next_reposition_estimate: string | null }[])[0] ?? null
+      : c.prediction as { message_text: string | null; confidence_score: number | null; next_reposition_estimate: string | null } | null,
     followups: (followupsByCard.get(c.id) ?? []) as PipelineCard["followups"],
     latest_note: (latestNoteByCard.get(c.id) ?? null) as PipelineCard["latest_note"],
   }));

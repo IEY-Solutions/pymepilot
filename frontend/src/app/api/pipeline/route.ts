@@ -2,9 +2,12 @@ import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@/lib/supabase/server";
 import {
   FOLLOWUP_SEQUENCES,
+  ORIGIN_SEQUENCES,
+  STAGE_TIMERS,
   type ColumnName,
   type ContactResult,
   type Vertical,
+  type OriginStage,
   type PipelineResponse,
   type PipelineErrorResponse,
 } from "@/lib/pipeline/types";
@@ -46,14 +49,65 @@ export async function GET(): Promise<Response> {
     .eq("is_expired", false)
     .lt("created_at", threeDaysAgo);
 
+  // 2b. Auto-mover cards con stage_deadline vencido a "en_seguimiento"
+  // Aplica a: contactado, por_cotizar, cotizacion_enviada
+  const today = new Date().toISOString().split("T")[0];
+  const { data: expiredCards } = await supabase
+    .from("pipeline_cards")
+    .select("id, column_name, vertical, tenant_id")
+    .not("stage_deadline", "is", null)
+    .lte("stage_deadline", today)
+    .in("column_name", ["contactado", "por_cotizar", "cotizacion_enviada"]);
+
+  if (expiredCards && expiredCards.length > 0) {
+    for (const expired of expiredCards) {
+      const originStage = expired.column_name as OriginStage;
+      const vertical = expired.vertical as Vertical;
+
+      // Mover a en_seguimiento y limpiar deadline
+      await supabase
+        .from("pipeline_cards")
+        .update({ column_name: "en_seguimiento", stage_deadline: null })
+        .eq("id", expired.id);
+
+      // Marcar followups pendientes previos como skipped
+      await supabase
+        .from("followups")
+        .update({ status: "skipped" })
+        .eq("card_id", expired.id)
+        .eq("status", "pending");
+
+      // Crear nueva secuencia de followups con origin_stage
+      const sequence = originStage === "contactado"
+        ? [...(FOLLOWUP_SEQUENCES[vertical] ?? [2, 5, 10])]
+        : [...(ORIGIN_SEQUENCES[originStage] ?? [2, 5, 10])];
+
+      const followups = sequence.map((days, index) => {
+        const scheduledDate = new Date();
+        scheduledDate.setDate(scheduledDate.getDate() + days);
+        return {
+          tenant_id: expired.tenant_id,
+          card_id: expired.id,
+          sequence_number: index + 1,
+          scheduled_date: scheduledDate.toISOString().split("T")[0],
+          status: "pending" as const,
+          origin_stage: originStage,
+        };
+      });
+
+      await supabase.from("followups").insert(followups);
+    }
+    console.log(`[pipeline-GET] ${expiredCards.length} cards auto-movidas a en_seguimiento por deadline vencido`);
+  }
+
   // 3. Fetch cards con relaciones
   const { data: cards, error } = await supabase
     .from("pipeline_cards")
     .select(
       `id, tenant_id, prediction_id, customer_id, column_name, vertical,
-       priority, is_expired, stage_messages, created_at, updated_at,
+       priority, is_expired, stage_messages, stage_deadline, created_at, updated_at,
        customer:customers!inner(name, phone, email),
-       prediction:predictions(message_text, confidence_score)`
+       prediction:predictions(message_text, confidence_score, next_reposition_estimate)`
     )
     .order("is_expired", { ascending: true })
     .order("priority", { ascending: true })
@@ -77,7 +131,7 @@ export async function GET(): Promise<Response> {
   const [followupsRes, notesRes] = await Promise.all([
     supabase
       .from("followups")
-      .select("id, card_id, sequence_number, scheduled_date, status, completed_at")
+      .select("id, card_id, sequence_number, scheduled_date, status, completed_at, origin_stage")
       .in("card_id", cardIds)
       .order("sequence_number", { ascending: true }),
     supabase
@@ -117,17 +171,82 @@ export async function GET(): Promise<Response> {
     latest_note: latestNoteByCard.get(c.id) ?? null,
   }));
 
-  // Debug temporal: ver si stage_messages llega al response
-  const cardsWithMessages = enrichedCards.filter((c) => {
-    const sm = c.stage_messages as Record<string, string> | null;
-    return sm && Object.keys(sm).length > 0;
-  });
-  if (cardsWithMessages.length > 0) {
-    console.log(`[pipeline-GET] ${cardsWithMessages.length} cards con stage_messages:`,
-      cardsWithMessages.map((c) => ({ id: c.id, col: c.column_name, keys: Object.keys(c.stage_messages as Record<string, string>) })));
+  // 7. Push notifications: detectar followups de hoy sin notificacion enviada
+  const todayFollowups: { followupId: string; cardId: string; seqNum: number; total: number; customerName: string; originStage: string | null }[] = [];
+
+  for (const card of enrichedCards) {
+    if (card.column_name !== "en_seguimiento") continue;
+    const pendingToday = (card.followups as { id: string; scheduled_date: string; status: string; sequence_number: number; origin_stage: string | null }[])
+      .filter((f) => f.status === "pending" && f.scheduled_date === today);
+
+    const customerName = typeof card.customer === "object" && card.customer && "name" in card.customer
+      ? (card.customer as { name: string }).name
+      : "Cliente";
+
+    for (const f of pendingToday) {
+      const total = (card.followups as { id: string }[]).length;
+      todayFollowups.push({
+        followupId: f.id,
+        cardId: card.id,
+        seqNum: f.sequence_number,
+        total,
+        customerName,
+        originStage: f.origin_stage,
+      });
+    }
   }
 
-  return Response.json({ cards: enrichedCards });
+  const notifications: { id: string; followup_id: string; title: string; body: string; scheduled_at: string }[] = [];
+
+  if (todayFollowups.length > 0) {
+    // Verificar cuales ya tienen notificacion enviada
+    const followupIds = todayFollowups.map((f) => f.followupId);
+    const { data: existingNotifs } = await supabase
+      .from("followup_notifications")
+      .select("followup_id")
+      .in("followup_id", followupIds)
+      .in("status", ["sent", "pending"]);
+
+    const alreadyNotified = new Set((existingNotifs ?? []).map((n) => n.followup_id));
+
+    const tenantId = user.app_metadata?.tenant_id;
+    for (const f of todayFollowups) {
+      if (alreadyNotified.has(f.followupId)) continue;
+
+      const originLabel = f.originStage && f.originStage !== "contactado"
+        ? f.originStage === "por_cotizar" ? " (post-cotizacion)" : " (post-envio)"
+        : "";
+      const title = `Seguimiento ${f.seqNum}/${f.total}${originLabel}`;
+      const body = `Hoy toca contactar a ${f.customerName}`;
+
+      if (tenantId) {
+        const { data: notif } = await supabase
+          .from("followup_notifications")
+          .insert({
+            tenant_id: tenantId,
+            followup_id: f.followupId,
+            channel: "push",
+            status: "sent",
+            scheduled_at: new Date().toISOString(),
+            sent_at: new Date().toISOString(),
+            title,
+            body,
+          })
+          .select("id, followup_id, title, body, scheduled_at")
+          .single();
+
+        if (notif) {
+          notifications.push(notif);
+        }
+      }
+    }
+
+    if (notifications.length > 0) {
+      console.log(`[pipeline-GET] ${notifications.length} notificaciones push creadas para followups de hoy`);
+    }
+  }
+
+  return Response.json({ cards: enrichedCards, notifications });
 }
 
 // ------------------------------------------------------------
@@ -190,10 +309,23 @@ export async function POST(request: Request): Promise<Response> {
 }
 
 // ============================================================
-// Handlers
+// Helpers
 // ============================================================
 
 type SupabaseClient = Awaited<ReturnType<typeof createClient>>;
+
+/** Calcula stage_deadline para una columna destino. NULL si la etapa no tiene timer. */
+function computeDeadline(toColumn: ColumnName): string | null {
+  const timerDays = STAGE_TIMERS[toColumn];
+  if (!timerDays) return null;
+  const deadline = new Date();
+  deadline.setDate(deadline.getDate() + timerDays);
+  return deadline.toISOString().split("T")[0];
+}
+
+// ============================================================
+// Handlers
+// ============================================================
 
 /** Sync predictions → pipeline_cards (via SQL function) */
 async function handleSync(supabase: SupabaseClient): Promise<Response> {
@@ -250,10 +382,10 @@ async function handleMove(
 
   const fromColumn = currentCard?.column_name as ColumnName | undefined;
 
-  // 2. Mover la card
+  // 2. Mover la card (con deadline si la etapa destino tiene timer)
   const { error } = await supabase
     .from("pipeline_cards")
-    .update({ column_name: toColumn })
+    .update({ column_name: toColumn, stage_deadline: computeDeadline(toColumn) })
     .eq("id", cardId);
 
   if (error) {
@@ -292,7 +424,15 @@ async function handleMove(
 
       if (card) {
         const vertical = card.vertical as Vertical;
-        const sequence = [...(FOLLOWUP_SEQUENCES[vertical] ?? [2, 5, 10])];
+        // Determinar origin_stage y secuencia segun de donde viene
+        const originStage = (fromColumn && ["contactado", "por_cotizar", "cotizacion_enviada"].includes(fromColumn))
+          ? fromColumn as OriginStage
+          : ("contactado" as OriginStage);
+
+        const sequence = originStage === "contactado"
+          ? [...(FOLLOWUP_SEQUENCES[vertical] ?? [2, 5, 10])]
+          : [...(ORIGIN_SEQUENCES[originStage] ?? [2, 5, 10])];
+
         const followups = sequence.map((days, index) => {
           const scheduledDate = new Date();
           scheduledDate.setDate(scheduledDate.getDate() + days);
@@ -302,6 +442,7 @@ async function handleMove(
             sequence_number: index + 1,
             scheduled_date: scheduledDate.toISOString().split("T")[0],
             status: "pending" as const,
+            origin_stage: originStage,
           };
         });
 
@@ -310,7 +451,7 @@ async function handleMove(
     }
   }
 
-  // 3. Si llega a "vendido", marcar prediction como completed
+  // Si llega a "vendido", marcar prediction como completed
   if (toColumn === "vendido") {
     const { data: card } = await supabase
       .from("pipeline_cards")
@@ -413,7 +554,14 @@ async function handleContact(
     targetColumn = "en_seguimiento";
 
     const vertical = card.vertical as Vertical;
-    const defaultSequence: number[] = [...(FOLLOWUP_SEQUENCES[vertical] ?? [2, 5, 10])];
+    // Determinar origin_stage para la secuencia diferenciada
+    const originStage = (fromColumn && ["contactado", "por_cotizar", "cotizacion_enviada"].includes(fromColumn))
+      ? fromColumn as OriginStage
+      : ("contactado" as OriginStage);
+
+    const defaultSequence: number[] = originStage === "contactado"
+      ? [...(FOLLOWUP_SEQUENCES[vertical] ?? [2, 5, 10])]
+      : [...(ORIGIN_SEQUENCES[originStage] ?? [2, 5, 10])];
 
     // Si hay nota, intentar que Claude ajuste los plazos
     let sequence: number[] = defaultSequence;
@@ -457,6 +605,7 @@ async function handleContact(
           sequence_number: index + 1,
           scheduled_date: scheduledDate.toISOString().split("T")[0],
           status: "pending" as const,
+          origin_stage: originStage,
         };
       });
 
@@ -470,10 +619,10 @@ async function handleContact(
     }
   }
 
-  // 4. Mover la card a la columna destino
+  // 4. Mover la card a la columna destino (con deadline si corresponde)
   const { error: moveError } = await supabase
     .from("pipeline_cards")
-    .update({ column_name: targetColumn })
+    .update({ column_name: targetColumn, stage_deadline: computeDeadline(targetColumn) })
     .eq("id", cardId);
 
   if (moveError) {
@@ -882,10 +1031,10 @@ async function handleCompleteFollowup(
       .eq("card_id", cardId)
       .eq("status", "pending");
 
-    // Mover card
+    // Mover card (con deadline para por_cotizar)
     await supabase
       .from("pipeline_cards")
-      .update({ column_name: "por_cotizar" })
+      .update({ column_name: "por_cotizar", stage_deadline: computeDeadline("por_cotizar") })
       .eq("id", cardId);
 
     // Generar copy para "por_cotizar"
@@ -1021,10 +1170,10 @@ async function handleAdvance(
     );
   }
 
-  // 1. Mover la card
+  // 1. Mover la card (con deadline si corresponde)
   const { error: moveError } = await supabase
     .from("pipeline_cards")
-    .update({ column_name: targetColumn })
+    .update({ column_name: targetColumn, stage_deadline: computeDeadline(targetColumn) })
     .eq("id", cardId);
 
   if (moveError) {
@@ -1045,18 +1194,29 @@ async function handleAdvance(
     });
   }
 
-  // 3. Si llega a "vendido", marcar prediction como "completed"
+  // 3. Si llega a "vendido", marcar prediction como "completed" + calcular reposicion
   if (targetColumn === "vendido") {
     const { data: card } = await supabase
       .from("pipeline_cards")
-      .select("prediction_id")
+      .select("prediction_id, vertical, customer_id")
       .eq("id", cardId)
       .single();
 
     if (card?.prediction_id) {
+      const updateData: Record<string, unknown> = { status: "completed" };
+
+      // Si es vertical reposicion, calcular next_reposition_estimate
+      if (card.vertical === "reposicion") {
+        const estimateDays = await computeAvgOrderInterval(supabase, card.customer_id);
+        const nextDate = new Date();
+        nextDate.setDate(nextDate.getDate() + estimateDays);
+        updateData.next_reposition_estimate = nextDate.toISOString().split("T")[0];
+        console.log(`[pipeline] Vendido reposicion: cliente=${card.customer_id}, next_reposition=${estimateDays} dias`);
+      }
+
       await supabase
         .from("predictions")
-        .update({ status: "completed" })
+        .update(updateData)
         .eq("id", card.prediction_id);
     }
 
@@ -1075,4 +1235,35 @@ async function handleAdvance(
     success: true,
     message: targetColumn === "vendido" ? "Venta cerrada" : "Cotizacion enviada",
   } satisfies PipelineResponse);
+}
+
+/**
+ * Calcula el promedio de dias entre ordenes de un cliente.
+ * Si hay menos de 2 ordenes, retorna 30 (default).
+ */
+async function computeAvgOrderInterval(
+  supabase: SupabaseClient,
+  customerId: string
+): Promise<number> {
+  const { data: orders } = await supabase
+    .from("orders")
+    .select("order_date")
+    .eq("customer_id", customerId)
+    .eq("status", "completed")
+    .order("order_date", { ascending: true })
+    .limit(20);
+
+  if (!orders || orders.length < 2) return 30;
+
+  let totalDays = 0;
+  for (let i = 1; i < orders.length; i++) {
+    const diff = Math.abs(
+      new Date(orders[i].order_date).getTime() -
+      new Date(orders[i - 1].order_date).getTime()
+    );
+    totalDays += Math.round(diff / 86_400_000);
+  }
+
+  const avg = Math.round(totalDays / (orders.length - 1));
+  return Math.max(avg, 7); // Minimo 7 dias
 }

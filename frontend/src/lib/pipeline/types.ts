@@ -66,6 +66,22 @@ export const FOLLOWUP_SEQUENCES: Record<Vertical, [number, number, number]> = {
   cross_sell: [2, 5, 10],
 };
 
+/** Etapas de origen para followups (de donde se creo el seguimiento) */
+export type OriginStage = "contactado" | "por_cotizar" | "cotizacion_enviada";
+
+/** Secuencias de followup diferenciadas por etapa de origen */
+export const ORIGIN_SEQUENCES: Record<"por_cotizar" | "cotizacion_enviada", number[]> = {
+  por_cotizar: [1, 3, 5],         // Agresivo — cliente ya mostro interes
+  cotizacion_enviada: [2, 4, 7],   // Moderado — insistir pero sin presionar
+};
+
+/** Timers por etapa: dias antes de auto-mover a "en_seguimiento" */
+export const STAGE_TIMERS: Partial<Record<ColumnName, number>> = {
+  contactado: 2,
+  por_cotizar: 1,
+  cotizacion_enviada: 1,
+};
+
 /** Card del pipeline con datos del cliente embebidos */
 export interface PipelineCard {
   id: string;
@@ -78,6 +94,8 @@ export interface PipelineCard {
   is_expired: boolean;
   /** Cache de copies de venta por etapa. Keys: en_seguimiento, por_cotizar, cotizacion_enviada */
   stage_messages: Record<string, string>;
+  /** Fecha limite de la etapa actual (NULL si la etapa no tiene timer) */
+  stage_deadline: string | null;
   created_at: string;
   updated_at: string;
   // Relaciones
@@ -89,6 +107,7 @@ export interface PipelineCard {
   prediction?: {
     message_text: string | null;
     confidence_score: number | null;
+    next_reposition_estimate: string | null;
   } | null;
   followups: Followup[];
   latest_note: ContactNote | null;
@@ -102,6 +121,7 @@ export interface Followup {
   scheduled_date: string;
   status: "pending" | "completed" | "skipped";
   completed_at: string | null;
+  origin_stage: OriginStage | null;
 }
 
 /** Nota de contacto */
@@ -154,6 +174,20 @@ export type PipelineRequest =
   | PipelineContactRequest
   | PipelineFollowupRequest
   | PipelineDiscardRequest;
+
+/** Notificacion de followup (push in-app) */
+export interface FollowupNotification {
+  id: string;
+  followup_id: string;
+  title: string;
+  body: string;
+  scheduled_at: string;
+}
+
+export interface PipelineGetResponse {
+  cards: PipelineCard[];
+  notifications: FollowupNotification[];
+}
 
 export interface PipelineResponse {
   success: boolean;

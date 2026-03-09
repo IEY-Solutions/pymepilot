@@ -6,7 +6,7 @@ import type { DragEndEvent, DragStartEvent } from "@dnd-kit/core";
 import { PipelineColumn } from "./pipeline-column";
 import { PipelineCard as PipelineCardComponent } from "./pipeline-card";
 import { ContactModal } from "./contact-modal";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, Bell, X } from "lucide-react";
 import {
   COLUMN_ORDER,
   type PipelineCard,
@@ -14,6 +14,7 @@ import {
   type ContactResult,
   type ContactNote,
   type Followup,
+  type FollowupNotification,
 } from "@/lib/pipeline/types";
 
 interface Props {
@@ -27,6 +28,7 @@ export function PipelineBoard({ initialCards }: Props) {
   const [modalNotes, setModalNotes] = useState<ContactNote[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [generatingCardIds, setGeneratingCardIds] = useState<Set<string>>(new Set());
+  const [notifications, setNotifications] = useState<FollowupNotification[]>([]);
 
   // Mantener modalCard sincronizada con cards state
   // Cuando refreshBoard() actualiza cards, el modal abierto se actualiza también
@@ -173,6 +175,14 @@ export function PipelineBoard({ initialCards }: Props) {
       if (res.ok) {
         const data = await res.json();
         setCards(data.cards ?? []);
+        if (data.notifications?.length > 0) {
+          setNotifications((prev) => {
+            // Evitar duplicados por id
+            const existingIds = new Set(prev.map((n) => n.id));
+            const newNotifs = (data.notifications as FollowupNotification[]).filter((n) => !existingIds.has(n.id));
+            return [...prev, ...newNotifs];
+          });
+        }
       }
     } catch (err) {
       console.error("Error refreshing pipeline:", err);
@@ -326,6 +336,32 @@ export function PipelineBoard({ initialCards }: Props) {
           Actualizar
         </button>
       </div>
+
+      {/* Notificaciones de followups del dia */}
+      {notifications.length > 0 && (
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 space-y-1.5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Bell className="h-4 w-4 text-amber-600" />
+              <span className="text-sm font-medium text-amber-800">
+                Seguimientos para hoy ({notifications.length})
+              </span>
+            </div>
+            <button
+              onClick={() => setNotifications([])}
+              className="p-0.5 text-amber-400 hover:text-amber-600 transition-colors"
+              aria-label="Cerrar notificaciones"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          {notifications.map((n) => (
+            <div key={n.id} className="text-xs text-amber-700">
+              <span className="font-medium">{n.title}</span> — {n.body}
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Board Kanban */}
       <DndContext

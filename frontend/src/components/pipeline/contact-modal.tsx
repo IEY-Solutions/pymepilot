@@ -15,7 +15,7 @@ import type {
   ColumnName,
   ContactNote,
 } from "@/lib/pipeline/types";
-import { VERTICAL_STYLES, COLUMN_LABELS } from "@/lib/pipeline/types";
+import { VERTICAL_STYLES, COLUMN_LABELS, STAGE_TIMERS } from "@/lib/pipeline/types";
 
 // =============================================================================
 // Props
@@ -190,6 +190,126 @@ function SuggestedMessage({ card }: { card: PipelineCard }) {
         </button>
       </div>
       <p className="text-xs text-gray-600 whitespace-pre-line">{message}</p>
+    </div>
+  );
+}
+
+// =============================================================================
+// Plan de seguimiento
+// =============================================================================
+
+const ORIGIN_LABELS: Record<string, string> = {
+  contactado: "post-contacto",
+  por_cotizar: "post-cotizacion",
+  cotizacion_enviada: "post-envio",
+};
+
+function formatDateShort(dateStr: string): string {
+  const d = new Date(dateStr + "T12:00:00"); // Evitar timezone issues
+  return `${d.getDate()}/${d.getMonth() + 1}`;
+}
+
+function FollowupPlan({ card }: { card: PipelineCard }) {
+  const hasFollowups = card.followups.length > 0;
+  const hasDeadline = !!card.stage_deadline;
+  const isInSeguimiento = card.column_name === "en_seguimiento";
+  const hasTimer = ["contactado", "por_cotizar", "cotizacion_enviada"].includes(card.column_name);
+
+  // No mostrar plan si no hay nada que mostrar
+  if (!hasFollowups && !hasDeadline && !hasTimer) return null;
+
+  const today = new Date().toISOString().split("T")[0];
+  const originLabel = card.followups[0]?.origin_stage
+    ? ORIGIN_LABELS[card.followups[0].origin_stage] ?? ""
+    : "";
+
+  return (
+    <div className="px-4 py-3">
+      <p className="text-xs font-medium text-gray-700 uppercase tracking-wide mb-2">Plan de seguimiento</p>
+      <div className="space-y-0">
+        {/* Para etapas con timer: mostrar evento actual + deadline */}
+        {hasTimer && !isInSeguimiento && (
+          <>
+            <PlanStep
+              label={`En ${COLUMN_LABELS[card.column_name]}`}
+              date={formatDateShort(card.updated_at.split("T")[0])}
+              completed={true}
+            />
+            {card.stage_deadline && (
+              <PlanStep
+                label={`Si no responde → pasa a seguimiento`}
+                date={formatDateShort(card.stage_deadline)}
+                completed={false}
+                isOverdue={card.stage_deadline <= today}
+              />
+            )}
+          </>
+        )}
+
+        {/* Para en_seguimiento: mostrar secuencia de followups */}
+        {isInSeguimiento && hasFollowups && (
+          <>
+            {originLabel && (
+              <div className="text-[10px] text-gray-400 mb-1 italic">Origen: {originLabel}</div>
+            )}
+            {card.followups
+              .sort((a, b) => a.sequence_number - b.sequence_number)
+              .map((f) => (
+                <PlanStep
+                  key={f.id}
+                  label={`Seguimiento ${f.sequence_number}`}
+                  date={formatDateShort(f.scheduled_date)}
+                  completed={f.status === "completed"}
+                  isSkipped={f.status === "skipped"}
+                  isOverdue={f.status === "pending" && f.scheduled_date <= today}
+                  detail={f.status === "completed" && f.completed_at
+                    ? `Completado ${formatDateShort(f.completed_at.split("T")[0])}`
+                    : f.status === "pending" && f.scheduled_date === today
+                      ? "Hoy"
+                      : undefined}
+                />
+              ))}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function PlanStep({
+  label,
+  date,
+  completed,
+  isSkipped,
+  isOverdue,
+  detail,
+}: {
+  label: string;
+  date: string;
+  completed: boolean;
+  isSkipped?: boolean;
+  isOverdue?: boolean;
+  detail?: string;
+}) {
+  return (
+    <div className="flex items-center gap-2 py-1">
+      <div className={`w-2 h-2 rounded-full shrink-0 ${
+        completed ? "bg-green-500" :
+        isSkipped ? "bg-gray-300" :
+        isOverdue ? "bg-red-500" :
+        "border-2 border-gray-300"
+      }`} />
+      <span className={`text-xs ${
+        completed ? "text-gray-500 line-through" :
+        isSkipped ? "text-gray-400 line-through" :
+        isOverdue ? "text-red-600 font-medium" :
+        "text-gray-700"
+      }`}>
+        {label} — {date}
+      </span>
+      {detail && (
+        <span className="text-[10px] text-gray-400 ml-auto">{detail}</span>
+      )}
     </div>
   );
 }
@@ -411,6 +531,9 @@ export function ContactModal({
           {/* Mensaje sugerido — stage_messages[etapa] o prediction.message_text */}
           <SuggestedMessage card={card} />
 
+          {/* Plan de seguimiento */}
+          <FollowupPlan card={card} />
+
           {/* Timeline de actividad */}
           {allNotes.length > 0 && (
             <div className="px-4 py-3">
@@ -568,12 +691,24 @@ function renderActions(
         </>
       );
 
-    case "vendido":
+    case "vendido": {
+      const nextRepo = card.prediction?.next_reposition_estimate;
       return (
         <>
           {banner}
+          {card.vertical === "reposicion" && nextRepo && (
+            <div className="bg-green-50 rounded-lg p-3 space-y-1">
+              <p className="text-xs font-medium text-green-800">
+                Proxima reposicion estimada: ~{formatDateShort(nextRepo)}
+              </p>
+              <p className="text-[10px] text-green-600">
+                El motor de PymePilot generara una nueva oportunidad cuando se acerque la fecha.
+              </p>
+            </div>
+          )}
         </>
       );
+    }
 
     default:
       return null;
