@@ -16,6 +16,8 @@ import { TicketChart } from "./charts/ticket-chart";
 import { ValueChart } from "./charts/value-chart";
 import { ClientRankingTable } from "./client-ranking-table";
 import { ProductRankingTable, type ProductRankingRow } from "./product-ranking-table";
+import { DemandProjectionTable, type DemandProjectionRow } from "./demand-projection-table";
+import { ClientDemandTable, type ClientDemandRow } from "./client-demand-table";
 import { formatCurrency } from "@/lib/format";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { TOOLTIPS } from "@/lib/tooltips";
@@ -78,6 +80,8 @@ interface MetricasContentProps {
   sales: SalesRow[];
   rankings: RankingRow[];
   productRankings: ProductRankingRow[];
+  demandProjections: DemandProjectionRow[];
+  clientDemand: ClientDemandRow[];
 }
 
 // ============================================================
@@ -128,8 +132,10 @@ export function MetricasContent({
   sales,
   rankings,
   productRankings,
+  demandProjections,
+  clientDemand,
 }: MetricasContentProps) {
-  const [activeTab, setActiveTab] = useState<"rendimiento" | "clientes" | "productos" | "comparar">(
+  const [activeTab, setActiveTab] = useState<"rendimiento" | "clientes" | "productos" | "demanda" | "comparar">(
     "rendimiento"
   );
   const [showExport, setShowExport] = useState(false);
@@ -232,6 +238,16 @@ export function MetricasContent({
               }`}
             >
               Productos
+            </button>
+            <button
+              onClick={() => setActiveTab("demanda")}
+              className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                activeTab === "demanda"
+                  ? "bg-[#1a2a2c] text-white shadow-[0_8px_32px_rgba(0,0,0,0.3)]"
+                  : "text-white/50 hover:text-white/80"
+              }`}
+            >
+              Demanda
             </button>
             <button
               onClick={() => setActiveTab("comparar")}
@@ -407,9 +423,90 @@ export function MetricasContent({
         <ProductRankingTable products={productRankings} />
       )}
 
+      {/* Tab: Demanda */}
+      {activeTab === "demanda" && (
+        <DemandSubTabs projections={demandProjections} clients={clientDemand} />
+      )}
+
       {/* Tab: Comparar */}
       {activeTab === "comparar" && (
         <CompareTab revenue={revenue} churn={churn} ticket={ticket} value={value} sales={sales} />
+      )}
+    </div>
+  );
+}
+
+// ============================================================
+// DEMAND SUB-TABS
+// ============================================================
+
+function DemandSubTabs({
+  projections,
+  clients,
+}: {
+  projections: DemandProjectionRow[];
+  clients: ClientDemandRow[];
+}) {
+  const [subTab, setSubTab] = useState<"productos" | "clientes">("productos");
+
+  // KPIs compartidos
+  const totalDemand = projections.reduce(
+    (sum, p) => sum + Number(p.projected_demand_30d),
+    0
+  );
+  const totalProducts = projections.length;
+  const totalClients = clients.length;
+
+  return (
+    <div className="space-y-4">
+      {/* KPIs resumen */}
+      <div className="grid grid-cols-3 gap-3">
+        <div className="glass-dark rounded-xl p-4 text-center">
+          <p className="text-2xl font-bold text-white">
+            {totalDemand.toLocaleString("es-AR")}
+          </p>
+          <p className="text-xs text-white/50 mt-1">Unidades prox. 30d</p>
+        </div>
+        <div className="glass-dark rounded-xl p-4 text-center">
+          <p className="text-2xl font-bold text-white">{totalProducts}</p>
+          <p className="text-xs text-white/50 mt-1">Productos activos</p>
+        </div>
+        <div className="glass-dark rounded-xl p-4 text-center">
+          <p className="text-2xl font-bold text-white">{totalClients}</p>
+          <p className="text-xs text-white/50 mt-1">Clientes top</p>
+        </div>
+      </div>
+
+      {/* Sub-tabs */}
+      <div className="flex gap-1 bg-white/[0.06] rounded-lg p-0.5 w-fit">
+        <button
+          onClick={() => setSubTab("productos")}
+          className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+            subTab === "productos"
+              ? "bg-[#1a2a2c] text-white shadow-[0_8px_32px_rgba(0,0,0,0.3)]"
+              : "text-white/50 hover:text-white/80"
+          }`}
+        >
+          Por Producto
+        </button>
+        <button
+          onClick={() => setSubTab("clientes")}
+          className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+            subTab === "clientes"
+              ? "bg-[#1a2a2c] text-white shadow-[0_8px_32px_rgba(0,0,0,0.3)]"
+              : "text-white/50 hover:text-white/80"
+          }`}
+        >
+          Por Cliente
+        </button>
+      </div>
+
+      {/* Contenido */}
+      {subTab === "productos" && (
+        <DemandProjectionTable projections={projections} />
+      )}
+      {subTab === "clientes" && (
+        <ClientDemandTable clients={clients} />
       )}
     </div>
   );
@@ -453,11 +550,11 @@ function CompareTab({
         previous: { revenue: revenue.slice(-6, -3), churn: churn.slice(-6, -3), ticket: ticket.slice(-6, -3), value: value.slice(-6, -3), sales: sales.slice(-6, -3), label: "Trimestre anterior" },
       };
     }
-    // Custom: todo el rango disponible dividido en 2 mitades
-    const half = Math.floor(revenue.length / 2);
+    // Custom: ultimos N meses vs N meses anteriores (N = compareRange)
+    const n = Math.min(compareRange, revenue.length);
     return {
-      current: { revenue: revenue.slice(half), churn: churn.slice(half), ticket: ticket.slice(half), value: value.slice(half), sales: sales.slice(half), label: `Ultimos ${revenue.length - half}m` },
-      previous: { revenue: revenue.slice(0, half), churn: churn.slice(0, half), ticket: ticket.slice(0, half), value: value.slice(0, half), sales: sales.slice(0, half), label: `${half}m anteriores` },
+      current: { revenue: revenue.slice(-n), churn: churn.slice(-n), ticket: ticket.slice(-n), value: value.slice(-n), sales: sales.slice(-n), label: `Ultimos ${n}m` },
+      previous: { revenue: revenue.slice(-n * 2, -n), churn: churn.slice(-n * 2, -n), ticket: ticket.slice(-n * 2, -n), value: value.slice(-n * 2, -n), sales: sales.slice(-n * 2, -n), label: `${n}m anteriores` },
     };
   }, [compareType, compareRange, revenue, churn, ticket, value, sales]);
 
