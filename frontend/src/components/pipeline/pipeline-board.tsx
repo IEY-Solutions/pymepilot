@@ -322,15 +322,15 @@ export function PipelineBoard({ initialCards }: Props) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Pipeline</h1>
-          <p className="text-sm text-gray-500">
+          <h1 className="text-2xl font-bold text-white">Pipeline</h1>
+          <p className="text-sm text-white/50">
             {totalCards} {totalCards === 1 ? "cliente" : "clientes"} en el pipeline
           </p>
         </div>
         <button
           onClick={refreshBoard}
           disabled={isRefreshing}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white/70 bg-white/[0.06] border border-white/10 rounded-lg hover:bg-white/10 disabled:opacity-50"
         >
           <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
           Actualizar
@@ -339,24 +339,24 @@ export function PipelineBoard({ initialCards }: Props) {
 
       {/* Notificaciones de followups del dia */}
       {notifications.length > 0 && (
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 space-y-1.5">
+        <div className="bg-amber-500/15 border border-amber-500/30 rounded-lg p-3 space-y-1.5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Bell className="h-4 w-4 text-amber-600" />
-              <span className="text-sm font-medium text-amber-800">
+              <Bell className="h-4 w-4 text-amber-400" />
+              <span className="text-sm font-medium text-amber-300">
                 Seguimientos para hoy ({notifications.length})
               </span>
             </div>
             <button
               onClick={() => setNotifications([])}
-              className="p-0.5 text-amber-400 hover:text-amber-600 transition-colors"
+              className="p-0.5 text-amber-400/50 hover:text-amber-400 transition-colors"
               aria-label="Cerrar notificaciones"
             >
               <X className="h-4 w-4" />
             </button>
           </div>
           {notifications.map((n) => (
-            <div key={n.id} className="text-xs text-amber-700">
+            <div key={n.id} className="text-xs text-amber-400/80">
               <span className="font-medium">{n.title}</span> — {n.body}
             </div>
           ))}

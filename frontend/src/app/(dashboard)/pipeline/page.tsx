@@ -33,7 +33,7 @@ export default async function PipelinePage() {
   if (error) {
     return (
       <div>
-        <h1 className="text-2xl font-bold text-brand-on-100 mb-4">Pipeline</h1>
+        <h1 className="text-2xl font-bold text-white mb-4">Pipeline</h1>
         <p className="text-red-400 bg-red-500/15 p-4 rounded-lg">
           Error al cargar el pipeline. Intenta recargar la pagina.
         </p>
