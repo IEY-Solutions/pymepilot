@@ -118,7 +118,10 @@ function generatePalette(hex: string): Record<string, string> {
 function applyPaletteToCSS(palette: Record<string, string>) {
   const root = document.documentElement;
   for (const [shade, color] of Object.entries(palette)) {
-    root.style.setProperty(`--brand-${shade}`, color);
+    // Tailwind v4 @theme genera --color-brand-{shade} en :root
+    // Sobreescribimos directamente esa variable para que todas
+    // las clases brand-* se actualicen en runtime
+    root.style.setProperty(`--color-brand-${shade}`, color);
   }
 }
 
