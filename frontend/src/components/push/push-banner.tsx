@@ -8,7 +8,6 @@ export function PushBanner() {
   const [subscribing, setSubscribing] = useState(false);
 
   useEffect(() => {
-    // Solo mostrar si el navegador soporta push y no pidio permiso aun
     if (
       typeof window === "undefined" ||
       !("serviceWorker" in navigator) ||
@@ -18,10 +17,8 @@ export function PushBanner() {
       return;
     }
 
-    // Si ya acepto o rechazo, no mostrar
     if (Notification.permission !== "default") return;
 
-    // Si ya lo descarto en esta sesion, no mostrar
     if (sessionStorage.getItem("push-banner-dismissed")) return;
 
     setVisible(true);
@@ -42,10 +39,8 @@ export function PushBanner() {
         return;
       }
 
-      // Registrar service worker
       const registration = await navigator.serviceWorker.register("/sw.js");
 
-      // Obtener VAPID public key del env
       const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
       if (!vapidKey) {
         console.error("NEXT_PUBLIC_VAPID_PUBLIC_KEY no configurada");
@@ -53,13 +48,11 @@ export function PushBanner() {
         return;
       }
 
-      // Suscribir al push (applicationServerKey acepta string base64url directamente)
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: vapidKey,
       });
 
-      // Enviar suscripcion al backend
       const subJson = subscription.toJSON();
       const res = await fetch("/api/push/subscribe", {
         method: "POST",
@@ -84,10 +77,10 @@ export function PushBanner() {
   if (!visible) return null;
 
   return (
-    <div className="bg-blue-50 border-b border-blue-100 px-4 py-3">
+    <div className="bg-[#81b5a1]/10 border-b border-[rgba(129,181,161,0.2)] px-4 py-3">
       <div className="max-w-5xl flex items-center gap-3">
-        <Bell className="h-5 w-5 text-blue-600 flex-shrink-0" />
-        <p className="text-sm text-blue-800 flex-1">
+        <Bell className="h-5 w-5 text-[#81b5a1] flex-shrink-0" />
+        <p className="text-sm text-white/80 flex-1">
           Activa las notificaciones para recibir un resumen diario de tus
           clientes a contactar y enterarte al instante cuando se concrete una
           venta.
@@ -95,13 +88,13 @@ export function PushBanner() {
         <button
           onClick={handleSubscribe}
           disabled={subscribing}
-          className="text-sm font-medium px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex-shrink-0"
+          className="text-sm font-medium px-3 py-1.5 bg-[#81b5a1] text-white rounded-lg hover:bg-[#5a9a84] transition-colors disabled:opacity-50 flex-shrink-0 glow-hover"
         >
           {subscribing ? "Activando..." : "Activar"}
         </button>
         <button
           onClick={handleDismiss}
-          className="text-blue-400 hover:text-blue-600 flex-shrink-0"
+          className="text-white/30 hover:text-white/60 flex-shrink-0"
           aria-label="Cerrar"
         >
           <X className="h-4 w-4" />
@@ -110,4 +103,3 @@ export function PushBanner() {
     </div>
   );
 }
-

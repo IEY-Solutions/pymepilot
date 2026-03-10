@@ -44,10 +44,10 @@ const verticalLabels: Record<string, string> = {
 };
 
 const verticalColors: Record<string, string> = {
-  reposicion: "bg-blue-100 text-blue-700",
-  activacion: "bg-emerald-100 text-emerald-700",
-  recuperacion: "bg-amber-100 text-amber-700",
-  cross_sell: "bg-purple-100 text-purple-700",
+  reposicion: "bg-[#81b5a1]/15 text-blue-400",
+  activacion: "bg-emerald-500/15 text-emerald-400",
+  recuperacion: "bg-amber-500/15 text-amber-400",
+  cross_sell: "bg-purple-500/15 text-purple-400",
 };
 
 const statusLabels: Record<string, string> = {
@@ -107,8 +107,8 @@ export function ClientDetail({ customerId }: { customerId: string }) {
   if (loading) {
     return (
       <div className="flex items-center gap-2 py-3">
-        <div className="w-4 h-4 border-2 border-indigo-200 border-t-indigo-500 rounded-full animate-spin" />
-        <span className="text-xs text-gray-400">Cargando detalle...</span>
+        <div className="w-4 h-4 border-2 border-[#81b5a1]/30 border-t-[#81b5a1] rounded-full animate-spin" />
+        <span className="text-xs text-white/40">Cargando detalle...</span>
       </div>
     );
   }
@@ -116,10 +116,10 @@ export function ClientDetail({ customerId }: { customerId: string }) {
   if (error) {
     return (
       <div className="flex items-center gap-2 py-3">
-        <span className="text-xs text-red-500">Error al cargar detalle.</span>
+        <span className="text-xs text-red-400">Error al cargar detalle.</span>
         <button
           onClick={() => setRetryCount((c) => c + 1)}
-          className="text-xs text-indigo-600 hover:text-indigo-800 underline"
+          className="text-xs text-[#81b5a1] hover:text-[#a3cabb] underline"
         >
           Reintentar
         </button>
@@ -133,7 +133,7 @@ export function ClientDetail({ customerId }: { customerId: string }) {
 
   if (!hasProducts && !hasRevenue && !hasPredictions) {
     return (
-      <div className="text-xs text-gray-400 py-3">
+      <div className="text-xs text-white/40 py-3">
         Sin datos registrados para este cliente
       </div>
     );
@@ -160,7 +160,7 @@ export function ClientDetail({ customerId }: { customerId: string }) {
       {hasProducts && (
         <div>
           <div className="flex items-center justify-between mb-3">
-            <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-white/40">
               Top {sortedProducts.length} productos
             </h4>
             <div className="flex gap-1 bg-surface-muted rounded p-0.5">
@@ -169,7 +169,7 @@ export function ClientDetail({ customerId }: { customerId: string }) {
                 className={`px-2 py-0.5 text-[10px] font-medium rounded transition-colors ${
                   productSort === "revenue"
                     ? "bg-brand-600 text-brand-on-600 shadow-sm"
-                    : "text-gray-500 hover:text-gray-700"
+                    : "text-white/50 hover:text-white/80"
                 }`}
               >
                 Monto
@@ -179,7 +179,7 @@ export function ClientDetail({ customerId }: { customerId: string }) {
                 className={`px-2 py-0.5 text-[10px] font-medium rounded transition-colors ${
                   productSort === "units"
                     ? "bg-brand-600 text-brand-on-600 shadow-sm"
-                    : "text-gray-500 hover:text-gray-700"
+                    : "text-white/50 hover:text-white/80"
                 }`}
               >
                 Unidades
@@ -195,28 +195,28 @@ export function ClientDetail({ customerId }: { customerId: string }) {
                   : 0;
               return (
                 <div key={i} className="flex items-center gap-3 text-sm">
-                  <span className="text-xs font-medium text-gray-300 w-4 text-right">
+                  <span className="text-xs font-medium text-white/30 w-4 text-right">
                     {i + 1}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <span className="text-gray-700 truncate block">
+                    <span className="text-white/80 truncate block">
                       {p.product_name}
                     </span>
                     <div className="w-full h-1 bg-surface-muted rounded-full mt-1">
                       <div
-                        className="h-full bg-indigo-400 rounded-full transition-all duration-300"
+                        className="h-full bg-[#81b5a1] rounded-full transition-all duration-300"
                         style={{ width: `${pct}%` }}
                       />
                     </div>
                   </div>
                   <div className="flex gap-3 text-xs shrink-0">
-                    <span className={`font-medium ${productSort === "revenue" ? "text-gray-700" : "text-gray-400"}`}>
+                    <span className={`font-medium ${productSort === "revenue" ? "text-white/80" : "text-white/40"}`}>
                       {formatCurrency(Number(p.total_revenue))}
                     </span>
-                    <span className={`${productSort === "units" ? "font-medium text-gray-700" : "text-gray-400"}`}>
+                    <span className={`${productSort === "units" ? "font-medium text-white/80" : "text-white/40"}`}>
                       {Number(p.total_quantity)} uds
                     </span>
-                    <span className="text-gray-400">{p.times_ordered}x</span>
+                    <span className="text-white/40">{p.times_ordered}x</span>
                   </div>
                 </div>
               );
@@ -228,7 +228,7 @@ export function ClientDetail({ customerId }: { customerId: string }) {
       {/* Seccion 2: Facturacion mensual — mini bar chart */}
       {hasRevenue && (
         <div>
-          <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-3">
+          <h4 className="text-xs font-semibold uppercase tracking-wider text-white/40 mb-3">
             Facturacion mensual
           </h4>
           <div className="h-20">
@@ -241,7 +241,7 @@ export function ClientDetail({ customerId }: { customerId: string }) {
               >
                 <XAxis
                   dataKey="month"
-                  tick={{ fontSize: 10, fill: "#9ca3af" }}
+                  tick={{ fontSize: 10, fill: "rgba(255,255,255,0.5)" }}
                   axisLine={false}
                   tickLine={false}
                 />
@@ -253,12 +253,16 @@ export function ClientDetail({ customerId }: { customerId: string }) {
                   contentStyle={{
                     fontSize: 12,
                     borderRadius: 8,
-                    border: "1px solid #e5e7eb",
+                    border: "1px solid rgba(129,181,161,0.2)",
+                    backgroundColor: "rgba(26,42,44,0.95)",
+                    color: "rgba(255,255,255,0.8)",
                   }}
+                  labelStyle={{ color: "rgba(255,255,255,0.5)" }}
+                  itemStyle={{ color: "rgba(255,255,255,0.8)" }}
                 />
                 <Bar
                   dataKey="revenue"
-                  fill="#818cf8"
+                  fill="#81b5a1"
                   radius={[4, 4, 0, 0]}
                 />
               </BarChart>
@@ -270,7 +274,7 @@ export function ClientDetail({ customerId }: { customerId: string }) {
       {/* Seccion 3: Predicciones activas */}
       {hasPredictions && (
         <div>
-          <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-3">
+          <h4 className="text-xs font-semibold uppercase tracking-wider text-white/40 mb-3">
             Predicciones activas
           </h4>
           <div className="space-y-2">
@@ -280,11 +284,11 @@ export function ClientDetail({ customerId }: { customerId: string }) {
                 className="flex flex-wrap items-center gap-2 text-sm"
               >
                 <span
-                  className={`px-2 py-0.5 rounded-full text-xs font-medium ${verticalColors[pred.vertical] ?? "bg-gray-100 text-gray-600"}`}
+                  className={`px-2 py-0.5 rounded-full text-xs font-medium ${verticalColors[pred.vertical] ?? "bg-white/[0.06] text-white/60"}`}
                 >
                   {verticalLabels[pred.vertical] ?? pred.vertical}
                 </span>
-                <span className="text-xs text-gray-400">
+                <span className="text-xs text-white/40">
                   {new Date(pred.prediction_date + "T12:00:00").toLocaleDateString("es-AR", {
                     day: "numeric",
                     month: "short",
@@ -293,14 +297,14 @@ export function ClientDetail({ customerId }: { customerId: string }) {
                 <span
                   className={`text-xs px-1.5 py-0.5 rounded ${
                     pred.status === "contacted"
-                      ? "bg-green-50 text-green-600"
-                      : "bg-gray-100 text-gray-500"
+                      ? "bg-green-500/15 text-green-400"
+                      : "bg-white/[0.06] text-white/50"
                   }`}
                 >
                   {statusLabels[pred.status] ?? pred.status}
                 </span>
                 {pred.message_text && (
-                  <span className="text-xs text-gray-400 truncate max-w-[200px]">
+                  <span className="text-xs text-white/40 truncate max-w-[200px]">
                     {pred.message_text.slice(0, 60)}
                     {pred.message_text.length > 60 ? "..." : ""}
                   </span>

@@ -100,9 +100,9 @@ function KpiCard({
   tooltip?: string;
 }) {
   return (
-    <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 p-5">
+    <div className="bg-[#1a2a2c] rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.3)] hover:shadow-[0_8px_32px_rgba(0,0,0,0.4)] transition-shadow duration-200 p-5">
       <div className="flex items-center justify-between mb-3">
-        <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+        <span className="text-xs font-semibold uppercase tracking-wider text-white/40">
           {title}
           {tooltip && <InfoTooltip text={tooltip} />}
         </span>
@@ -110,8 +110,8 @@ function KpiCard({
           <Icon className="h-4 w-4" />
         </div>
       </div>
-      <p className="text-3xl font-bold tracking-tight text-gray-900">{value}</p>
-      <p className="text-sm text-gray-500 mt-1.5">{subtitle}</p>
+      <p className="text-3xl font-bold tracking-tight text-white">{value}</p>
+      <p className="text-sm text-white/50 mt-1.5">{subtitle}</p>
     </div>
   );
 }
@@ -200,15 +200,15 @@ export function MetricasContent({
     <div className="space-y-6">
       {/* Header con tabs + exportar */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <h1 className="text-2xl font-bold tracking-tight text-gray-900">Metricas</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-white">Metricas</h1>
         <div className="flex items-center gap-2">
-          <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
+          <div className="flex gap-1 bg-white/[0.06] rounded-lg p-1">
             <button
               onClick={() => setActiveTab("rendimiento")}
               className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
                 activeTab === "rendimiento"
-                  ? "bg-white text-gray-900 shadow-sm"
-                  : "text-gray-500 hover:text-gray-700"
+                  ? "bg-[#1a2a2c] text-white shadow-[0_8px_32px_rgba(0,0,0,0.3)]"
+                  : "text-white/50 hover:text-white/80"
               }`}
             >
               Rendimiento
@@ -217,8 +217,8 @@ export function MetricasContent({
               onClick={() => setActiveTab("clientes")}
               className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
                 activeTab === "clientes"
-                  ? "bg-white text-gray-900 shadow-sm"
-                  : "text-gray-500 hover:text-gray-700"
+                  ? "bg-[#1a2a2c] text-white shadow-[0_8px_32px_rgba(0,0,0,0.3)]"
+                  : "text-white/50 hover:text-white/80"
               }`}
             >
               Clientes
@@ -227,8 +227,8 @@ export function MetricasContent({
               onClick={() => setActiveTab("productos")}
               className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
                 activeTab === "productos"
-                  ? "bg-white text-gray-900 shadow-sm"
-                  : "text-gray-500 hover:text-gray-700"
+                  ? "bg-[#1a2a2c] text-white shadow-[0_8px_32px_rgba(0,0,0,0.3)]"
+                  : "text-white/50 hover:text-white/80"
               }`}
             >
               Productos
@@ -237,8 +237,8 @@ export function MetricasContent({
               onClick={() => setActiveTab("comparar")}
               className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
                 activeTab === "comparar"
-                  ? "bg-white text-gray-900 shadow-sm"
-                  : "text-gray-500 hover:text-gray-700"
+                  ? "bg-[#1a2a2c] text-white shadow-[0_8px_32px_rgba(0,0,0,0.3)]"
+                  : "text-white/50 hover:text-white/80"
               }`}
             >
               Comparar
@@ -250,7 +250,7 @@ export function MetricasContent({
             <button
               onClick={() => setShowExport(!showExport)}
               disabled={exporting}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white/60 bg-[#1a2a2c] border border-[rgba(129,181,161,0.1)] rounded-lg hover:bg-white/[0.03] transition-colors disabled:opacity-50"
             >
               <Download className="h-4 w-4" />
               <span className="hidden sm:inline">
@@ -260,16 +260,16 @@ export function MetricasContent({
             </button>
 
             {showExport && (
-              <div className="absolute right-0 mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+              <div className="absolute right-0 mt-1 w-48 bg-[#1a2a2c] border border-[rgba(129,181,161,0.1)] rounded-lg shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-10">
                 <button
                   onClick={handleExportExcel}
-                  className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 rounded-t-lg"
+                  className="w-full text-left px-4 py-2.5 text-sm text-white/80 hover:bg-white/[0.03] rounded-t-lg"
                 >
                   Descargar Excel (.xlsx)
                 </button>
                 <button
                   onClick={handleExportPdf}
-                  className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 rounded-b-lg border-t border-gray-100"
+                  className="w-full text-left px-4 py-2.5 text-sm text-white/80 hover:bg-white/[0.03] rounded-b-lg border-t border-white/[0.06]"
                 >
                   Descargar PDF
                 </button>
@@ -303,8 +303,8 @@ export function MetricasContent({
               icon={Receipt}
               color={
                 salesPctChange >= 0
-                  ? "bg-gradient-to-br from-blue-50 to-blue-100 text-blue-600"
-                  : "bg-gradient-to-br from-red-50 to-red-100 text-red-600"
+                  ? "bg-gradient-to-br from-[#81b5a1]/10 to-[#81b5a1]/15 text-[#81b5a1]"
+                  : "bg-gradient-to-br from-red-500/15 to-red-500/20 text-red-400"
               }
               tooltip={TOOLTIPS["metricas.ventas_mes"]}
             />
@@ -323,8 +323,8 @@ export function MetricasContent({
               icon={recurringTrend >= 0 ? TrendingUp : TrendingDown}
               color={
                 recurringTrend >= 0
-                  ? "bg-gradient-to-br from-green-50 to-green-100 text-green-600"
-                  : "bg-gradient-to-br from-red-50 to-red-100 text-red-600"
+                  ? "bg-gradient-to-br from-green-500/15 to-green-500/20 text-green-400"
+                  : "bg-gradient-to-br from-red-500/15 to-red-500/20 text-red-400"
               }
               tooltip={TOOLTIPS["metricas.recurrente"]}
             />
@@ -343,10 +343,10 @@ export function MetricasContent({
               icon={churnTrend <= 0 ? TrendingDown : TrendingUp}
               color={
                 Number(lastChurn?.churn_rate ?? 0) <= 10
-                  ? "bg-gradient-to-br from-green-50 to-green-100 text-green-600"
+                  ? "bg-gradient-to-br from-green-500/15 to-green-500/20 text-green-400"
                   : Number(lastChurn?.churn_rate ?? 0) <= 15
-                    ? "bg-gradient-to-br from-amber-50 to-amber-100 text-amber-600"
-                    : "bg-gradient-to-br from-red-50 to-red-100 text-red-600"
+                    ? "bg-gradient-to-br from-amber-500/15 to-amber-500/20 text-amber-400"
+                    : "bg-gradient-to-br from-red-500/15 to-red-500/20 text-red-400"
               }
               tooltip={TOOLTIPS["metricas.churn"]}
             />
@@ -363,7 +363,7 @@ export function MetricasContent({
                   : "Sin datos"
               }
               icon={ShoppingCart}
-              color="bg-gradient-to-br from-purple-50 to-purple-100 text-purple-600"
+              color="bg-gradient-to-br from-purple-500/15 to-purple-500/20 text-purple-400"
               tooltip={TOOLTIPS["metricas.ticket"]}
             />
             <KpiCard
@@ -375,7 +375,7 @@ export function MetricasContent({
                   : "Sin conversiones aun"
               }
               icon={Zap}
-              color="bg-gradient-to-br from-indigo-50 to-indigo-100 text-indigo-600"
+              color="bg-gradient-to-br from-indigo-500/15 to-indigo-500/20 text-indigo-400"
               tooltip={TOOLTIPS["metricas.valor_pymepilot"]}
             />
           </div>
@@ -517,15 +517,15 @@ function CompareTab({
     <div className="space-y-6">
       {/* Selectores */}
       <div className="flex flex-wrap gap-3">
-        <div className="flex gap-1 bg-gray-100 rounded-lg p-0.5">
+        <div className="flex gap-1 bg-white/[0.06] rounded-lg p-0.5">
           {([["month", "Mes vs anterior"], ["quarter", "Trimestre vs anterior"], ["custom", "Periodo custom"]] as const).map(([val, label]) => (
             <button
               key={val}
               onClick={() => setCompareType(val)}
               className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
                 compareType === val
-                  ? "bg-white text-gray-900 shadow-sm"
-                  : "text-gray-500 hover:text-gray-700"
+                  ? "bg-[#1a2a2c] text-white shadow-[0_8px_32px_rgba(0,0,0,0.3)]"
+                  : "text-white/50 hover:text-white/80"
               }`}
             >
               {label}
@@ -534,15 +534,15 @@ function CompareTab({
         </div>
 
         {compareType === "custom" && (
-          <div className="flex gap-1 bg-gray-100 rounded-lg p-0.5">
+          <div className="flex gap-1 bg-white/[0.06] rounded-lg p-0.5">
             {([4, 6, 9, 12] as const).map((months) => (
               <button
                 key={months}
                 onClick={() => setCompareRange(months)}
                 className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
                   compareRange === months
-                    ? "bg-white text-gray-900 shadow-sm"
-                    : "text-gray-500 hover:text-gray-700"
+                    ? "bg-[#1a2a2c] text-white shadow-[0_8px_32px_rgba(0,0,0,0.3)]"
+                    : "text-white/50 hover:text-white/80"
                 }`}
               >
                 {months}m
@@ -553,17 +553,17 @@ function CompareTab({
       </div>
 
       {/* Tabla KPIs */}
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+      <div className="bg-[#1a2a2c] rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.3)] overflow-hidden">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-gray-100">
-              <th className="text-left text-xs font-semibold uppercase tracking-wider text-gray-400 px-5 py-3">Metrica</th>
-              <th className="text-right text-xs font-semibold uppercase tracking-wider text-gray-400 px-5 py-3">{current.label}</th>
-              <th className="text-right text-xs font-semibold uppercase tracking-wider text-gray-400 px-5 py-3">{previous.label}</th>
-              <th className="text-right text-xs font-semibold uppercase tracking-wider text-gray-400 px-5 py-3">Variacion</th>
+            <tr className="border-b border-white/[0.06]">
+              <th className="text-left text-xs font-semibold uppercase tracking-wider text-white/40 px-5 py-3">Metrica</th>
+              <th className="text-right text-xs font-semibold uppercase tracking-wider text-white/40 px-5 py-3">{current.label}</th>
+              <th className="text-right text-xs font-semibold uppercase tracking-wider text-white/40 px-5 py-3">{previous.label}</th>
+              <th className="text-right text-xs font-semibold uppercase tracking-wider text-white/40 px-5 py-3">Variacion</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-50">
+          <tbody className="divide-y divide-white/[0.06]">
             {kpis.map((kpi) => {
               const diff = kpi.currentVal - kpi.previousVal;
               const pctChange = kpi.previousVal !== 0
@@ -572,11 +572,11 @@ function CompareTab({
               const isPositive = kpi.invertColor ? diff <= 0 : diff >= 0;
 
               return (
-                <tr key={kpi.label} className="hover:bg-gray-50">
-                  <td className="text-sm font-medium text-gray-700 px-5 py-3">{kpi.label}</td>
-                  <td className="text-sm text-right text-gray-900 font-semibold px-5 py-3">{kpi.format(kpi.currentVal)}</td>
-                  <td className="text-sm text-right text-gray-500 px-5 py-3">{kpi.format(kpi.previousVal)}</td>
-                  <td className={`text-sm text-right font-medium px-5 py-3 ${isPositive ? "text-green-600" : "text-red-600"}`}>
+                <tr key={kpi.label} className="hover:bg-white/[0.03]">
+                  <td className="text-sm font-medium text-white/80 px-5 py-3">{kpi.label}</td>
+                  <td className="text-sm text-right text-white font-semibold px-5 py-3">{kpi.format(kpi.currentVal)}</td>
+                  <td className="text-sm text-right text-white/50 px-5 py-3">{kpi.format(kpi.previousVal)}</td>
+                  <td className={`text-sm text-right font-medium px-5 py-3 ${isPositive ? "text-green-400" : "text-red-400"}`}>
                     {diff > 0 ? "+" : ""}{kpi.isPp ? `${diff.toFixed(1)}pp` : `${pctChange.toFixed(0)}%`}
                     {" "}{isPositive ? "↑" : "↓"}
                   </td>

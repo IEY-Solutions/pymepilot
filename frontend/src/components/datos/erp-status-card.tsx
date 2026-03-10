@@ -7,15 +7,6 @@ import {
   CircleDashed,
 } from "lucide-react";
 
-/**
- * Tipos de estado para la card de ERP.
- *
- * QUE ES: Cada estado representa una condicion diferente de la conexion
- * del tenant con su ERP (sistema contable).
- *
- * POR QUE 5 estados: Porque cubren todas las combinaciones posibles
- * de configuracion y resultado del ultimo sync.
- */
 type ErpStatus = "connected" | "outdated" | "error" | "not_configured" | "file_only";
 
 interface ErpStatusInfo {
@@ -28,10 +19,6 @@ interface ErpStatusInfo {
   borderClass: string;
 }
 
-/**
- * Props que recibe el componente.
- * El caller (page.tsx) le pasa los datos ya consultados de la DB.
- */
 interface ErpStatusCardProps {
   erpType: string | null;
   hasCredentials: boolean;
@@ -47,46 +34,42 @@ interface ErpStatusCardProps {
 function getErpStatus(props: ErpStatusCardProps): ErpStatusInfo {
   const { erpType, hasCredentials, lastSync } = props;
 
-  // Estado 1: ERP tipo excel (sin API, solo subida de archivos)
   if (erpType === "excel") {
     return {
       status: "file_only",
       label: "Canal: Subida de archivos",
       description: "Los datos se cargan via Smart File Upload o Google Drive.",
       icon: FileSpreadsheet,
-      colorClass: "text-blue-600",
-      bgClass: "bg-blue-50",
-      borderClass: "border-blue-200",
+      colorClass: "text-blue-400",
+      bgClass: "bg-blue-500/15",
+      borderClass: "border-blue-500/30",
     };
   }
 
-  // Estado 2: Sin credenciales configuradas
   if (!erpType || !hasCredentials) {
     return {
       status: "not_configured",
       label: "No configurado",
       description: "Credenciales ERP no configuradas. Contactar administrador.",
       icon: CircleDashed,
-      colorClass: "text-gray-500",
-      bgClass: "bg-gray-50",
-      borderClass: "border-gray-200",
+      colorClass: "text-white/50",
+      bgClass: "bg-white/[0.06]",
+      borderClass: "border-white/[0.1]",
     };
   }
 
-  // Estado 3: Ultimo sync fallo
   if (lastSync && lastSync.status === "failed") {
     return {
       status: "error",
       label: "Error de conexion",
       description: "El ultimo sync fallo. Verificar credenciales y conexion.",
       icon: XCircle,
-      colorClass: "text-red-600",
-      bgClass: "bg-red-50",
-      borderClass: "border-red-200",
+      colorClass: "text-red-400",
+      bgClass: "bg-red-500/15",
+      borderClass: "border-red-500/30",
     };
   }
 
-  // Estado 4: Sync desactualizado (>48 horas)
   if (lastSync) {
     const lastSyncDate = new Date(lastSync.started_at);
     const hoursSinceSync = (Date.now() - lastSyncDate.getTime()) / (1000 * 60 * 60);
@@ -97,33 +80,31 @@ function getErpStatus(props: ErpStatusCardProps): ErpStatusInfo {
         label: "Desactualizado",
         description: `Ultimo sync hace ${Math.floor(hoursSinceSync / 24)} dias.`,
         icon: AlertTriangle,
-        colorClass: "text-yellow-600",
-        bgClass: "bg-yellow-50",
-        borderClass: "border-yellow-200",
+        colorClass: "text-yellow-400",
+        bgClass: "bg-yellow-500/15",
+        borderClass: "border-yellow-500/30",
       };
     }
 
-    // Estado 5: Todo OK
     return {
       status: "connected",
       label: "Conectado",
       description: "Datos sincronizados correctamente.",
       icon: CheckCircle,
-      colorClass: "text-green-600",
-      bgClass: "bg-green-50",
-      borderClass: "border-green-200",
+      colorClass: "text-green-400",
+      bgClass: "bg-green-500/15",
+      borderClass: "border-green-500/30",
     };
   }
 
-  // Sin syncs registrados pero con credenciales
   return {
     status: "not_configured",
     label: "Pendiente",
     description: "Credenciales configuradas. Esperando primer sync.",
     icon: CircleDashed,
-    colorClass: "text-gray-500",
-    bgClass: "bg-gray-50",
-    borderClass: "border-gray-200",
+    colorClass: "text-white/50",
+    bgClass: "bg-white/[0.06]",
+    borderClass: "border-white/[0.1]",
   };
 }
 
@@ -163,14 +144,14 @@ export function ErpStatusCard({ erpType, hasCredentials, lastSync }: ErpStatusCa
   const StatusIcon = info.icon;
 
   return (
-    <div className={`rounded-lg border ${info.borderClass} ${info.bgClass} p-4`}>
+    <div className={`rounded-2xl border ${info.borderClass} ${info.bgClass} p-4`}>
       <div className="flex items-start gap-3">
         <div className="mt-0.5">
-          <Cloud className="h-5 w-5 text-gray-400" />
+          <Cloud className="h-5 w-5 text-white/40" />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-medium text-gray-900">Conexion ERP</h2>
+            <h2 className="text-sm font-medium text-white">Conexion ERP</h2>
             <div className="flex items-center gap-1.5">
               <StatusIcon className={`h-4 w-4 ${info.colorClass}`} />
               <span className={`text-xs font-medium ${info.colorClass}`}>
@@ -179,9 +160,9 @@ export function ErpStatusCard({ erpType, hasCredentials, lastSync }: ErpStatusCa
             </div>
           </div>
 
-          <p className="text-xs text-gray-500 mt-1">{info.description}</p>
+          <p className="text-xs text-white/50 mt-1">{info.description}</p>
 
-          <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
+          <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-white/50">
             <span>Tipo: {formatErpType(erpType)}</span>
             {lastSync && (
               <>

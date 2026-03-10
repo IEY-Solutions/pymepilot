@@ -17,7 +17,7 @@ export function BottomNav({ unreadCount = 0 }: { unreadCount?: number }) {
   const pathname = usePathname();
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 border-t border-gray-200 bg-white z-50">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 border-t border-[rgba(129,181,161,0.1)] bg-[#1a2a2c] z-50">
       <div className="flex justify-around">
         {navItems.map((item) => {
           const isActive =
@@ -30,8 +30,8 @@ export function BottomNav({ unreadCount = 0 }: { unreadCount?: number }) {
               href={item.href}
               className={`flex flex-col items-center gap-0.5 py-2 px-3 text-xs transition-colors ${
                 isActive
-                  ? "text-blue-600"
-                  : "text-gray-400 hover:text-gray-600"
+                  ? "text-[#81b5a1]"
+                  : "text-white/40 hover:text-white/60"
               }`}
             >
               <span className="relative">

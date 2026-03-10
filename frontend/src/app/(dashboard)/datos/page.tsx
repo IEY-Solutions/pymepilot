@@ -17,10 +17,10 @@ const statusConfig: Record<
   string,
   { icon: React.ComponentType<{ className?: string }>; color: string; label: string }
 > = {
-  completed: { icon: CheckCircle, color: "text-green-500", label: "OK" },
-  failed: { icon: XCircle, color: "text-red-500", label: "Error" },
-  requires_review: { icon: AlertTriangle, color: "text-yellow-500", label: "Revisar" },
-  started: { icon: Clock, color: "text-blue-500", label: "En curso" },
+  completed: { icon: CheckCircle, color: "text-green-400", label: "OK" },
+  failed: { icon: XCircle, color: "text-red-400", label: "Error" },
+  requires_review: { icon: AlertTriangle, color: "text-yellow-400", label: "Revisar" },
+  started: { icon: Clock, color: "text-blue-400", label: "En curso" },
 };
 
 function formatDate(dateStr: string): string {
@@ -35,7 +35,6 @@ function formatDate(dateStr: string): string {
 export default async function DatosPage() {
   const supabase = await createClient();
 
-  // Queries en paralelo (+ upload_jobs recientes + tenant info)
   const [syncsRes, customersRes, productsRes, ordersRes, predictionsRes, uploadsRes, driveRes, tenantRes] =
     await Promise.all([
       supabase
@@ -65,8 +64,6 @@ export default async function DatosPage() {
         .select("id, folder_id, status, last_synced_at, error_message")
         .limit(1)
         .maybeSingle(),
-      // RPC SECURITY DEFINER: solo columnas seguras, filtrada por tenant del JWT.
-      // NO expone erp_config (que contiene client_id + client_secret_encrypted).
       supabase.rpc("get_tenant_info_secure"),
     ]);
 
@@ -77,21 +74,17 @@ export default async function DatosPage() {
   const tenantRows = tenantRes.data as { erp_type: string | null; has_erp_credentials: boolean }[] | null;
   const tenantData = tenantRows?.[0] ?? null;
 
-  // Datos para la card de ERP (derivados de VIEW segura, sin erp_config)
   const erpType = tenantData?.erp_type ?? null;
   const hasCredentials = tenantData?.has_erp_credentials ?? false;
 
-  // Ultimo sync exitoso (para la card de ERP)
   const lastSuccessfulSync = syncs.find((s) => s.status === "completed") ?? null;
 
-  // Indicador de frescura
   const freshness = getFreshnessInfo(lastSync?.started_at ?? null);
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Estado de Datos</h1>
+      <h1 className="text-2xl font-bold text-white">Estado de Datos</h1>
 
-      {/* Card de estado ERP */}
       <ErpStatusCard
         erpType={erpType}
         hasCredentials={hasCredentials}
@@ -104,16 +97,15 @@ export default async function DatosPage() {
         } : null}
       />
 
-      {/* Indicador de frescura mejorado */}
       {freshness && (
-        <div className={`flex items-center justify-between gap-3 p-4 ${freshness.bgClass} border ${freshness.borderClass} rounded-lg`}>
+        <div className={`flex items-center justify-between gap-3 p-4 ${freshness.bgClass} border ${freshness.borderClass} rounded-2xl`}>
           <div className="flex items-center gap-3">
             {freshness.color === "green" ? (
-              <CheckCircle className="h-5 w-5 text-green-600 shrink-0" />
+              <CheckCircle className="h-5 w-5 text-green-400 shrink-0" />
             ) : freshness.color === "yellow" ? (
-              <AlertTriangle className="h-5 w-5 text-yellow-600 shrink-0" />
+              <AlertTriangle className="h-5 w-5 text-yellow-400 shrink-0" />
             ) : (
-              <AlertTriangle className="h-5 w-5 text-red-600 shrink-0" />
+              <AlertTriangle className="h-5 w-5 text-red-400 shrink-0" />
             )}
             <div>
               <p className={`text-sm font-medium ${freshness.textClass}`}>
@@ -135,15 +127,12 @@ export default async function DatosPage() {
         </div>
       )}
 
-      {/* Smart File Upload (Canal 2) */}
       <FileUpload />
 
-      {/* Google Drive (Canal 3) */}
       <DriveConnection connection={driveConnection} />
 
-      {/* Conteo de registros */}
       <div>
-        <h2 className="text-sm font-medium text-gray-500 mb-3">
+        <h2 className="text-sm font-medium text-white/50 mb-3">
           Registros en base de datos
           <InfoTooltip text={TOOLTIPS["datos.registros"]} />
         </h2>
@@ -156,27 +145,26 @@ export default async function DatosPage() {
           ].map((item) => (
             <div
               key={item.label}
-              className="bg-white rounded-lg border border-gray-200 p-3 flex items-center gap-3"
+              className="glass-dark p-3 flex items-center gap-3"
             >
-              <Database className="h-4 w-4 text-gray-400" />
+              <Database className="h-4 w-4 text-white/40" />
               <div>
-                <p className="text-lg font-semibold text-gray-900">
+                <p className="text-lg font-semibold text-white">
                   {item.count}
                 </p>
-                <p className="text-xs text-gray-500">{item.label}</p>
+                <p className="text-xs text-white/50">{item.label}</p>
               </div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Uploads recientes */}
       {uploads.length > 0 && (
         <div>
-          <h2 className="text-sm font-medium text-gray-500 mb-3">
+          <h2 className="text-sm font-medium text-white/50 mb-3">
             Uploads recientes
           </h2>
-          <div className="bg-white rounded-lg border border-gray-200 divide-y divide-gray-100">
+          <div className="glass-dark divide-y divide-white/[0.06]">
             {uploads.map((upload) => {
               const config = statusConfig[upload.status] ?? statusConfig.started;
               const StatusIcon = config.icon;
@@ -190,18 +178,18 @@ export default async function DatosPage() {
                   <div className="flex items-center gap-3">
                     <StatusIcon className={`h-5 w-5 ${config.color}`} />
                     <div>
-                      <p className="text-sm font-medium text-gray-900 max-w-xs truncate">
+                      <p className="text-sm font-medium text-white max-w-xs truncate">
                         {fileNames}
                       </p>
-                      <p className="text-xs text-gray-400">
+                      <p className="text-xs text-white/40">
                         {formatDate(upload.created_at)}
                       </p>
                     </div>
                   </div>
-                  <div className="text-right text-xs text-gray-500">
+                  <div className="text-right text-xs text-white/50">
                     <p>{config.label}</p>
                     {upload.error_message && (
-                      <p className="text-red-500 mt-0.5 max-w-48 truncate">
+                      <p className="text-red-400 mt-0.5 max-w-48 truncate">
                         Error en procesamiento
                       </p>
                     )}
@@ -213,15 +201,14 @@ export default async function DatosPage() {
         </div>
       )}
 
-      {/* Ultimas sincronizaciones */}
       <div>
-        <h2 className="text-sm font-medium text-gray-500 mb-3">
+        <h2 className="text-sm font-medium text-white/50 mb-3">
           Ultimas sincronizaciones
         </h2>
         {syncs.length === 0 ? (
-          <p className="text-gray-400 text-sm">No hay sincronizaciones</p>
+          <p className="text-white/40 text-sm">No hay sincronizaciones</p>
         ) : (
-          <div className="bg-white rounded-lg border border-gray-200 divide-y divide-gray-100">
+          <div className="glass-dark divide-y divide-white/[0.06]">
             {syncs.map((sync) => {
               const config = statusConfig[sync.status] ?? statusConfig.started;
               const StatusIcon = config.icon;
@@ -233,22 +220,22 @@ export default async function DatosPage() {
                   <div className="flex items-center gap-3">
                     <StatusIcon className={`h-5 w-5 ${config.color}`} />
                     <div>
-                      <p className="text-sm font-medium text-gray-900">
+                      <p className="text-sm font-medium text-white">
                         {sync.source} ({sync.sync_type})
                       </p>
-                      <p className="text-xs text-gray-400">
+                      <p className="text-xs text-white/40">
                         {formatDate(sync.started_at)}
                       </p>
                     </div>
                   </div>
-                  <div className="text-right text-xs text-gray-500">
+                  <div className="text-right text-xs text-white/50">
                     <p>
                       {sync.customers_synced}C / {sync.products_synced}P /{" "}
                       {sync.orders_synced}O
                       <InfoTooltip text={TOOLTIPS["datos.sync_counts"]} />
                     </p>
                     {sync.error_message && (
-                      <p className="text-red-500 mt-0.5 max-w-48 truncate">
+                      <p className="text-red-400 mt-0.5 max-w-48 truncate">
                         Error en sincronizacion
                       </p>
                     )}

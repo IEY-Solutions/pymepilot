@@ -116,7 +116,7 @@ export function InfoTooltip({ text }: { text: string }) {
           }
         }}
       >
-        <Info className="h-3.5 w-3.5 text-gray-400 hover:text-gray-500 cursor-help shrink-0" />
+        <Info className="h-3.5 w-3.5 text-white/40 hover:text-white/60 cursor-help shrink-0" />
       </span>
 
       {open &&
@@ -131,7 +131,7 @@ export function InfoTooltip({ text }: { text: string }) {
               width: TOOLTIP_WIDTH,
               zIndex: 9999,
             }}
-            className="px-3 py-2 text-xs text-gray-700 bg-white border border-border-subtle rounded-lg shadow-lg leading-relaxed"
+            className="px-3 py-2 text-xs text-white/90 bg-[#1a2a2c] border border-[rgba(129,181,161,0.2)] rounded-lg shadow-[0_8px_32px_rgba(0,0,0,0.4)] leading-relaxed"
             // Evitar que el hover sobre el tooltip lo cierre
             onMouseEnter={() => setOpen(true)}
             onMouseLeave={() => setOpen(false)}
@@ -142,8 +142,8 @@ export function InfoTooltip({ text }: { text: string }) {
               style={{ left: pos.arrowLeft }}
               className={`absolute ${
                 pos.above
-                  ? "top-full border-t-white"
-                  : "bottom-full border-b-white"
+                  ? "top-full border-t-[#1a2a2c]"
+                  : "bottom-full border-b-[#1a2a2c]"
               } -translate-x-1/2 border-4 border-transparent`}
             />
           </div>,

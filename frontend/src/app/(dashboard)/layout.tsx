@@ -25,7 +25,7 @@ export default async function DashboardLayout({
 
   return (
     <ChatWrapper>
-      <div className="min-h-screen bg-gray-50 flex flex-col">
+      <div className="min-h-screen bg-[#1a2a2c] flex flex-col">
         <Header tenantName={tenantName} />
         <PushBanner />
         <div className="flex flex-1 overflow-hidden">

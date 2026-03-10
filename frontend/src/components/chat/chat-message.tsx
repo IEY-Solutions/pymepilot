@@ -2,14 +2,6 @@
 
 import type { ChatMessage } from "@/lib/chat/types";
 
-// ============================================================
-// ChatMessageBubble — Burbuja individual de mensaje
-// ============================================================
-// Concepto: Cada mensaje en el chat es una burbuja. Las del
-// usuario van a la derecha (azul), las del asistente a la
-// izquierda (gris). Es el patron visual de WhatsApp/iMessage.
-// ============================================================
-
 interface Props {
   message: ChatMessage;
 }
@@ -22,8 +14,8 @@ export function ChatMessageBubble({ message }: Props) {
       <div
         className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
           isUser
-            ? "bg-blue-600 text-white rounded-br-md"
-            : "bg-gray-100 text-gray-800 rounded-bl-md"
+            ? "bg-[#81b5a1] text-white rounded-br-md"
+            : "bg-white/[0.06] text-white/90 rounded-bl-md"
         }`}
       >
         <div className="whitespace-pre-wrap break-words">{message.content}</div>

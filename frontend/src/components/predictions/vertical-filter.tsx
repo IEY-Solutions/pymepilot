@@ -12,23 +12,23 @@ const verticalConfig: Record<
 > = {
   reposicion: {
     label: "Repos.",
-    color: "bg-gray-100 text-gray-600",
-    activeColor: "bg-blue-100 text-blue-700 ring-1 ring-blue-300",
+    color: "bg-white/10 text-white/50",
+    activeColor: "bg-blue-500/20 text-blue-400 ring-1 ring-blue-500/40",
   },
   activacion: {
     label: "Activ.",
-    color: "bg-gray-100 text-gray-600",
-    activeColor: "bg-green-100 text-green-700 ring-1 ring-green-300",
+    color: "bg-white/10 text-white/50",
+    activeColor: "bg-green-500/20 text-green-400 ring-1 ring-green-500/40",
   },
   recuperacion: {
     label: "Recup.",
-    color: "bg-gray-100 text-gray-600",
-    activeColor: "bg-amber-100 text-amber-700 ring-1 ring-amber-300",
+    color: "bg-white/10 text-white/50",
+    activeColor: "bg-amber-500/20 text-amber-400 ring-1 ring-amber-500/40",
   },
   cross_sell: {
     label: "Cross-sell",
-    color: "bg-gray-100 text-gray-600",
-    activeColor: "bg-indigo-100 text-indigo-700 ring-1 ring-indigo-300",
+    color: "bg-white/10 text-white/50",
+    activeColor: "bg-indigo-500/20 text-indigo-400 ring-1 ring-indigo-500/40",
   },
 };
 
@@ -50,8 +50,8 @@ export function VerticalFilter({
         onClick={() => onFilter(null)}
         className={`text-xs font-medium px-3 py-1.5 rounded-full transition-colors ${
           activeFilter === null
-            ? "bg-gray-900 text-white"
-            : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+            ? "bg-white text-[#1a2a2c]"
+            : "bg-white/10 text-white/50 hover:bg-white/15"
         }`}
       >
         Todas {total}
@@ -68,7 +68,7 @@ export function VerticalFilter({
             key={key}
             onClick={() => onFilter(isActive ? null : key)}
             className={`text-xs font-medium px-3 py-1.5 rounded-full transition-colors ${
-              isActive ? config.activeColor : `${config.color} hover:bg-gray-200`
+              isActive ? config.activeColor : `${config.color} hover:bg-white/15`
             }`}
           >
             {config.label} {count}

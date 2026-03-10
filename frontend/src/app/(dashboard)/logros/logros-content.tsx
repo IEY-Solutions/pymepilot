@@ -8,10 +8,6 @@ import { formatCurrency } from "@/lib/format";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { TOOLTIPS } from "@/lib/tooltips";
 
-// ============================================================
-// TIPOS
-// ============================================================
-
 export interface AchievementRow {
   prediction_id: string;
   customer_name: string;
@@ -31,10 +27,6 @@ interface LogrosContentProps {
   totalOrders: number;
   totalRevenue: number;
 }
-
-// ============================================================
-// HELPERS
-// ============================================================
 
 const currentMonth = new Date().toLocaleString("es-AR", { month: "long" });
 
@@ -70,9 +62,9 @@ function KpiCard({
   tooltip?: string;
 }) {
   return (
-    <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 p-5">
+    <div className="glass-dark p-5 animate-fade-in-up">
       <div className="flex items-center justify-between mb-3">
-        <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+        <span className="text-xs font-semibold uppercase tracking-wider text-white/40">
           {title}
           {tooltip && <InfoTooltip text={tooltip} />}
         </span>
@@ -80,15 +72,11 @@ function KpiCard({
           <Icon className="h-4 w-4" />
         </div>
       </div>
-      <p className="text-3xl font-bold tracking-tight text-gray-900">{value}</p>
-      <p className="text-sm text-gray-500 mt-1.5">{subtitle}</p>
+      <p className="text-3xl font-bold tracking-tight text-white">{value}</p>
+      <p className="text-sm text-white/50 mt-1.5">{subtitle}</p>
     </div>
   );
 }
-
-// ============================================================
-// COMPONENTE PRINCIPAL
-// ============================================================
 
 export function LogrosContent({
   achievements,
@@ -106,11 +94,10 @@ export function LogrosContent({
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+      <h1 className="text-2xl font-bold tracking-tight text-white">
         Mis ventas
       </h1>
 
-      {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <KpiCard
           title="Mis ventas del mes"
@@ -125,7 +112,7 @@ export function LogrosContent({
               : "PymePilot tiene clientes listos para que los contactes"
           }
           icon={ShoppingBag}
-          color="bg-gradient-to-br from-blue-50 to-blue-100 text-blue-600"
+          color="bg-blue-500/15 text-blue-400"
           tooltip={TOOLTIPS["logros.ventas_mes"]}
         />
         <KpiCard
@@ -141,7 +128,7 @@ export function LogrosContent({
               : "Cuando un cliente recomendado compre, lo vas a ver aca"
           }
           icon={Trophy}
-          color="bg-gradient-to-br from-amber-50 to-amber-100 text-amber-600"
+          color="bg-amber-500/15 text-amber-400"
           tooltip={TOOLTIPS["logros.ventas_pymepilot"]}
         />
         <KpiCard
@@ -151,14 +138,13 @@ export function LogrosContent({
           icon={Flame}
           color={
             streak >= 3
-              ? "bg-gradient-to-br from-orange-50 to-orange-100 text-orange-600"
-              : "bg-gradient-to-br from-gray-50 to-gray-100 text-gray-500"
+              ? "bg-orange-500/15 text-orange-400"
+              : "bg-white/10 text-white/50"
           }
           tooltip={TOOLTIPS["logros.racha"]}
         />
       </div>
 
-      {/* Filtro por vertical */}
       {achievements.length > 0 && (
         <div>
           <VerticalFilter
@@ -169,16 +155,15 @@ export function LogrosContent({
         </div>
       )}
 
-      {/* Lista de logros */}
       {filtered.length === 0 ? (
         <div className="text-center py-12">
-          <Trophy className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-          <p className="text-gray-500 font-medium">
+          <Trophy className="h-12 w-12 text-white/20 mx-auto mb-3" />
+          <p className="text-white/60 font-medium">
             {activeFilter
               ? "No hay ventas para este filtro"
               : "Todavia sin ventas este mes"}
           </p>
-          <p className="text-sm text-gray-400 mt-1">
+          <p className="text-sm text-white/40 mt-1">
             Cada vez que un cliente recomendado compre, va a aparecer aca
           </p>
         </div>

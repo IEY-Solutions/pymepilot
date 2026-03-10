@@ -26,7 +26,7 @@ export function PipelineColumn({ column, cards, generatingCardIds, onCardClick, 
     <div className="flex flex-col min-w-[200px] flex-1">
       {/* Header */}
       <div
-        className={`flex items-center gap-2 px-3 py-2 rounded-t-lg ${headerColor}`}
+        className={`flex items-center gap-2 px-3 py-2 rounded-t-2xl ${headerColor}`}
       >
         <h3 className="text-xs font-semibold uppercase tracking-wide">
           {label}
@@ -38,14 +38,14 @@ export function PipelineColumn({ column, cards, generatingCardIds, onCardClick, 
       {/* Drop zone */}
       <div
         ref={setNodeRef}
-        className={`flex-1 p-2 space-y-2 rounded-b-lg transition-colors min-h-[200px] ${
+        className={`flex-1 p-2 space-y-2 rounded-b-2xl transition-colors min-h-[200px] ${
           isOver
-            ? "bg-blue-50 border-2 border-dashed border-blue-300"
-            : "bg-gray-50 border border-gray-200"
+            ? "bg-[#81b5a1]/10 border-2 border-dashed border-[#81b5a1]/40"
+            : "bg-white/[0.03] border border-[rgba(129,181,161,0.1)]"
         }`}
       >
         {cards.length === 0 && (
-          <p className="text-xs text-gray-400 text-center py-8">
+          <p className="text-xs text-white/30 text-center py-8">
             {isOver ? "Soltar aca" : "Sin cards"}
           </p>
         )}

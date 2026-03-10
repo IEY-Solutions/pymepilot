@@ -38,26 +38,26 @@ export function ProductRankingTable({ products }: Props) {
 
   if (products.length === 0) {
     return (
-      <div className="bg-white rounded-xl shadow-sm p-8 text-center">
-        <p className="text-gray-500">Sin datos de productos</p>
+      <div className="bg-[#1a2a2c] rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.3)] p-8 text-center">
+        <p className="text-white/50">Sin datos de productos</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+    <div className="bg-[#1a2a2c] rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.3)] overflow-hidden">
       {/* Toggle */}
-      <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider">
+      <div className="px-5 py-4 border-b border-white/[0.06] flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-white/80 uppercase tracking-wider">
           Ranking de productos ({products.length})
         </h3>
-        <div className="flex gap-1 bg-gray-100 rounded-lg p-0.5">
+        <div className="flex gap-1 bg-white/[0.06] rounded-lg p-0.5">
           <button
             onClick={() => setSortBy("revenue")}
             className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
               sortBy === "revenue"
-                ? "bg-white text-gray-900 shadow-sm"
-                : "text-gray-500 hover:text-gray-700"
+                ? "bg-[#1a2a2c] text-white shadow-[0_8px_32px_rgba(0,0,0,0.3)]"
+                : "text-white/50 hover:text-white/80"
             }`}
           >
             Por monto
@@ -66,8 +66,8 @@ export function ProductRankingTable({ products }: Props) {
             onClick={() => setSortBy("units")}
             className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
               sortBy === "units"
-                ? "bg-white text-gray-900 shadow-sm"
-                : "text-gray-500 hover:text-gray-700"
+                ? "bg-[#1a2a2c] text-white shadow-[0_8px_32px_rgba(0,0,0,0.3)]"
+                : "text-white/50 hover:text-white/80"
             }`}
           >
             Por unidades
@@ -76,16 +76,16 @@ export function ProductRankingTable({ products }: Props) {
       </div>
 
       {/* Table */}
-      <div className="divide-y divide-gray-50">
+      <div className="divide-y divide-white/[0.06]">
         {sorted.map((p, i) => {
           const barValue = sortBy === "revenue" ? Number(p.total_revenue) : Number(p.total_units);
           const pct = maxValue > 0 ? Math.round((barValue / maxValue) * 100) : 0;
 
           return (
-            <div key={p.product_id} className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 transition-colors">
+            <div key={p.product_id} className="flex items-center gap-3 px-5 py-3 hover:bg-white/[0.03] transition-colors">
               {/* Ranking */}
               <span className={`text-sm font-bold w-7 text-right shrink-0 ${
-                i === 0 ? "text-amber-500" : i === 1 ? "text-gray-400" : i === 2 ? "text-amber-700" : "text-gray-300"
+                i === 0 ? "text-amber-500" : i === 1 ? "text-white/40" : i === 2 ? "text-amber-400" : "text-white/30"
               }`}>
                 {i + 1}
               </span>
@@ -93,14 +93,14 @@ export function ProductRankingTable({ products }: Props) {
               {/* Product info + bar */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-baseline gap-2">
-                  <span className="text-sm font-medium text-gray-900 truncate">{p.product_name}</span>
+                  <span className="text-sm font-medium text-white truncate">{p.product_name}</span>
                   {p.product_sku && (
-                    <span className="text-[10px] text-gray-400 shrink-0">{p.product_sku}</span>
+                    <span className="text-[10px] text-white/40 shrink-0">{p.product_sku}</span>
                   )}
                 </div>
-                <div className="w-full h-1.5 bg-gray-100 rounded-full mt-1.5">
+                <div className="w-full h-1.5 bg-white/[0.06] rounded-full mt-1.5">
                   <div
-                    className="h-full bg-indigo-400 rounded-full transition-all duration-300"
+                    className="h-full bg-[#81b5a1] rounded-full transition-all duration-300"
                     style={{ width: `${pct}%` }}
                   />
                 </div>
@@ -108,10 +108,10 @@ export function ProductRankingTable({ products }: Props) {
 
               {/* Values */}
               <div className="flex gap-4 text-xs shrink-0">
-                <span className={`font-medium ${sortBy === "units" ? "text-gray-900" : "text-gray-400"}`}>
+                <span className={`font-medium ${sortBy === "units" ? "text-white" : "text-white/40"}`}>
                   {Number(p.total_units).toLocaleString("es-AR")} uds
                 </span>
-                <span className={`font-medium ${sortBy === "revenue" ? "text-gray-900" : "text-gray-400"}`}>
+                <span className={`font-medium ${sortBy === "revenue" ? "text-white" : "text-white/40"}`}>
                   {formatCurrency(Number(p.total_revenue))}
                 </span>
               </div>

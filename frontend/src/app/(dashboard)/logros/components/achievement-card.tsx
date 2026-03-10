@@ -8,19 +8,19 @@ import type { AchievementRow } from "../logros-content";
 const verticalBadge: Record<string, { label: string; className: string }> = {
   reposicion: {
     label: "Reposicion",
-    className: "bg-blue-100 text-blue-700",
+    className: "bg-blue-500/20 text-blue-400",
   },
   activacion: {
     label: "Activacion",
-    className: "bg-green-100 text-green-700",
+    className: "bg-green-500/20 text-green-400",
   },
   recuperacion: {
     label: "Recuperacion",
-    className: "bg-amber-100 text-amber-700",
+    className: "bg-amber-500/20 text-amber-400",
   },
   cross_sell: {
     label: "Cross-sell",
-    className: "bg-indigo-100 text-indigo-700",
+    className: "bg-indigo-500/20 text-indigo-400",
   },
 };
 
@@ -73,7 +73,7 @@ export function AchievementCard({
 
   const badge = verticalBadge[achievement.vertical] ?? {
     label: achievement.vertical,
-    className: "bg-gray-100 text-gray-700",
+    className: "bg-white/10 text-white/50",
   };
 
   const timeAgo = getTimeAgo(achievement.attribution_date);
@@ -81,14 +81,13 @@ export function AchievementCard({
 
   return (
     <div
-      className="bg-white rounded-xl shadow-sm border border-gray-100 cursor-pointer transition-shadow hover:shadow-md"
+      className="glass-dark cursor-pointer hover:shadow-[0_8px_32px_rgba(0,0,0,0.4),0_0_20px_rgba(129,181,161,0.1)] transition-shadow"
       onClick={() => setExpanded(!expanded)}
     >
-      {/* Colapsada: nombre + monto + badge + chevron */}
       <div className="flex items-center justify-between gap-2 p-4">
         <div className="flex items-center gap-3 min-w-0">
           <div className="min-w-0">
-            <h3 className="font-semibold text-gray-900 truncate">
+            <h3 className="font-semibold text-white truncate">
               {achievement.customer_name}
             </h3>
           </div>
@@ -99,30 +98,29 @@ export function AchievementCard({
           </span>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
-          <p className="font-bold text-green-600">
+          <p className="font-bold text-green-400">
             {formatCurrency(Number(achievement.attribution_amount))}
           </p>
           <ChevronDown
-            className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${
+            className={`h-4 w-4 text-white/40 transition-transform duration-200 ${
               expanded ? "rotate-180" : ""
             }`}
           />
         </div>
       </div>
 
-      {/* Expandida: historia + productos + tiempo */}
       {expanded && (
-        <div className="px-4 pb-4 border-t border-gray-100 pt-3 space-y-2">
-          <p className="text-sm text-gray-700">{story}</p>
+        <div className="px-4 pb-4 border-t border-white/[0.06] pt-3 space-y-2">
+          <p className="text-sm text-white/70">{story}</p>
 
           {achievement.products && achievement.products.length > 0 && (
             <div>
-              <p className="text-xs text-gray-400 mb-1">Productos:</p>
+              <p className="text-xs text-white/40 mb-1">Productos:</p>
               <div className="flex flex-wrap gap-1">
                 {achievement.products.map((product, idx) => (
                   <span
                     key={idx}
-                    className="text-xs bg-gray-50 text-gray-600 px-2 py-0.5 rounded"
+                    className="text-xs bg-white/[0.06] text-white/60 px-2 py-0.5 rounded"
                   >
                     {product.name} x{product.quantity}
                   </span>
@@ -131,7 +129,7 @@ export function AchievementCard({
             </div>
           )}
 
-          <p className="text-xs text-gray-400">{timeAgo}</p>
+          <p className="text-xs text-white/40">{timeAgo}</p>
         </div>
       )}
     </div>

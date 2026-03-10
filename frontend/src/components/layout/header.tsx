@@ -15,18 +15,18 @@ export function Header({ tenantName }: { tenantName?: string }) {
   }
 
   return (
-    <header className="h-14 border-b border-gray-200 bg-white flex items-center justify-between px-4">
+    <header className="h-14 border-b border-[rgba(129,181,161,0.1)] bg-[#1a2a2c] flex items-center justify-between px-4">
       <div className="flex items-center gap-2">
-        <span className="text-lg font-bold text-blue-600">PymePilot</span>
+        <span className="text-lg font-bold text-[#81b5a1]">PymePilot</span>
         {tenantName && (
-          <span className="text-sm text-gray-500 hidden sm:inline">
+          <span className="text-sm text-white/50 hidden sm:inline">
             | {tenantName}
           </span>
         )}
       </div>
       <button
         onClick={handleLogout}
-        className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 transition-colors"
+        className="flex items-center gap-1 text-sm text-white/40 hover:text-white/70 transition-colors"
       >
         <LogOut className="h-4 w-4" />
         <span className="hidden sm:inline">Salir</span>

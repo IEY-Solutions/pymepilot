@@ -25,14 +25,14 @@ function CustomTooltip({ active, payload, label }: TooltipContentProps<ValueType
   if (!active || !payload?.length) return null;
   const churnVal = Number(payload[0]?.value ?? 0);
   return (
-    <div className="bg-white shadow-lg rounded-lg border border-gray-100 px-4 py-3">
-      <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">
+    <div className="bg-[#1a2a2c]/95 backdrop-blur-lg shadow-[0_8px_32px_rgba(0,0,0,0.5)] rounded-lg border border-white/[0.06] px-4 py-3">
+      <p className="text-xs font-medium text-white/40 uppercase tracking-wider mb-2">
         {label}
       </p>
       <div className="flex items-center gap-2">
         <span className="w-2.5 h-2.5 rounded-full bg-red-500 shrink-0" />
-        <span className="text-sm text-gray-600">Churn</span>
-        <span className="text-sm font-semibold text-gray-900 ml-auto">
+        <span className="text-sm text-white/60">Churn</span>
+        <span className="text-sm font-semibold text-white ml-auto">
           {churnVal.toFixed(1)}%
         </span>
       </div>
@@ -43,7 +43,7 @@ function CustomTooltip({ active, payload, label }: TooltipContentProps<ValueType
 export function ChurnChart({ data }: { data: ChurnRow[] }) {
   if (data.length === 0) {
     return (
-      <div className="bg-white rounded-xl shadow-sm p-8 text-center text-gray-400 text-sm">
+      <div className="bg-[#1a2a2c] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.3)] p-8 text-center text-white/40 text-sm">
         Sin datos de churn
       </div>
     );
@@ -57,13 +57,13 @@ export function ChurnChart({ data }: { data: ChurnRow[] }) {
   }));
 
   return (
-    <div className="bg-white rounded-xl shadow-sm p-5">
+    <div className="bg-[#1a2a2c] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.3)] p-5">
       <div className="mb-4">
-        <h3 className="text-base font-semibold text-gray-900">
+        <h3 className="text-base font-semibold text-white">
           Churn mensual
           <InfoTooltip text={TOOLTIPS["metricas.chart_churn"]} />
         </h3>
-        <p className="text-xs text-gray-400 mt-0.5">
+        <p className="text-xs text-white/40 mt-0.5">
           Porcentaje de clientes que dejan de comprar
         </p>
       </div>
@@ -74,18 +74,18 @@ export function ChurnChart({ data }: { data: ChurnRow[] }) {
         >
           <CartesianGrid
             strokeDasharray="3 3"
-            stroke="#f3f4f6"
+            stroke="rgba(129,181,161,0.1)"
             vertical={false}
           />
           <XAxis
             dataKey="month"
-            tick={{ fontSize: 12, fill: "#9ca3af" }}
-            axisLine={{ stroke: "#e5e7eb" }}
+            tick={{ fontSize: 12, fill: "rgba(255,255,255,0.5)" }}
+            axisLine={{ stroke: "rgba(129,181,161,0.2)" }}
             tickLine={false}
           />
           <YAxis
             tickFormatter={(v: number) => `${v}%`}
-            tick={{ fontSize: 12, fill: "#9ca3af" }}
+            tick={{ fontSize: 12, fill: "rgba(255,255,255,0.5)" }}
             width={45}
             domain={[0, "auto"]}
             axisLine={false}
@@ -121,8 +121,8 @@ export function ChurnChart({ data }: { data: ChurnRow[] }) {
             dataKey="churn"
             stroke="#ef4444"
             strokeWidth={2.5}
-            dot={{ r: 4, fill: "#ef4444", strokeWidth: 2, stroke: "#fff" }}
-            activeDot={{ r: 6, fill: "#ef4444", strokeWidth: 2, stroke: "#fff" }}
+            dot={{ r: 4, fill: "#ef4444", strokeWidth: 2, stroke: "#1a2a2c" }}
+            activeDot={{ r: 6, fill: "#ef4444", strokeWidth: 2, stroke: "#1a2a2c" }}
           />
         </LineChart>
       </ResponsiveContainer>

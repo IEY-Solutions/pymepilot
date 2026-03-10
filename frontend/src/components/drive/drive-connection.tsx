@@ -4,37 +4,11 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { HardDrive, Link2, Unlink, Loader2, CheckCircle, XCircle } from "lucide-react";
 
-/**
- * Componente para conectar/desconectar una carpeta de Google Drive.
- *
- * QUE HACE: El usuario pega el link de una carpeta de Google Drive.
- * PymePilot extrae el folder_id, lo guarda en drive_connections,
- * y el script sync_google_drive.py lo usa para sincronizar automaticamente.
- *
- * CONCEPTO - Extraccion de folder_id:
- * Un link de carpeta de Drive se ve asi:
- *   https://drive.google.com/drive/folders/1AbCdEfGhIjKlMnOpQrStUvWxYz
- * El ID es la ultima parte despues de /folders/.
- *
- * FLUJO:
- * 1. Usuario comparte carpeta con el email del Service Account
- * 2. Pega el link aca
- * 3. Se extrae folder_id y se guarda en drive_connections
- * 4. Cron diario (4:30 AM) detecta archivos nuevos y los procesa
- */
-
-// Email del Service Account — se muestra al usuario para que comparta la carpeta.
-// Se actualiza cuando se complete el Paso 7 (setup Google Cloud).
 const SERVICE_ACCOUNT_EMAIL = process.env.NEXT_PUBLIC_DRIVE_SERVICE_ACCOUNT_EMAIL ?? "";
 
 function extractFolderId(input: string): string | null {
-  // Soporta:
-  //   https://drive.google.com/drive/folders/FOLDER_ID
-  //   https://drive.google.com/drive/folders/FOLDER_ID?usp=sharing
-  //   FOLDER_ID (directo)
   const match = input.match(/folders\/([a-zA-Z0-9_-]+)/);
   if (match) return match[1];
-  // Si no matchea URL, asumir que es el ID directo (solo alfanumerico + guion + underscore)
   const trimmed = input.trim();
   if (/^[a-zA-Z0-9_-]+$/.test(trimmed) && trimmed.length > 10) {
     return trimmed;
@@ -73,7 +47,6 @@ export function DriveConnection({
 
     setLoading(true);
     try {
-      // Obtener tenant_id del JWT (mismo patron que file-upload.tsx)
       const { data: { user } } = await supabase.auth.getUser();
       const tenantId = user?.app_metadata?.tenant_id;
       if (!tenantId) {
@@ -126,7 +99,6 @@ export function DriveConnection({
     }
   }
 
-  // --- Estado: Conectado ---
   if (currentConnection) {
     const isError = currentConnection.status === "error";
     const lastSync = currentConnection.last_synced_at
@@ -139,23 +111,23 @@ export function DriveConnection({
       : "Nunca (espera al proximo sync 4:30 AM)";
 
     return (
-      <div className="bg-white rounded-lg border border-gray-200 p-4 space-y-3">
+      <div className="glass-dark p-4 space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <HardDrive className="h-4 w-4 text-gray-500" />
-            <h3 className="text-sm font-medium text-gray-900">
+            <HardDrive className="h-4 w-4 text-white/50" />
+            <h3 className="text-sm font-medium text-white">
               Google Drive
             </h3>
           </div>
           <div className="flex items-center gap-1.5">
             {isError ? (
-              <XCircle className="h-4 w-4 text-red-500" />
+              <XCircle className="h-4 w-4 text-red-400" />
             ) : (
-              <CheckCircle className="h-4 w-4 text-green-500" />
+              <CheckCircle className="h-4 w-4 text-green-400" />
             )}
             <span
               className={`text-xs font-medium ${
-                isError ? "text-red-600" : "text-green-600"
+                isError ? "text-red-400" : "text-green-400"
               }`}
             >
               {isError ? "Error" : "Conectado"}
@@ -163,20 +135,20 @@ export function DriveConnection({
           </div>
         </div>
 
-        <div className="text-xs text-gray-500 space-y-1">
+        <div className="text-xs text-white/50 space-y-1">
           <p>
-            Carpeta: <code className="bg-gray-100 px-1 rounded truncate max-w-[200px] inline-block align-bottom" title={currentConnection.folder_id}>{currentConnection.folder_id}</code>
+            Carpeta: <code className="bg-white/[0.06] px-1 rounded truncate max-w-[200px] inline-block align-bottom text-white/70" title={currentConnection.folder_id}>{currentConnection.folder_id}</code>
           </p>
           <p>Ultima sync: {lastSync}</p>
           {currentConnection.error_message && (
-            <p className="text-red-500">Error en conexion con Drive</p>
+            <p className="text-red-400">Error en conexion con Drive</p>
           )}
         </div>
 
         <button
           onClick={handleDisconnect}
           disabled={loading}
-          className="flex items-center gap-1.5 text-xs text-red-600 hover:text-red-700 disabled:opacity-50"
+          className="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-300 disabled:opacity-50"
         >
           {loading ? (
             <Loader2 className="h-3 w-3 animate-spin" />
@@ -189,28 +161,27 @@ export function DriveConnection({
     );
   }
 
-  // --- Estado: No conectado ---
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-4 space-y-3">
+    <div className="glass-dark p-4 space-y-3">
       <div className="flex items-center gap-2">
-        <HardDrive className="h-4 w-4 text-gray-500" />
-        <h3 className="text-sm font-medium text-gray-900">
+        <HardDrive className="h-4 w-4 text-white/50" />
+        <h3 className="text-sm font-medium text-white">
           Google Drive
         </h3>
       </div>
 
-      <div className="text-xs text-gray-500 space-y-2">
+      <div className="text-xs text-white/50 space-y-2">
         <p>
           Conecta una carpeta de Google Drive para sincronizar datos
           automaticamente todos los dias.
         </p>
         {SERVICE_ACCOUNT_EMAIL && (
-          <div className="bg-blue-50 border border-blue-200 rounded p-2">
-            <p className="text-blue-800 font-medium mb-1">Paso 1:</p>
-            <p className="text-blue-700">
+          <div className="bg-[#81b5a1]/10 border border-[rgba(129,181,161,0.2)] rounded-lg p-2">
+            <p className="text-[#a3cabb] font-medium mb-1">Paso 1:</p>
+            <p className="text-white/60">
               Compartí tu carpeta con este email:
             </p>
-            <code className="block mt-1 bg-blue-100 px-2 py-1 rounded text-blue-900 break-all text-[11px]">
+            <code className="block mt-1 bg-white/[0.06] px-2 py-1 rounded text-[#a3cabb] break-all text-[11px]">
               {SERVICE_ACCOUNT_EMAIL}
             </code>
           </div>
@@ -226,12 +197,12 @@ export function DriveConnection({
             setError(null);
           }}
           placeholder="Pega el link de la carpeta de Drive"
-          className="flex-1 text-sm border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="flex-1 text-sm border border-[rgba(129,181,161,0.2)] bg-white/[0.06] rounded-lg px-3 py-2 text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-[#81b5a1] focus:border-transparent"
         />
         <button
           onClick={handleConnect}
           disabled={loading || !folderLink.trim()}
-          className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-white bg-[#81b5a1] rounded-lg hover:bg-[#5a9a84] disabled:opacity-50 disabled:cursor-not-allowed glow-hover"
         >
           {loading ? (
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -242,7 +213,7 @@ export function DriveConnection({
         </button>
       </div>
 
-      {error && <p className="text-xs text-red-500">{error}</p>}
+      {error && <p className="text-xs text-red-400">{error}</p>}
     </div>
   );
 }

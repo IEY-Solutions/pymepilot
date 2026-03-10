@@ -9,11 +9,11 @@ import type { PipelineCard as PipelineCardType } from "@/lib/pipeline/types";
 import { VERTICAL_STYLES } from "@/lib/pipeline/types";
 
 const priorityLabels: Record<number, { label: string; color: string }> = {
-  1: { label: "Urgente", color: "bg-red-100 text-red-700" },
-  2: { label: "Alta", color: "bg-orange-100 text-orange-700" },
-  3: { label: "Media", color: "bg-yellow-100 text-yellow-700" },
-  4: { label: "Normal", color: "bg-blue-100 text-blue-700" },
-  5: { label: "Baja", color: "bg-gray-100 text-gray-600" },
+  1: { label: "Urgente", color: "bg-red-500/20 text-red-400" },
+  2: { label: "Alta", color: "bg-orange-500/20 text-orange-400" },
+  3: { label: "Media", color: "bg-yellow-500/20 text-yellow-400" },
+  4: { label: "Normal", color: "bg-[#81b5a1]/20 text-[#a3cabb]" },
+  5: { label: "Baja", color: "bg-white/10 text-white/50" },
 };
 
 function timeInColumn(updatedAt: string): string {
@@ -56,13 +56,13 @@ function followupLabel(card: PipelineCardType) {
   let badgeColor: string;
   if (diffDays <= 0) {
     timing = "Hoy";
-    badgeColor = "bg-orange-100 text-orange-700";
+    badgeColor = "bg-orange-500/20 text-orange-400";
   } else if (diffDays === 1) {
     timing = "Manana";
-    badgeColor = "bg-yellow-100 text-yellow-700";
+    badgeColor = "bg-yellow-500/20 text-yellow-400";
   } else {
     timing = `en ${diffDays} dias`;
-    badgeColor = "bg-gray-100 text-gray-600";
+    badgeColor = "bg-white/10 text-white/50";
   }
 
   // Agregar origen si es distinto de "contactado"
@@ -90,13 +90,13 @@ function deadlineBadge(card: PipelineCardType): { text: string; color: string } 
   const label = stageLabels[card.column_name] ?? "respuesta";
 
   if (diffDays < 0) {
-    return { text: `Sin ${label} — vencido hace ${Math.abs(diffDays)}d`, color: "bg-red-100 text-red-700" };
+    return { text: `Sin ${label} — vencido hace ${Math.abs(diffDays)}d`, color: "bg-red-500/20 text-red-400" };
   } else if (diffDays === 0) {
-    return { text: `Esperando ${label} — vence hoy`, color: "bg-orange-100 text-orange-700" };
+    return { text: `Esperando ${label} — vence hoy`, color: "bg-orange-500/20 text-orange-400" };
   } else if (diffDays === 1) {
-    return { text: `Esperando ${label} — vence manana`, color: "bg-yellow-100 text-yellow-700" };
+    return { text: `Esperando ${label} — vence manana`, color: "bg-yellow-500/20 text-yellow-400" };
   } else {
-    return { text: `Esperando ${label} — ${diffDays}d restantes`, color: "bg-gray-100 text-gray-600" };
+    return { text: `Esperando ${label} — ${diffDays}d restantes`, color: "bg-white/10 text-white/50" };
   }
 }
 
@@ -122,7 +122,7 @@ export function PipelineCard({ card, isGenerating, onClick, onDiscard }: Props) 
   const priority = priorityLabels[card.priority] ?? priorityLabels[3];
   const verticalStyle = VERTICAL_STYLES[card.vertical] ?? {
     label: card.vertical,
-    color: "bg-purple-100 text-purple-700",
+    color: "bg-purple-500/20 text-purple-400",
   };
   const followup = followupLabel(card);
   const deadline = deadlineBadge(card);
@@ -131,9 +131,9 @@ export function PipelineCard({ card, isGenerating, onClick, onDiscard }: Props) 
     <div
       ref={setNodeRef}
       style={style}
-      className={`bg-white rounded-lg border p-3 space-y-2 cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow touch-none ${
-        card.is_expired ? "opacity-60 border-gray-300" : "border-gray-200"
-      } ${isDragging ? "shadow-lg" : ""}`}
+      className={`glass-dark p-3 space-y-2 cursor-grab active:cursor-grabbing hover:shadow-[0_8px_32px_rgba(0,0,0,0.4),0_0_20px_rgba(129,181,161,0.1)] transition-shadow touch-none ${
+        card.is_expired ? "opacity-60 border-white/5" : ""
+      } ${isDragging ? "shadow-[0_8px_32px_rgba(0,0,0,0.6)]" : ""}`}
       {...listeners}
       {...attributes}
       onClick={onClick}
@@ -141,13 +141,13 @@ export function PipelineCard({ card, isGenerating, onClick, onDiscard }: Props) 
       {/* Header: nombre + descartar */}
       <div className="flex items-start gap-1.5">
         <div className="flex-1 min-w-0">
-          <h4 className="font-medium text-sm text-gray-900 truncate">
+          <h4 className="font-medium text-sm text-white truncate">
             {card.customer.name}
           </h4>
         </div>
         {card.is_expired && onDiscard && (
           <button
-            className="p-0.5 text-gray-400 hover:text-red-500 rounded transition-colors"
+            className="p-0.5 text-white/40 hover:text-red-400 rounded transition-colors"
             onClick={(e) => {
               e.stopPropagation();
               onDiscard();
@@ -173,7 +173,7 @@ export function PipelineCard({ card, isGenerating, onClick, onDiscard }: Props) 
           {priority.label}
         </span>
         {card.is_expired && (
-          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-red-50 text-red-600">
+          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-red-500/20 text-red-400">
             Vencida
             <InfoTooltip text={TOOLTIPS["pipeline.vencida"]} />
           </span>
@@ -199,11 +199,11 @@ export function PipelineCard({ card, isGenerating, onClick, onDiscard }: Props) 
       )}
 
       {/* Contacto rapido */}
-      <div className="flex items-center gap-2 text-xs text-gray-500">
+      <div className="flex items-center gap-2 text-xs text-white/40">
         {card.customer.phone && (
           <a
             href={`tel:${card.customer.phone}`}
-            className="flex items-center gap-0.5 hover:text-blue-600"
+            className="flex items-center gap-0.5 hover:text-[#81b5a1]"
             onClick={(e) => e.stopPropagation()}
             onPointerDown={(e) => e.stopPropagation()}
           >
@@ -213,7 +213,7 @@ export function PipelineCard({ card, isGenerating, onClick, onDiscard }: Props) 
         {card.customer.email && (
           <a
             href={`mailto:${card.customer.email}`}
-            className="flex items-center gap-0.5 hover:text-blue-600"
+            className="flex items-center gap-0.5 hover:text-[#81b5a1]"
             onClick={(e) => e.stopPropagation()}
             onPointerDown={(e) => e.stopPropagation()}
           >
@@ -228,14 +228,14 @@ export function PipelineCard({ card, isGenerating, onClick, onDiscard }: Props) 
 
       {/* Ultima nota (truncada) */}
       {card.latest_note?.note_text && !isGenerating && (
-        <p className="text-[10px] text-gray-500 truncate italic">
+        <p className="text-[10px] text-white/40 truncate italic">
           {card.latest_note.note_text}
         </p>
       )}
 
       {/* Indicador de generacion de propuesta */}
       {isGenerating && (
-        <div className="flex items-center gap-1.5 text-[10px] text-blue-600 animate-pulse">
+        <div className="flex items-center gap-1.5 text-[10px] text-[#81b5a1] animate-pulse">
           <Sparkles className="h-3 w-3" />
           <span>Actualizando propuesta...</span>
         </div>

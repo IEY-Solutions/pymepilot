@@ -18,7 +18,7 @@ export function Sidebar({ unreadCount = 0 }: { unreadCount?: number }) {
   const pathname = usePathname();
 
   return (
-    <aside className="hidden md:flex w-14 border-r border-gray-200 bg-white flex-col items-center">
+    <aside className="hidden md:flex w-14 border-r border-[rgba(129,181,161,0.1)] bg-[#1a2a2c] flex-col items-center">
       <nav className="flex-1 py-4 space-y-1">
         {navItems.map((item) => {
           const isActive =
@@ -32,8 +32,8 @@ export function Sidebar({ unreadCount = 0 }: { unreadCount?: number }) {
               title={item.label}
               className={`relative group flex items-center justify-center w-10 h-10 rounded-lg transition-colors ${
                 isActive
-                  ? "bg-blue-50 text-blue-700"
-                  : "text-gray-500 hover:bg-gray-100 hover:text-gray-900"
+                  ? "bg-[#81b5a1]/15 text-[#81b5a1]"
+                  : "text-white/40 hover:bg-white/[0.06] hover:text-white/70"
               }`}
             >
               <span className="relative">
@@ -43,7 +43,7 @@ export function Sidebar({ unreadCount = 0 }: { unreadCount?: number }) {
                 )}
               </span>
               {/* Tooltip on hover */}
-              <span className="absolute left-full ml-2 px-2 py-1 text-xs font-medium text-white bg-gray-800 rounded whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50">
+              <span className="absolute left-full ml-2 px-2 py-1 text-xs font-medium text-white bg-black/80 backdrop-blur-sm rounded whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50">
                 {item.label}
               </span>
             </Link>

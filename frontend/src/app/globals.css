@@ -1,6 +1,82 @@
 @import "tailwindcss";
 
 @theme inline {
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-inter);
+
+  /* Teal palette — identidad PymePilot */
+  --color-teal-400: #a3cabb;
+  --color-teal-500: #81b5a1;
+  --color-teal-600: #5a9a84;
+
+  /* Surface colors */
+  --color-surface: rgba(255, 255, 255, 0.06);
+  --color-surface-hover: rgba(255, 255, 255, 0.10);
+
+  /* Border colors */
+  --color-border-subtle: rgba(129, 181, 161, 0.1);
+  --color-border-accent: rgba(129, 181, 161, 0.2);
+}
+
+/* Base dark mode */
+body {
+  background-color: #1a2a2c;
+  color: #ffffff;
+}
+
+/* Glass dark — cards principales, modales */
+.glass-dark {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+/* Glass green — CTAs, badges activos, elementos destacados */
+.glass-green {
+  background: rgba(129, 181, 161, 0.08);
+  border: 1px solid rgba(129, 181, 161, 0.2);
+  border-radius: 16px;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+/* Animacion fadeInUp — entrada sutil de cards */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.4s ease-out both;
+}
+
+/* Glow hover — botones primarios */
+.glow-hover {
+  transition: box-shadow 0.2s ease-in-out;
+}
+.glow-hover:hover {
+  box-shadow: 0 4px 20px rgba(129, 181, 161, 0.4);
+}
+
+/* Scrollbar dark */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(129, 181, 161, 0.2);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(129, 181, 161, 0.4);
 }

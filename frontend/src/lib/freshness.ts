@@ -37,9 +37,9 @@ export function getFreshnessInfo(lastSyncDate: string | null): {
       : `hace ${Math.floor(ageHours)} hora${Math.floor(ageHours) !== 1 ? "s" : ""}`;
     return {
       color: "green",
-      bgClass: "bg-green-50",
-      borderClass: "border-green-200",
-      textClass: "text-green-800",
+      bgClass: "bg-green-500/15",
+      borderClass: "border-green-500/30",
+      textClass: "text-green-400",
       label: "Datos actualizados",
       message: `Ultima actualizacion ${hoursLabel}`,
     };
@@ -48,9 +48,9 @@ export function getFreshnessInfo(lastSyncDate: string | null): {
   if (ageHours < 72) {
     return {
       color: "yellow",
-      bgClass: "bg-yellow-50",
-      borderClass: "border-yellow-200",
-      textClass: "text-yellow-800",
+      bgClass: "bg-yellow-500/15",
+      borderClass: "border-yellow-500/30",
+      textClass: "text-yellow-400",
       label: `Datos de hace ${ageDays} dia${ageDays !== 1 ? "s" : ""}`,
       message: "Subi datos nuevos para mejorar la precision de las predicciones.",
     };
@@ -58,9 +58,9 @@ export function getFreshnessInfo(lastSyncDate: string | null): {
 
   return {
     color: "red",
-    bgClass: "bg-red-50",
-    borderClass: "border-red-200",
-    textClass: "text-red-800",
+    bgClass: "bg-red-500/15",
+    borderClass: "border-red-500/30",
+    textClass: "text-red-400",
     label: `Datos de hace ${ageDays} dias`,
     message: "Las predicciones pueden ser imprecisas. Subi datos actualizados.",
   };

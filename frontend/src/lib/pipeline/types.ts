@@ -36,12 +36,12 @@ export const COLUMN_LABELS: Record<ColumnName, string> = {
 
 /** Colores de cada columna (header del Kanban) */
 export const COLUMN_COLORS: Record<ColumnName, string> = {
-  a_contactar: "bg-slate-100 text-slate-700",
-  contactado: "bg-blue-100 text-blue-700",
-  en_seguimiento: "bg-amber-100 text-amber-700",
-  por_cotizar: "bg-purple-100 text-purple-700",
-  cotizacion_enviada: "bg-indigo-100 text-indigo-700",
-  vendido: "bg-green-100 text-green-700",
+  a_contactar: "bg-slate-500/20 text-slate-300",
+  contactado: "bg-blue-500/20 text-blue-400",
+  en_seguimiento: "bg-amber-500/20 text-amber-400",
+  por_cotizar: "bg-purple-500/20 text-purple-400",
+  cotizacion_enviada: "bg-indigo-500/20 text-indigo-400",
+  vendido: "bg-green-500/20 text-green-400",
 };
 
 /** Verticales del motor de predicciones */
@@ -49,10 +49,10 @@ export type Vertical = "reposicion" | "activacion" | "cross_sell" | "recuperacio
 
 /** Colores por vertical */
 export const VERTICAL_STYLES: Record<Vertical, { label: string; color: string }> = {
-  reposicion: { label: "Reposicion", color: "bg-blue-100 text-blue-700" },
-  activacion: { label: "Activacion", color: "bg-green-100 text-green-700" },
-  cross_sell: { label: "Cross-sell", color: "bg-purple-100 text-purple-700" },
-  recuperacion: { label: "Recuperacion", color: "bg-amber-100 text-amber-700" },
+  reposicion: { label: "Reposicion", color: "bg-blue-500/20 text-blue-400" },
+  activacion: { label: "Activacion", color: "bg-green-500/20 text-green-400" },
+  cross_sell: { label: "Cross-sell", color: "bg-purple-500/20 text-purple-400" },
+  recuperacion: { label: "Recuperacion", color: "bg-amber-500/20 text-amber-400" },
 };
 
 /** Resultado de contacto */
