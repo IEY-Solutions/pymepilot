@@ -205,12 +205,12 @@ export function DriveConnection({
           automaticamente todos los dias.
         </p>
         {SERVICE_ACCOUNT_EMAIL && (
-          <div className="bg-brand-50 border border-brand-200 rounded p-2">
-            <p className="text-brand-800 font-medium mb-1">Paso 1:</p>
-            <p className="text-brand-700">
+          <div className="bg-blue-50 border border-blue-200 rounded p-2">
+            <p className="text-blue-800 font-medium mb-1">Paso 1:</p>
+            <p className="text-blue-700">
               Compartí tu carpeta con este email:
             </p>
-            <code className="block mt-1 bg-brand-100 px-2 py-1 rounded text-brand-900 break-all text-[11px]">
+            <code className="block mt-1 bg-blue-100 px-2 py-1 rounded text-blue-900 break-all text-[11px]">
               {SERVICE_ACCOUNT_EMAIL}
             </code>
           </div>
@@ -226,12 +226,12 @@ export function DriveConnection({
             setError(null);
           }}
           placeholder="Pega el link de la carpeta de Drive"
-          className="flex-1 text-sm border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+          className="flex-1 text-sm border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         />
         <button
           onClick={handleConnect}
           disabled={loading || !folderLink.trim()}
-          className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-white bg-brand-600 rounded-lg hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {loading ? (
             <Loader2 className="h-4 w-4 animate-spin" />

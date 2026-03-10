@@ -101,14 +101,4 @@ export const TOOLTIPS = {
     "Ventas cerradas. El cliente compro y el ciclo del pipeline se completo.",
   "pipeline.vencida":
     "Esta card tiene mas de 3 dias sin ser contactada. Todavia podes contactarla o descartarla.",
-
-  // ============================================================
-  // CONFIGURACION
-  // ============================================================
-  "config.preview":
-    "Asi se va a ver tu dashboard con el logo y color que elijas. Los cambios se aplican cuando guardas.",
-  "config.logo":
-    "Logo de tu empresa. Aparece en el header del dashboard en lugar de PymePilot. Recomendado: fondo transparente, formato horizontal.",
-  "config.color":
-    "Color principal que se aplica a botones, encabezados y acentos del dashboard. Elegi uno de los predefinidos o usa un color personalizado.",
 } as const;

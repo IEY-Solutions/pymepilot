@@ -203,7 +203,7 @@ export function PipelineCard({ card, isGenerating, onClick, onDiscard }: Props) 
         {card.customer.phone && (
           <a
             href={`tel:${card.customer.phone}`}
-            className="flex items-center gap-0.5 hover:text-brand-600"
+            className="flex items-center gap-0.5 hover:text-blue-600"
             onClick={(e) => e.stopPropagation()}
             onPointerDown={(e) => e.stopPropagation()}
           >
@@ -213,7 +213,7 @@ export function PipelineCard({ card, isGenerating, onClick, onDiscard }: Props) 
         {card.customer.email && (
           <a
             href={`mailto:${card.customer.email}`}
-            className="flex items-center gap-0.5 hover:text-brand-600"
+            className="flex items-center gap-0.5 hover:text-blue-600"
             onClick={(e) => e.stopPropagation()}
             onPointerDown={(e) => e.stopPropagation()}
           >
@@ -235,7 +235,7 @@ export function PipelineCard({ card, isGenerating, onClick, onDiscard }: Props) 
 
       {/* Indicador de generacion de propuesta */}
       {isGenerating && (
-        <div className="flex items-center gap-1.5 text-[10px] text-brand-600 animate-pulse">
+        <div className="flex items-center gap-1.5 text-[10px] text-blue-600 animate-pulse">
           <Sparkles className="h-3 w-3" />
           <span>Actualizando propuesta...</span>
         </div>

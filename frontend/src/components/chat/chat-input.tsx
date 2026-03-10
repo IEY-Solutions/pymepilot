@@ -58,14 +58,14 @@ export function ChatInput({
         disabled={disabled}
         rows={1}
         className="flex-1 resize-none rounded-xl border border-gray-300 px-3 py-2 text-sm
-                   placeholder:text-gray-400 focus:border-brand-500 focus:outline-none
-                   focus:ring-1 focus:ring-brand-500 disabled:opacity-50"
+                   placeholder:text-gray-400 focus:border-blue-500 focus:outline-none
+                   focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
       />
       <button
         onClick={handleSubmit}
         disabled={disabled || !text.trim()}
         className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full
-                   bg-brand-600 text-white transition-colors hover:bg-brand-700
+                   bg-blue-600 text-white transition-colors hover:bg-blue-700
                    disabled:opacity-40 disabled:cursor-not-allowed"
         aria-label="Enviar mensaje"
       >

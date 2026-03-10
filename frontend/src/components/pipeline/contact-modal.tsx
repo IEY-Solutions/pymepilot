@@ -101,7 +101,7 @@ function Timeline({
           {/* Linea vertical */}
           <div className="flex flex-col items-center">
             <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${
-              event.type === "created" ? "bg-gray-300" : "bg-brand-500"
+              event.type === "created" ? "bg-gray-300" : "bg-blue-500"
             }`} />
             {i < events.length - 1 && (
               <div className="w-px flex-1 bg-gray-200 mt-1" />
@@ -195,7 +195,7 @@ function SuggestedMessage({ card }: { card: PipelineCard }) {
         <div className="flex items-center gap-2">
           <button
             onClick={handleCopy}
-            className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-brand-600 transition-colors"
+            className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-blue-600 transition-colors"
           >
             {copied ? (
               <>
@@ -224,7 +224,7 @@ function SuggestedMessage({ card }: { card: PipelineCard }) {
         <textarea
           value={editedMessage}
           onChange={(e) => setEditedMessage(e.target.value)}
-          className="w-full text-xs text-gray-600 bg-white border border-gray-200 rounded-md p-2 resize-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+          className="w-full text-xs text-gray-600 bg-white border border-gray-200 rounded-md p-2 resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
           rows={4}
         />
       ) : (
@@ -465,7 +465,7 @@ function NoteField({
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
-      className="w-full border border-gray-300 rounded-lg p-2.5 text-sm resize-none h-16 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+      className="w-full border border-gray-300 rounded-lg p-2.5 text-sm resize-none h-16 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
       maxLength={500}
     />
   );
@@ -486,7 +486,7 @@ function SubmitButton({
     <button
       onClick={onClick}
       disabled={disabled}
-      className="w-full py-2 text-sm font-medium text-white bg-brand-600 rounded-lg hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+      className="w-full py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
     >
       {isSubmitting ? "Guardando..." : label}
     </button>
@@ -554,12 +554,12 @@ export function ContactModal({
           {/* Contacto */}
           <div className="flex gap-3 mt-2">
             {card.customer.phone && (
-              <a href={`tel:${card.customer.phone}`} className="flex items-center gap-1 text-xs text-gray-500 hover:text-brand-600">
+              <a href={`tel:${card.customer.phone}`} className="flex items-center gap-1 text-xs text-gray-500 hover:text-blue-600">
                 <Phone className="h-3 w-3" /> {card.customer.phone}
               </a>
             )}
             {card.customer.email && (
-              <a href={`mailto:${card.customer.email}`} className="flex items-center gap-1 text-xs text-gray-500 hover:text-brand-600">
+              <a href={`mailto:${card.customer.email}`} className="flex items-center gap-1 text-xs text-gray-500 hover:text-blue-600">
                 <Mail className="h-3 w-3" /> {card.customer.email}
               </a>
             )}
@@ -626,9 +626,9 @@ function StageContextBanner({ card, activeFollowup }: { card: PipelineCard; acti
   if (!text) return null;
 
   return (
-    <div className="flex items-start gap-2 px-3 py-2 bg-brand-50 rounded-lg mb-3">
-      <Info className="h-3.5 w-3.5 text-brand-500 mt-0.5 shrink-0" />
-      <p className="text-xs text-brand-700">{text}</p>
+    <div className="flex items-start gap-2 px-3 py-2 bg-blue-50 rounded-lg mb-3">
+      <Info className="h-3.5 w-3.5 text-blue-500 mt-0.5 shrink-0" />
+      <p className="text-xs text-blue-700">{text}</p>
     </div>
   );
 }

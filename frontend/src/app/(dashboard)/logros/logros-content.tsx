@@ -125,7 +125,7 @@ export function LogrosContent({
               : "PymePilot tiene clientes listos para que los contactes"
           }
           icon={ShoppingBag}
-          color="bg-gradient-to-br from-brand-50 to-brand-100 text-brand-600"
+          color="bg-gradient-to-br from-blue-50 to-blue-100 text-blue-600"
           tooltip={TOOLTIPS["logros.ventas_mes"]}
         />
         <KpiCard

@@ -158,7 +158,7 @@ export default async function HomePage() {
           value={pendingCount}
           subtitle="Predicciones para contactar"
           icon={MessageSquare}
-          color="bg-brand-50 text-brand-600"
+          color="bg-blue-50 text-blue-600"
           tooltip={TOOLTIPS["home.pendientes"]}
         />
         <KpiCard

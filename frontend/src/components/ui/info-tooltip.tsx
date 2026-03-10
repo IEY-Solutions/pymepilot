@@ -131,7 +131,7 @@ export function InfoTooltip({ text }: { text: string }) {
               width: TOOLTIP_WIDTH,
               zIndex: 9999,
             }}
-            className="px-3 py-2 text-xs text-gray-700 bg-white border border-gray-200 rounded-lg shadow-lg leading-relaxed"
+            className="px-3 py-2 text-xs text-gray-700 bg-white border border-border-subtle rounded-lg shadow-lg leading-relaxed"
             // Evitar que el hover sobre el tooltip lo cierre
             onMouseEnter={() => setOpen(true)}
             onMouseLeave={() => setOpen(false)}

@@ -30,7 +30,7 @@ export function ChatBubble() {
         onClick={toggleChat}
         className={`fixed z-50 flex items-center justify-center rounded-full shadow-lg
                     transition-all duration-200 hover:scale-105
-                    ${isOpen ? "h-10 w-10 bg-gray-600 hover:bg-gray-700" : "h-14 w-14 bg-brand-600 hover:bg-brand-700"}
+                    ${isOpen ? "h-10 w-10 bg-gray-600 hover:bg-gray-700" : "h-14 w-14 bg-blue-600 hover:bg-blue-700"}
                     ${isOpen ? "bottom-[min(85vh,560px)] right-4 md:bottom-[520px] md:right-6" : "bottom-20 right-4 md:bottom-6 md:right-6"}`}
         aria-label={isOpen ? "Cerrar chat" : "Abrir PymePilot Asesor"}
       >
@@ -59,20 +59,20 @@ export function ChatBubble() {
                      md:w-[400px] md:h-[500px] md:rounded-2xl"
         >
           {/* Header */}
-          <div className="flex items-center justify-between border-b border-gray-200 bg-brand-600 px-4 py-3">
+          <div className="flex items-center justify-between border-b border-gray-200 bg-blue-600 px-4 py-3">
             <div className="flex items-center gap-2">
               <Bot className="h-5 w-5 text-white" />
               <span className="text-sm font-semibold text-white">PymePilot Asesor</span>
             </div>
             <div className="flex items-center gap-2">
               {usage && (
-                <span className="text-xs text-brand-200">
+                <span className="text-xs text-blue-200">
                   {usage.questions_today}/{usage.daily_limit}
                 </span>
               )}
               <button
                 onClick={toggleChat}
-                className="rounded-full p-1 text-white/70 hover:text-white hover:bg-brand-700 transition-colors"
+                className="rounded-full p-1 text-white/70 hover:text-white hover:bg-blue-700 transition-colors"
                 aria-label="Cerrar chat"
               >
                 <X className="h-4 w-4" />

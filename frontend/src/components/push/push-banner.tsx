@@ -84,10 +84,10 @@ export function PushBanner() {
   if (!visible) return null;
 
   return (
-    <div className="bg-brand-50 border-b border-brand-100 px-4 py-3">
+    <div className="bg-blue-50 border-b border-blue-100 px-4 py-3">
       <div className="max-w-5xl flex items-center gap-3">
-        <Bell className="h-5 w-5 text-brand-600 flex-shrink-0" />
-        <p className="text-sm text-brand-800 flex-1">
+        <Bell className="h-5 w-5 text-blue-600 flex-shrink-0" />
+        <p className="text-sm text-blue-800 flex-1">
           Activa las notificaciones para recibir un resumen diario de tus
           clientes a contactar y enterarte al instante cuando se concrete una
           venta.
@@ -95,13 +95,13 @@ export function PushBanner() {
         <button
           onClick={handleSubscribe}
           disabled={subscribing}
-          className="text-sm font-medium px-3 py-1.5 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors disabled:opacity-50 flex-shrink-0"
+          className="text-sm font-medium px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex-shrink-0"
         >
           {subscribing ? "Activando..." : "Activar"}
         </button>
         <button
           onClick={handleDismiss}
-          className="text-brand-400 hover:text-brand-600 flex-shrink-0"
+          className="text-blue-400 hover:text-blue-600 flex-shrink-0"
           aria-label="Cerrar"
         >
           <X className="h-4 w-4" />

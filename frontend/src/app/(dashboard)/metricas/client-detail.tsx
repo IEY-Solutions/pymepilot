@@ -163,12 +163,12 @@ export function ClientDetail({ customerId }: { customerId: string }) {
             <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-400">
               Top {sortedProducts.length} productos
             </h4>
-            <div className="flex gap-1 bg-gray-100 rounded p-0.5">
+            <div className="flex gap-1 bg-surface-muted rounded p-0.5">
               <button
                 onClick={() => setProductSort("revenue")}
                 className={`px-2 py-0.5 text-[10px] font-medium rounded transition-colors ${
                   productSort === "revenue"
-                    ? "bg-white text-gray-900 shadow-sm"
+                    ? "bg-brand-600 text-brand-on-600 shadow-sm"
                     : "text-gray-500 hover:text-gray-700"
                 }`}
               >
@@ -178,7 +178,7 @@ export function ClientDetail({ customerId }: { customerId: string }) {
                 onClick={() => setProductSort("units")}
                 className={`px-2 py-0.5 text-[10px] font-medium rounded transition-colors ${
                   productSort === "units"
-                    ? "bg-white text-gray-900 shadow-sm"
+                    ? "bg-brand-600 text-brand-on-600 shadow-sm"
                     : "text-gray-500 hover:text-gray-700"
                 }`}
               >
@@ -202,7 +202,7 @@ export function ClientDetail({ customerId }: { customerId: string }) {
                     <span className="text-gray-700 truncate block">
                       {p.product_name}
                     </span>
-                    <div className="w-full h-1 bg-gray-100 rounded-full mt-1">
+                    <div className="w-full h-1 bg-surface-muted rounded-full mt-1">
                       <div
                         className="h-full bg-indigo-400 rounded-full transition-all duration-300"
                         style={{ width: `${pct}%` }}
