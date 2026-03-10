@@ -31,7 +31,7 @@ export function BottomNav({ unreadCount = 0 }: { unreadCount?: number }) {
               href={item.href}
               className={`flex flex-col items-center gap-0.5 py-2 px-3 text-xs transition-colors ${
                 isActive
-                  ? "text-blue-600"
+                  ? "text-brand-600"
                   : "text-gray-400 hover:text-gray-600"
               }`}
             >

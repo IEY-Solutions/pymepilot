@@ -40,7 +40,7 @@ export function PipelineColumn({ column, cards, generatingCardIds, onCardClick, 
         ref={setNodeRef}
         className={`flex-1 p-2 space-y-2 rounded-b-lg transition-colors min-h-[200px] ${
           isOver
-            ? "bg-blue-50 border-2 border-dashed border-blue-300"
+            ? "bg-brand-50 border-2 border-dashed border-brand-300"
             : "bg-gray-50 border border-gray-200"
         }`}
       >

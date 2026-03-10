@@ -54,9 +54,9 @@ function getErpStatus(props: ErpStatusCardProps): ErpStatusInfo {
       label: "Canal: Subida de archivos",
       description: "Los datos se cargan via Smart File Upload o Google Drive.",
       icon: FileSpreadsheet,
-      colorClass: "text-blue-600",
-      bgClass: "bg-blue-50",
-      borderClass: "border-blue-200",
+      colorClass: "text-brand-600",
+      bgClass: "bg-brand-50",
+      borderClass: "border-brand-200",
     };
   }
 

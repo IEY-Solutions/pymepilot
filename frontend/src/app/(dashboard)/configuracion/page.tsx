@@ -182,7 +182,7 @@ export default function ConfiguracionPage() {
           <div>
             <button
               onClick={() => fileRef.current?.click()}
-              className="text-sm font-medium text-blue-600 hover:text-blue-700"
+              className="text-sm font-medium text-brand-600 hover:text-brand-700"
             >
               {logoPreview ? "Cambiar logo" : "Subir logo"}
             </button>

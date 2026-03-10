@@ -33,7 +33,7 @@ export function Sidebar({ unreadCount = 0 }: { unreadCount?: number }) {
               title={item.label}
               className={`relative group flex items-center justify-center w-10 h-10 rounded-lg transition-colors ${
                 isActive
-                  ? "bg-blue-50 text-blue-700"
+                  ? "bg-brand-50 text-brand-700"
                   : "text-gray-500 hover:bg-gray-100 hover:text-gray-900"
               }`}
             >

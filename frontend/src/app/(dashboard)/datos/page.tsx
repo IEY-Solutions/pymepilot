@@ -20,7 +20,7 @@ const statusConfig: Record<
   completed: { icon: CheckCircle, color: "text-green-500", label: "OK" },
   failed: { icon: XCircle, color: "text-red-500", label: "Error" },
   requires_review: { icon: AlertTriangle, color: "text-yellow-500", label: "Revisar" },
-  started: { icon: Clock, color: "text-blue-500", label: "En curso" },
+  started: { icon: Clock, color: "text-brand-500", label: "En curso" },
 };
 
 function formatDate(dateStr: string): string {

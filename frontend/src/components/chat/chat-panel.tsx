@@ -40,8 +40,8 @@ export function ChatPanel({ showWelcome = true, className = "" }: Props) {
         {/* Bienvenida cuando no hay mensajes */}
         {showWelcome && messages.length === 0 && !isLoading && (
           <div className="flex flex-col items-center justify-center h-full text-center py-8">
-            <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center mb-3">
-              <Bot className="h-6 w-6 text-blue-600" />
+            <div className="w-12 h-12 rounded-full bg-brand-100 flex items-center justify-center mb-3">
+              <Bot className="h-6 w-6 text-brand-600" />
             </div>
             <h3 className="text-base font-semibold text-gray-800 mb-1">
               PymePilot Asesor
@@ -59,8 +59,8 @@ export function ChatPanel({ showWelcome = true, className = "" }: Props) {
                 <button
                   key={suggestion}
                   onClick={() => sendMessage(suggestion)}
-                  className="block w-full text-left text-sm text-blue-600 bg-blue-50
-                             rounded-lg px-3 py-2 hover:bg-blue-100 transition-colors"
+                  className="block w-full text-left text-sm text-brand-600 bg-brand-50
+                             rounded-lg px-3 py-2 hover:bg-brand-100 transition-colors"
                 >
                   {suggestion}
                 </button>

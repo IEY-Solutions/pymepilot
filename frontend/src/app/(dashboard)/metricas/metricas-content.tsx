@@ -303,7 +303,7 @@ export function MetricasContent({
               icon={Receipt}
               color={
                 salesPctChange >= 0
-                  ? "bg-gradient-to-br from-blue-50 to-blue-100 text-blue-600"
+                  ? "bg-gradient-to-br from-brand-50 to-brand-100 text-brand-600"
                   : "bg-gradient-to-br from-red-50 to-red-100 text-red-600"
               }
               tooltip={TOOLTIPS["metricas.ventas_mes"]}
