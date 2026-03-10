@@ -413,6 +413,83 @@ def save_prediction(
 
 
 # ============================================================
+# QUERY 5b: Crear pipeline card para prediccion
+# ============================================================
+
+def create_pipeline_card(
+    conn,
+    tenant_id: str,
+    prediction_id: str,
+    customer_id: str,
+    vertical: str,
+    priority: int,
+) -> str | None:
+    """Crea una card en pipeline_cards vinculada a la prediccion.
+
+    QUE HACE: Inmediatamente despues de guardar la prediccion, crea
+    la card en el Pipeline (columna "A contactar") para que aparezca
+    directo en el Kanban sin necesidad de sync posterior.
+
+    POR QUE: Antes, las predicciones se guardaban y un RPC del frontend
+    las sincronizaba al Pipeline en un segundo paso. Ahora se crean
+    ambas en la misma transaccion — mas simple, mas rapido, atomico.
+
+    CONCEPTO CLAVE - ON CONFLICT DO NOTHING:
+    Si ya existe una card para esta prediccion (por el UNIQUE constraint
+    en prediction_id), no falla ni duplica — simplemente no hace nada.
+    Esto hace la funcion idempotente (segura de llamar multiples veces).
+
+    Args:
+        conn: Conexion con tenant context (DENTRO de transaccion).
+        tenant_id: UUID del tenant.
+        prediction_id: UUID de la prediccion recien creada.
+        customer_id: UUID del cliente.
+        vertical: Tipo de vertical ('reposicion', etc).
+        priority: Prioridad (1=maxima a 5=minima).
+
+    Returns:
+        UUID de la card creada (como string), o None si ya existia.
+    """
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            INSERT INTO pipeline_cards (
+                tenant_id, prediction_id, customer_id,
+                column_name, vertical, priority
+            ) VALUES (
+                %(tenant_id)s, %(prediction_id)s, %(customer_id)s,
+                'a_contactar', %(vertical)s, %(priority)s
+            )
+            ON CONFLICT (prediction_id) WHERE prediction_id IS NOT NULL
+            DO NOTHING
+            RETURNING id
+            """,
+            {
+                'tenant_id': tenant_id,
+                'prediction_id': prediction_id,
+                'customer_id': customer_id,
+                'vertical': vertical,
+                'priority': priority,
+            },
+        )
+        row = cur.fetchone()
+
+    if row:
+        card_id = str(row[0])
+        logger.info(
+            f"Pipeline card creada: {card_id} "
+            f"(prediccion={prediction_id}, columna=a_contactar)"
+        )
+        return card_id
+
+    logger.debug(
+        f"Pipeline card ya existia para prediccion {prediction_id}, "
+        f"no se creo duplicado"
+    )
+    return None
+
+
+# ============================================================
 # QUERY 6: Predicciones pendientes para atribucion
 # ============================================================
 

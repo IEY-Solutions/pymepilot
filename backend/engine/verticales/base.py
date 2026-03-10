@@ -45,6 +45,7 @@ from backend.engine.core.logger import get_logger, sanitize_text
 from backend.engine.db.connection import get_db_connection, get_db_connection_no_tenant
 from backend.engine.db.queries import (
     check_existing_prediction,
+    create_pipeline_card,
     get_revenue_percentile_threshold,
     get_run_summary,
     save_prediction,
@@ -311,6 +312,20 @@ class VerticalBase(ABC):
                 priority=priority,
                 metadata=metadata,
             )
+
+            # --- Crear card en Pipeline (columna "A contactar") ---
+            # Antes esto se hacia via RPC desde el frontend.
+            # Ahora se crea en la misma transaccion — atomico.
+            if not dry_run:
+                create_pipeline_card(
+                    conn=conn,
+                    tenant_id=tenant_id,
+                    prediction_id=prediction_id,
+                    customer_id=customer_id,
+                    vertical=self.vertical_name,
+                    priority=priority,
+                )
+
             conn.commit()
 
         return {
