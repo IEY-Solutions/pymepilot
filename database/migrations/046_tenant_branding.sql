@@ -47,5 +47,8 @@ FOR UPDATE USING (
     )
 );
 
--- 3. Notificar a PostgREST que el schema cambio
+-- 3. Grants para el frontend (PostgREST usa rol authenticated)
+GRANT SELECT, UPDATE ON public.tenants TO authenticated;
+
+-- 4. Notificar a PostgREST que el schema cambio
 NOTIFY pgrst, 'reload schema';
