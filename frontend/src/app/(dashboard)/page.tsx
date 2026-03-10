@@ -204,7 +204,7 @@ export default async function HomePage() {
             </div>
           </div>
           <Link
-            href="/contactar"
+            href="/pipeline"
             className="text-xs text-indigo-600 underline shrink-0"
           >
             Ver contactos

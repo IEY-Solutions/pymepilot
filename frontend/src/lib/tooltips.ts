@@ -21,28 +21,6 @@ export const TOOLTIPS = {
     "Hace cuanto se sincronizaron los datos con tu ERP. Si dice mas de 48hs, los datos pueden estar desactualizados.",
 
   // ============================================================
-  // CONTACTAR
-  // ============================================================
-  "contactar.pendientes":
-    "Cantidad de clientes sugeridos para contactar hoy que todavia no marcaste como contactados.",
-  "contactar.prioridad":
-    "Urgencia de contacto segun el analisis de PymePilot. Urgente = cliente en riesgo de perderse. Baja = oportunidad sin apuro.",
-  "contactar.vertical":
-    "Tipo de prediccion: Reposicion (ya le toca comprar), Activacion (cliente nuevo), Cross-sell (puede comprar algo mas), Recuperacion (dejo de comprar).",
-  "contactar.confianza":
-    "Que tan seguro esta PymePilot de que este cliente va a comprar si lo contactas. Mas alto = mas probable.",
-  "contactar.ultima_compra":
-    "Hace cuanto fue la ultima vez que este cliente te compro.",
-  "contactar.sort_urgentes":
-    "Ordena por prioridad: primero los clientes que necesitan atencion inmediata.",
-  "contactar.sort_importantes":
-    "Ordena por facturacion total: primero los clientes que mas plata te generan.",
-  "contactar.sort_potencial":
-    "Ordena por monto potencial: combina la confianza de PymePilot con la facturacion del cliente.",
-  "contactar.sort_recientes":
-    "Ordena por fecha de prediccion: primero las mas nuevas.",
-
-  // ============================================================
   // METRICAS — KPIs
   // ============================================================
   "metricas.ventas_mes":
@@ -95,14 +73,6 @@ export const TOOLTIPS = {
     "De donde vinieron los datos: API (conexion directa al ERP), Excel (archivo subido), Drive (carpeta de Google Drive), Smart File (archivo inteligente).",
   "datos.sync_counts":
     "C = Clientes sincronizados, P = Productos sincronizados, O = Ordenes (pedidos) sincronizadas.",
-
-  // ============================================================
-  // HISTORIAL
-  // ============================================================
-  "historial.confianza":
-    "Porcentaje de confianza que tenia PymePilot cuando genero esta prediccion.",
-  "historial.status":
-    "Estado de la prediccion: Pendiente (sin atender), Contactado (lo llamaste), Ignorado (lo descartaste), Completado (compro), Expirado (paso la ventana).",
 
   // ============================================================
   // LOGROS

@@ -47,7 +47,7 @@ export const COLUMN_COLORS: Record<ColumnName, string> = {
 /** Verticales del motor de predicciones */
 export type Vertical = "reposicion" | "activacion" | "cross_sell" | "recuperacion";
 
-/** Colores por vertical (consistente con prediction-card.tsx) */
+/** Colores por vertical */
 export const VERTICAL_STYLES: Record<Vertical, { label: string; color: string }> = {
   reposicion: { label: "Reposicion", color: "bg-blue-100 text-blue-700" },
   activacion: { label: "Activacion", color: "bg-green-100 text-green-700" },

@@ -148,19 +148,39 @@ function SuggestedMessage({ card }: { card: PipelineCard }) {
 
   // Buscar copy cacheado para la etapa actual, fallback a prediction.message_text
   const stageMessage = card.stage_messages?.[card.column_name] ?? null;
-  const message = stageMessage ?? card.prediction?.message_text ?? null;
+  const originalMessage = stageMessage ?? card.prediction?.message_text ?? null;
   const isStageMessage = !!stageMessage;
 
-  if (!message) return null;
+  // En "a_contactar" el mensaje es editable — el vendedor puede ajustarlo
+  // antes de copiarlo a WhatsApp
+  const isEditable = card.column_name === "a_contactar";
+  const [editedMessage, setEditedMessage] = useState(originalMessage ?? "");
+  const message = isEditable ? editedMessage : originalMessage;
+
+  if (!originalMessage) return null;
 
   const handleCopy = async () => {
+    if (!message) return;
     try {
       await navigator.clipboard.writeText(message);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
     } catch {
-      // Fallback silencioso
+      // Fallback para browsers sin clipboard API
+      const textarea = document.createElement("textarea");
+      textarea.value = message;
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
     }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 3000);
+  };
+
+  const handleWhatsApp = async () => {
+    await handleCopy();
+    window.open("https://wa.me/", "_blank");
   };
 
   return (
@@ -172,24 +192,44 @@ function SuggestedMessage({ card }: { card: PipelineCard }) {
             {isStageMessage ? "Mensaje sugerido para esta etapa" : "Mensaje original"}
           </span>
         </div>
-        <button
-          onClick={handleCopy}
-          className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-blue-600 transition-colors"
-        >
-          {copied ? (
-            <>
-              <Check className="h-3 w-3" />
-              Copiado
-            </>
-          ) : (
-            <>
-              <Copy className="h-3 w-3" />
-              Copiar
-            </>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleCopy}
+            className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-blue-600 transition-colors"
+          >
+            {copied ? (
+              <>
+                <Check className="h-3 w-3" />
+                Copiado
+              </>
+            ) : (
+              <>
+                <Copy className="h-3 w-3" />
+                Copiar
+              </>
+            )}
+          </button>
+          {isEditable && (
+            <button
+              onClick={handleWhatsApp}
+              className="flex items-center gap-1 text-[10px] font-medium text-green-600 hover:text-green-700 transition-colors"
+            >
+              <Send className="h-3 w-3" />
+              WhatsApp
+            </button>
           )}
-        </button>
+        </div>
       </div>
-      <p className="text-xs text-gray-600 whitespace-pre-line">{message}</p>
+      {isEditable ? (
+        <textarea
+          value={editedMessage}
+          onChange={(e) => setEditedMessage(e.target.value)}
+          className="w-full text-xs text-gray-600 bg-white border border-gray-200 rounded-md p-2 resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+          rows={4}
+        />
+      ) : (
+        <p className="text-xs text-gray-600 whitespace-pre-line">{message}</p>
+      )}
     </div>
   );
 }
