@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import {
   TrendingUp,
   TrendingDown,
@@ -15,6 +15,7 @@ import { ChurnChart } from "./charts/churn-chart";
 import { TicketChart } from "./charts/ticket-chart";
 import { ValueChart } from "./charts/value-chart";
 import { ClientRankingTable } from "./client-ranking-table";
+import { ProductRankingTable, type ProductRankingRow } from "./product-ranking-table";
 import { formatCurrency } from "@/lib/format";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { TOOLTIPS } from "@/lib/tooltips";
@@ -76,6 +77,7 @@ interface MetricasContentProps {
   value: ValueRow[];
   sales: SalesRow[];
   rankings: RankingRow[];
+  productRankings: ProductRankingRow[];
 }
 
 // ============================================================
@@ -125,8 +127,9 @@ export function MetricasContent({
   value,
   sales,
   rankings,
+  productRankings,
 }: MetricasContentProps) {
-  const [activeTab, setActiveTab] = useState<"rendimiento" | "clientes">(
+  const [activeTab, setActiveTab] = useState<"rendimiento" | "clientes" | "productos" | "comparar">(
     "rendimiento"
   );
   const [showExport, setShowExport] = useState(false);
@@ -219,6 +222,26 @@ export function MetricasContent({
               }`}
             >
               Clientes
+            </button>
+            <button
+              onClick={() => setActiveTab("productos")}
+              className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                activeTab === "productos"
+                  ? "bg-white text-gray-900 shadow-sm"
+                  : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              Productos
+            </button>
+            <button
+              onClick={() => setActiveTab("comparar")}
+              className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                activeTab === "comparar"
+                  ? "bg-white text-gray-900 shadow-sm"
+                  : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              Comparar
             </button>
           </div>
 
@@ -378,6 +401,201 @@ export function MetricasContent({
       {activeTab === "clientes" && (
         <ClientRankingTable rankings={rankings} />
       )}
+
+      {/* Tab: Productos */}
+      {activeTab === "productos" && (
+        <ProductRankingTable products={productRankings} />
+      )}
+
+      {/* Tab: Comparar */}
+      {activeTab === "comparar" && (
+        <CompareTab revenue={revenue} churn={churn} ticket={ticket} value={value} sales={sales} />
+      )}
+    </div>
+  );
+}
+
+// ============================================================
+// COMPARE TAB
+// ============================================================
+
+type CompareType = "month" | "quarter" | "custom";
+type CompareRange = 4 | 6 | 9 | 12;
+
+function CompareTab({
+  revenue,
+  churn,
+  ticket,
+  value,
+  sales,
+}: {
+  revenue: RevenueRow[];
+  churn: ChurnRow[];
+  ticket: TicketRow[];
+  value: ValueRow[];
+  sales: SalesRow[];
+}) {
+  const [compareType, setCompareType] = useState<CompareType>("month");
+  const [compareRange, setCompareRange] = useState<CompareRange>(6);
+
+  // Calcular periodos segun tipo de comparacion
+  const { current, previous } = useMemo(() => {
+    if (compareType === "month") {
+      // Ultimo mes vs penultimo
+      return {
+        current: { revenue: revenue.slice(-1), churn: churn.slice(-1), ticket: ticket.slice(-1), value: value.slice(-1), sales: sales.slice(-1), label: "Ultimo mes" },
+        previous: { revenue: revenue.slice(-2, -1), churn: churn.slice(-2, -1), ticket: ticket.slice(-2, -1), value: value.slice(-2, -1), sales: sales.slice(-2, -1), label: "Mes anterior" },
+      };
+    } else if (compareType === "quarter") {
+      // Ultimos 3 meses vs 3 meses anteriores
+      return {
+        current: { revenue: revenue.slice(-3), churn: churn.slice(-3), ticket: ticket.slice(-3), value: value.slice(-3), sales: sales.slice(-3), label: "Ultimo trimestre" },
+        previous: { revenue: revenue.slice(-6, -3), churn: churn.slice(-6, -3), ticket: ticket.slice(-6, -3), value: value.slice(-6, -3), sales: sales.slice(-6, -3), label: "Trimestre anterior" },
+      };
+    }
+    // Custom: todo el rango disponible dividido en 2 mitades
+    const half = Math.floor(revenue.length / 2);
+    return {
+      current: { revenue: revenue.slice(half), churn: churn.slice(half), ticket: ticket.slice(half), value: value.slice(half), sales: sales.slice(half), label: `Ultimos ${revenue.length - half}m` },
+      previous: { revenue: revenue.slice(0, half), churn: churn.slice(0, half), ticket: ticket.slice(0, half), value: value.slice(0, half), sales: sales.slice(0, half), label: `${half}m anteriores` },
+    };
+  }, [compareType, compareRange, revenue, churn, ticket, value, sales]);
+
+  // Helpers para promediar/sumar arrays
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const avgField = (rows: any[], field: string) => {
+    if (rows.length === 0) return 0;
+    return rows.reduce((sum: number, r: Record<string, unknown>) => sum + Number(r[field] ?? 0), 0) / rows.length;
+  };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const sumField = (rows: any[], field: string) => {
+    return rows.reduce((sum: number, r: Record<string, unknown>) => sum + Number(r[field] ?? 0), 0);
+  };
+
+  // KPIs comparativos
+  const kpis = [
+    {
+      label: "Ventas (ordenes)",
+      currentVal: sumField(current.sales, "total_orders"),
+      previousVal: sumField(previous.sales, "total_orders"),
+      format: (v: number) => `${v.toLocaleString("es-AR")} ordenes`,
+      invertColor: false,
+    },
+    {
+      label: "Facturacion",
+      currentVal: sumField(current.sales, "total_revenue"),
+      previousVal: sumField(previous.sales, "total_revenue"),
+      format: (v: number) => formatCurrency(v),
+      invertColor: false,
+    },
+    {
+      label: "% Recurrente",
+      currentVal: avgField(current.revenue, "recurring_pct"),
+      previousVal: avgField(previous.revenue, "recurring_pct"),
+      format: (v: number) => `${v.toFixed(0)}%`,
+      invertColor: false,
+      isPp: true,
+    },
+    {
+      label: "Churn",
+      currentVal: avgField(current.churn, "churn_rate"),
+      previousVal: avgField(previous.churn, "churn_rate"),
+      format: (v: number) => `${v.toFixed(1)}%`,
+      invertColor: true, // menor churn es mejor
+      isPp: true,
+    },
+    {
+      label: "Ticket promedio",
+      currentVal: avgField(current.ticket, "avg_ticket"),
+      previousVal: avgField(previous.ticket, "avg_ticket"),
+      format: (v: number) => formatCurrency(v),
+      invertColor: false,
+    },
+  ];
+
+  return (
+    <div className="space-y-6">
+      {/* Selectores */}
+      <div className="flex flex-wrap gap-3">
+        <div className="flex gap-1 bg-gray-100 rounded-lg p-0.5">
+          {([["month", "Mes vs anterior"], ["quarter", "Trimestre vs anterior"], ["custom", "Periodo custom"]] as const).map(([val, label]) => (
+            <button
+              key={val}
+              onClick={() => setCompareType(val)}
+              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                compareType === val
+                  ? "bg-white text-gray-900 shadow-sm"
+                  : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {compareType === "custom" && (
+          <div className="flex gap-1 bg-gray-100 rounded-lg p-0.5">
+            {([4, 6, 9, 12] as const).map((months) => (
+              <button
+                key={months}
+                onClick={() => setCompareRange(months)}
+                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                  compareRange === months
+                    ? "bg-white text-gray-900 shadow-sm"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                {months}m
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Tabla KPIs */}
+      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+        <table className="w-full">
+          <thead>
+            <tr className="border-b border-gray-100">
+              <th className="text-left text-xs font-semibold uppercase tracking-wider text-gray-400 px-5 py-3">Metrica</th>
+              <th className="text-right text-xs font-semibold uppercase tracking-wider text-gray-400 px-5 py-3">{current.label}</th>
+              <th className="text-right text-xs font-semibold uppercase tracking-wider text-gray-400 px-5 py-3">{previous.label}</th>
+              <th className="text-right text-xs font-semibold uppercase tracking-wider text-gray-400 px-5 py-3">Variacion</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-50">
+            {kpis.map((kpi) => {
+              const diff = kpi.currentVal - kpi.previousVal;
+              const pctChange = kpi.previousVal !== 0
+                ? ((kpi.currentVal - kpi.previousVal) / Math.abs(kpi.previousVal)) * 100
+                : 0;
+              const isPositive = kpi.invertColor ? diff <= 0 : diff >= 0;
+
+              return (
+                <tr key={kpi.label} className="hover:bg-gray-50">
+                  <td className="text-sm font-medium text-gray-700 px-5 py-3">{kpi.label}</td>
+                  <td className="text-sm text-right text-gray-900 font-semibold px-5 py-3">{kpi.format(kpi.currentVal)}</td>
+                  <td className="text-sm text-right text-gray-500 px-5 py-3">{kpi.format(kpi.previousVal)}</td>
+                  <td className={`text-sm text-right font-medium px-5 py-3 ${isPositive ? "text-green-600" : "text-red-600"}`}>
+                    {diff > 0 ? "+" : ""}{kpi.isPp ? `${diff.toFixed(1)}pp` : `${pctChange.toFixed(0)}%`}
+                    {" "}{isPositive ? "↑" : "↓"}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Graficos con overlay */}
+      <div className="space-y-5">
+        <RevenueChart data={revenue} />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <ChurnChart data={churn} />
+          <TicketChart data={ticket} />
+        </div>
+        <ValueChart data={value} />
+      </div>
     </div>
   );
 }

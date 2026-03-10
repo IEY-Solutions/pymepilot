@@ -5,20 +5,21 @@ import type { RankingRow } from "./metricas-content";
 export default async function MetricasPage() {
   const supabase = await createClient();
 
-  // 5 RPCs + ranking + tendencias en paralelo
-  const [revenueRes, churnRes, ticketRes, valueRes, salesRes, rankingRes, trendsRes] =
+  // 5 RPCs + ranking + tendencias + product rankings en paralelo
+  const [revenueRes, churnRes, ticketRes, valueRes, salesRes, rankingRes, trendsRes, productRankingsRes] =
     await Promise.all([
-      supabase.rpc("get_monthly_revenue_split", { p_months: 6 }),
-      supabase.rpc("get_monthly_churn", { p_months: 6 }),
-      supabase.rpc("get_monthly_ticket", { p_months: 6 }),
-      supabase.rpc("get_monthly_value", { p_months: 6 }),
-      supabase.rpc("get_total_sales", { p_months: 2 }),
+      supabase.rpc("get_monthly_revenue_split", { p_months: 12 }),
+      supabase.rpc("get_monthly_churn", { p_months: 12 }),
+      supabase.rpc("get_monthly_ticket", { p_months: 12 }),
+      supabase.rpc("get_monthly_value", { p_months: 12 }),
+      supabase.rpc("get_total_sales", { p_months: 12 }),
       supabase
         .from("client_rankings_secure")
         .select("*")
         .order("ranking", { ascending: true })
         .limit(50),
       supabase.rpc("get_client_trends", { p_months_window: 3 }),
+      supabase.rpc("get_product_rankings"),
     ]);
 
   // Mergear tendencias con rankings via Map (O(n), no O(n²))
@@ -45,6 +46,7 @@ export default async function MetricasPage() {
       value={valueRes.data ?? []}
       sales={salesRes.data ?? []}
       rankings={rankingsWithTrend}
+      productRankings={productRankingsRes.data ?? []}
     />
   );
 }

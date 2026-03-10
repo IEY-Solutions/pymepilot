@@ -55,6 +55,8 @@ const statusLabels: Record<string, string> = {
   contacted: "Contactado",
 };
 
+type ProductSortBy = "revenue" | "units";
+
 export function ClientDetail({ customerId }: { customerId: string }) {
   const [products, setProducts] = useState<TopProduct[]>([]);
   const [monthlyRevenue, setMonthlyRevenue] = useState<MonthlyRevenue[]>([]);
@@ -62,6 +64,7 @@ export function ClientDetail({ customerId }: { customerId: string }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
+  const [productSort, setProductSort] = useState<ProductSortBy>("revenue");
 
   useEffect(() => {
     const supabase = createClient();
@@ -71,7 +74,7 @@ export function ClientDetail({ customerId }: { customerId: string }) {
     Promise.all([
       supabase.rpc("get_client_top_products", {
         p_customer_id: customerId,
-        p_limit: 5,
+        p_limit: 10,
       }),
       supabase.rpc("get_client_monthly_revenue", {
         p_customer_id: customerId,
@@ -136,25 +139,59 @@ export function ClientDetail({ customerId }: { customerId: string }) {
     );
   }
 
-  const maxProductRevenue = hasProducts
-    ? Math.max(...products.map((p) => Number(p.total_revenue)))
+  // Ordenar productos segun toggle
+  const sortedProducts = hasProducts
+    ? [...products].sort((a, b) =>
+        productSort === "units"
+          ? Number(b.total_quantity) - Number(a.total_quantity)
+          : Number(b.total_revenue) - Number(a.total_revenue)
+      )
+    : [];
+
+  const maxProductValue = sortedProducts.length > 0
+    ? productSort === "units"
+      ? Number(sortedProducts[0].total_quantity)
+      : Number(sortedProducts[0].total_revenue)
     : 0;
 
   return (
     <div className="space-y-5">
-      {/* Seccion 1: Top 5 productos */}
+      {/* Seccion 1: Top 10 productos */}
       {hasProducts && (
         <div>
-          <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-3">
-            Top 5 productos
-          </h4>
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+              Top {sortedProducts.length} productos
+            </h4>
+            <div className="flex gap-1 bg-gray-100 rounded p-0.5">
+              <button
+                onClick={() => setProductSort("revenue")}
+                className={`px-2 py-0.5 text-[10px] font-medium rounded transition-colors ${
+                  productSort === "revenue"
+                    ? "bg-white text-gray-900 shadow-sm"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                Monto
+              </button>
+              <button
+                onClick={() => setProductSort("units")}
+                className={`px-2 py-0.5 text-[10px] font-medium rounded transition-colors ${
+                  productSort === "units"
+                    ? "bg-white text-gray-900 shadow-sm"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                Unidades
+              </button>
+            </div>
+          </div>
           <div className="space-y-2">
-            {products.map((p, i) => {
+            {sortedProducts.map((p, i) => {
+              const barValue = productSort === "units" ? Number(p.total_quantity) : Number(p.total_revenue);
               const pct =
-                maxProductRevenue > 0
-                  ? Math.round(
-                      (Number(p.total_revenue) / maxProductRevenue) * 100
-                    )
+                maxProductValue > 0
+                  ? Math.round((barValue / maxProductValue) * 100)
                   : 0;
               return (
                 <div key={i} className="flex items-center gap-3 text-sm">
@@ -172,12 +209,14 @@ export function ClientDetail({ customerId }: { customerId: string }) {
                       />
                     </div>
                   </div>
-                  <div className="flex gap-3 text-xs text-gray-500 shrink-0">
-                    <span className="font-medium text-gray-700">
+                  <div className="flex gap-3 text-xs shrink-0">
+                    <span className={`font-medium ${productSort === "revenue" ? "text-gray-700" : "text-gray-400"}`}>
                       {formatCurrency(Number(p.total_revenue))}
                     </span>
-                    <span>{Number(p.total_quantity)} uds</span>
-                    <span>{p.times_ordered}x</span>
+                    <span className={`${productSort === "units" ? "font-medium text-gray-700" : "text-gray-400"}`}>
+                      {Number(p.total_quantity)} uds
+                    </span>
+                    <span className="text-gray-400">{p.times_ordered}x</span>
                   </div>
                 </div>
               );
