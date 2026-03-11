@@ -4,7 +4,7 @@ import { useState } from "react";
 import {
   X, Phone, PhoneOff, FileText, MessageCircle, Send,
   CheckCircle2, XCircle, StickyNote, Mail, Copy, Check,
-  Info,
+  Info, FileSpreadsheet,
 } from "lucide-react";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { TOOLTIPS } from "@/lib/tooltips";
@@ -494,6 +494,78 @@ function SubmitButton({
 }
 
 // =============================================================================
+// Boton generar propuesta Excel
+// =============================================================================
+
+function ProposalButton({
+  customerId,
+  customerName,
+}: {
+  customerId: string;
+  customerName: string;
+}) {
+  const [generating, setGenerating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleGenerate(e: React.MouseEvent) {
+    e.stopPropagation();
+    setGenerating(true);
+    setError(null);
+    try {
+      const { exportProposal } = await import("@/lib/exports/export-proposal");
+      await exportProposal(customerId, customerName);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Error al generar propuesta"
+      );
+    } finally {
+      setGenerating(false);
+    }
+  }
+
+  return (
+    <div className="mx-4 mt-3">
+      <button
+        onClick={handleGenerate}
+        disabled={generating}
+        className="proposal-shimmer w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg font-medium text-sm text-white bg-gradient-to-r from-[#81b5a1] to-[#5a9a84] hover:scale-[1.02] hover:shadow-[0_4px_20px_rgba(129,181,161,0.3)] active:scale-[0.98] transition-all duration-200 disabled:opacity-60 disabled:hover:scale-100"
+      >
+        <FileSpreadsheet className="h-4 w-4" />
+        {generating ? "Generando..." : "Generar propuesta de reposicion"}
+      </button>
+      {error && (
+        <p className="text-xs text-red-400 mt-1.5 text-center">{error}</p>
+      )}
+      <style jsx>{`
+        .proposal-shimmer {
+          position: relative;
+          overflow: hidden;
+        }
+        .proposal-shimmer::after {
+          content: "";
+          position: absolute;
+          top: 0;
+          left: -100%;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(255, 255, 255, 0.15),
+            transparent
+          );
+          animation: shimmer 2s ease-in-out 0.5s 1;
+        }
+        @keyframes shimmer {
+          0% { left: -100%; }
+          100% { left: 100%; }
+        }
+      `}</style>
+    </div>
+  );
+}
+
+// =============================================================================
 // Modal principal
 // =============================================================================
 
@@ -570,6 +642,14 @@ export function ContactModal({
         <div className="flex-1 overflow-y-auto">
           {/* Mensaje sugerido — stage_messages[etapa] o prediction.message_text */}
           <SuggestedMessage card={card} />
+
+          {/* Boton generar propuesta — solo para reposicion */}
+          {card.vertical === "reposicion" && (
+            <ProposalButton
+              customerId={card.customer_id}
+              customerName={card.customer.name}
+            />
+          )}
 
           {/* Plan de seguimiento */}
           <FollowupPlan card={card} />
