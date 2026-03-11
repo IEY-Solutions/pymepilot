@@ -34,12 +34,31 @@ docker run -d \
   --label "traefik.http.services.pymepilot.loadbalancer.server.port=3000" \
   pymepilot-frontend:latest
 
-# 4. Verificar
+# 4. Verificar container
 sleep 3
 echo ">> Estado del container:"
 docker ps --filter name=pymepilot-dashboard --format "{{.Names}} {{.Status}} {{.Image}}"
 echo ""
-echo ">> Ultimos logs:"
-docker logs pymepilot-dashboard --tail 5
+
+# 5. Health check HTTP (espera hasta 30s)
+echo ">> Health check..."
+RETRIES=6
+for i in $(seq 1 $RETRIES); do
+  HTTP_CODE=$(docker exec pymepilot-dashboard wget -q -O /dev/null -S http://localhost:3000 2>&1 | grep "HTTP/" | tail -1 | awk '{print $2}' || echo "000")
+  if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "307" ] || [ "$HTTP_CODE" = "308" ]; then
+    echo ">> Health check OK (HTTP $HTTP_CODE)"
+    break
+  fi
+  if [ "$i" -eq "$RETRIES" ]; then
+    echo ">> ADVERTENCIA: Health check fallo despues de 30s (HTTP $HTTP_CODE)"
+    echo ">> Ultimos logs:"
+    docker logs pymepilot-dashboard --tail 10
+    echo ""
+    echo "=== Deploy con advertencia. Verifica manualmente https://app.pymepilot.cloud ==="
+    exit 1
+  fi
+  sleep 5
+done
+
 echo ""
 echo "=== Deploy completo. Proba en https://app.pymepilot.cloud ==="

@@ -156,27 +156,37 @@ export function MetricasContent({
   async function handleExportExcel() {
     setExporting(true);
     setShowExport(false);
-    const { exportToExcel } = await import("./exports/export-excel");
-    exportToExcel({ revenue, churn, ticket, value, rankings });
-    setExporting(false);
+    try {
+      const { exportToExcel } = await import("./exports/export-excel");
+      exportToExcel({ revenue, churn, ticket, value, rankings });
+    } catch {
+      alert("Error al generar el Excel. Intenta de nuevo.");
+    } finally {
+      setExporting(false);
+    }
   }
 
   async function handleExportPdf() {
     setExporting(true);
     setShowExport(false);
-    const { exportToPdf } = await import("./exports/export-pdf");
-    await exportToPdf({
-      revenue,
-      churn,
-      ticket,
-      value,
-      sales,
-      rankings,
-      productRankings,
-      demandProjections,
-      clientDemand,
-    });
-    setExporting(false);
+    try {
+      const { exportToPdf } = await import("./exports/export-pdf");
+      await exportToPdf({
+        revenue,
+        churn,
+        ticket,
+        value,
+        sales,
+        rankings,
+        productRankings,
+        demandProjections,
+        clientDemand,
+      });
+    } catch {
+      alert("Error al generar el PDF. Intenta de nuevo.");
+    } finally {
+      setExporting(false);
+    }
   }
 
   // KPI cards: ultimo mes disponible
