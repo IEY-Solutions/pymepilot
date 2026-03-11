@@ -5,19 +5,13 @@ import type { PipelineCard } from "@/lib/pipeline/types";
 export default async function PipelinePage() {
   const supabase = await createClient();
 
-  // 1. Sync: crear cards para predicciones nuevas
-  await supabase.rpc("sync_predictions_to_pipeline");
+  // NOTA: Las mutaciones (sync RPC + expiracion + auto-move) se ejecutan
+  // SOLO en GET /api/pipeline (route.ts), NO aqui. Un Server Component
+  // se renderiza en cada navegacion y prefetch — no debe tener side effects.
+  // El client component (PipelineBoard) llama refreshBoard() al montar,
+  // que dispara el GET y ejecuta las mutaciones una sola vez.
 
-  // 2. Marcar vencidas: cards en "a_contactar" con mas de 3 dias
-  const threeDaysAgo = new Date(Date.now() - 3 * 86_400_000).toISOString();
-  await supabase
-    .from("pipeline_cards")
-    .update({ is_expired: true })
-    .eq("column_name", "a_contactar")
-    .eq("is_expired", false)
-    .lt("created_at", threeDaysAgo);
-
-  // 3. Fetch cards con relaciones
+  // 1. Fetch cards con relaciones (read-only)
   const { data: rawCards, error } = await supabase
     .from("pipeline_cards")
     .select(

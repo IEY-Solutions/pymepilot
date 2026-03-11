@@ -25,17 +25,17 @@ export default function DashboardError({
 }) {
   return (
     <div className="flex flex-col items-center justify-center min-h-[50vh] text-center px-4">
-      <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md w-full">
-        <h2 className="text-lg font-semibold text-red-800 mb-2">
+      <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-6 max-w-md w-full">
+        <h2 className="text-lg font-semibold text-red-400 mb-2">
           Algo salio mal
         </h2>
-        <p className="text-sm text-red-600 mb-4">
+        <p className="text-sm text-red-300/80 mb-4">
           No pudimos cargar los datos. Puede ser un problema temporal de
           conexion.
         </p>
         <button
           onClick={reset}
-          className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
+          className="px-4 py-2 text-sm font-medium text-white bg-red-600/80 rounded-lg hover:bg-red-600 transition-colors"
         >
           Reintentar
         </button>

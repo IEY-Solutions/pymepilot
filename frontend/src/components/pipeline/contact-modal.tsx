@@ -528,39 +528,15 @@ function ProposalButton({
       <button
         onClick={handleGenerate}
         disabled={generating}
-        className="proposal-shimmer w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg font-medium text-sm text-white bg-gradient-to-r from-[#81b5a1] to-[#5a9a84] hover:scale-[1.02] hover:shadow-[0_4px_20px_rgba(129,181,161,0.3)] active:scale-[0.98] transition-all duration-200 disabled:opacity-60 disabled:hover:scale-100"
+        className="relative overflow-hidden w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg font-medium text-sm text-white bg-gradient-to-r from-[#81b5a1] to-[#5a9a84] hover:scale-[1.02] hover:shadow-[0_4px_20px_rgba(129,181,161,0.3)] active:scale-[0.98] transition-all duration-200 disabled:opacity-60 disabled:hover:scale-100"
       >
-        <FileSpreadsheet className="h-4 w-4" />
-        {generating ? "Generando..." : "Generar propuesta de reposicion"}
+        <span className="absolute inset-0 animate-[shimmer_2s_ease-in-out_0.5s_1_both] bg-gradient-to-r from-transparent via-white/15 to-transparent" />
+        <FileSpreadsheet className="h-4 w-4 relative" />
+        <span className="relative">{generating ? "Generando..." : "Generar propuesta de reposicion"}</span>
       </button>
       {error && (
         <p className="text-xs text-red-400 mt-1.5 text-center">{error}</p>
       )}
-      <style jsx>{`
-        .proposal-shimmer {
-          position: relative;
-          overflow: hidden;
-        }
-        .proposal-shimmer::after {
-          content: "";
-          position: absolute;
-          top: 0;
-          left: -100%;
-          width: 100%;
-          height: 100%;
-          background: linear-gradient(
-            90deg,
-            transparent,
-            rgba(255, 255, 255, 0.15),
-            transparent
-          );
-          animation: shimmer 2s ease-in-out 0.5s 1;
-        }
-        @keyframes shimmer {
-          0% { left: -100%; }
-          100% { left: 100%; }
-        }
-      `}</style>
     </div>
   );
 }

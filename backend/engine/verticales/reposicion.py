@@ -102,6 +102,8 @@ class VerticalReposicion(VerticalBase):
             float entre 0.0 y 1.0
         """
         factors = self._calculate_factors(candidate, context)
+        # Cachear para reusar en build_metadata sin recalcular
+        candidate['_cached_factors'] = factors
 
         score = (
             factors['regularity'] * 0.35
@@ -194,8 +196,8 @@ class VerticalReposicion(VerticalBase):
         # Metadata base (incluye profile, sequence_step, etc.)
         meta = super().build_metadata(candidate, context, profile, confidence)
 
-        # Agregar factores desglosados (util para debugging y analisis)
-        factors = self._calculate_factors(candidate, context)
+        # Reusar factores cacheados (calculados en calculate_confidence)
+        factors = candidate.pop('_cached_factors', None) or self._calculate_factors(candidate, context)
         meta['confidence_factors'] = {
             'regularity': round(factors['regularity'], 3),
             'data_quantity': round(factors['data_quantity'], 3),

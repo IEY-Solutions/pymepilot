@@ -43,7 +43,7 @@ export function PushBanner() {
 
       const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
       if (!vapidKey) {
-        console.error("NEXT_PUBLIC_VAPID_PUBLIC_KEY no configurada");
+        // VAPID key no configurada — ocultar banner silenciosamente
         setVisible(false);
         return;
       }
@@ -64,10 +64,10 @@ export function PushBanner() {
       });
 
       if (!res.ok) {
-        console.error("Error guardando suscripcion:", await res.text());
+        // Error guardando suscripcion — silenciado en client-side
       }
     } catch (err) {
-      console.error("Error en suscripcion push:", err);
+      // Error en suscripcion push — silenciado en client-side
     } finally {
       setSubscribing(false);
       setVisible(false);

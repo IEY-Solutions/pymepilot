@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { DndContext, DragOverlay, PointerSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 import type { DragEndEvent, DragStartEvent } from "@dnd-kit/core";
 import { PipelineColumn } from "./pipeline-column";
@@ -185,9 +185,16 @@ export function PipelineBoard({ initialCards }: Props) {
         }
       }
     } catch (err) {
-      console.error("Error refreshing pipeline:", err);
+      // Error silenciado en client-side (no exponer detalles al usuario)
     }
     setIsRefreshing(false);
+  }, []);
+
+  // Sync al montar: ejecuta las mutaciones (sync RPC, expiracion, auto-move)
+  // a traves del GET /api/pipeline en vez de hacerlo en el Server Component
+  useEffect(() => {
+    refreshBoard();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Accion genérica: llama API, refresca board, cierra modal
@@ -207,7 +214,7 @@ export function PipelineBoard({ initialCards }: Props) {
           await refreshBoard();
         }
       } catch (err) {
-        console.error("Error en accion pipeline:", err);
+        // Error silenciado en client-side
       } finally {
         if (cardId) {
           setGeneratingCardIds((prev) => {
@@ -289,7 +296,7 @@ export function PipelineBoard({ initialCards }: Props) {
           setModalNotes((prev) => prev.filter((n) => n.id !== noteId));
         }
       } catch (err) {
-        console.error("Error deleting note:", err);
+        // Error silenciado en client-side
       }
     },
     []

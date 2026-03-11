@@ -542,7 +542,8 @@ async function execProductosMasVendidos(
     query = query.lte("orders.order_date", fechaFin);
   }
 
-  const { data, error } = await query;
+  // Limitar filas para evitar traer datasets enormes a memoria
+  const { data, error } = await query.limit(1000);
   if (error) return `Error: ${error.message}`;
   if (!data || data.length === 0) return "No hay datos de productos vendidos.";
 
@@ -620,7 +621,8 @@ async function execClientesPorProducto(
     .from("order_items")
     .select("product_name, quantity, total_price, orders!inner(customer_id, status, customers!inner(name))")
     .ilike("product_name", `%${nombreProducto}%`)
-    .eq("orders.status", "completed");
+    .eq("orders.status", "completed")
+    .limit(1000);
 
   if (error) return `Error: ${error.message}`;
   if (!data || data.length === 0)

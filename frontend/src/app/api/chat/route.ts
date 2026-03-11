@@ -19,6 +19,10 @@ import type { ChatRequest, ChatResponse, ChatErrorResponse } from "@/lib/chat/ty
 // Limite de iteraciones tool use para evitar loops infinitos
 const MAX_TOOL_ITERATIONS = 5;
 
+// Limites de input para controlar costos y prevenir abuso
+const MAX_MESSAGE_LENGTH = 5000; // caracteres por mensaje
+const MAX_HISTORY_MESSAGES = 10; // mensajes de historial enviados a Claude
+
 // Costo por token de Claude Sonnet (referencia)
 const COST_PER_INPUT_TOKEN = 0.000003; // $3/1M tokens
 const COST_PER_OUTPUT_TOKEN = 0.000015; // $15/1M tokens
@@ -135,6 +139,13 @@ export async function POST(request: Request): Promise<Response> {
     );
   }
 
+  if (message.length > MAX_MESSAGE_LENGTH) {
+    return Response.json(
+      { error: `El mensaje es demasiado largo (maximo ${MAX_MESSAGE_LENGTH} caracteres)` } satisfies ChatErrorResponse,
+      { status: 400 }
+    );
+  }
+
   // ---- 3. Verificar limite diario ----
   const todayStr = new Date().toISOString().split("T")[0];
   const DAILY_LIMIT = parseInt(process.env.CHAT_DAILY_LIMIT || "20", 10);
@@ -161,24 +172,33 @@ export async function POST(request: Request): Promise<Response> {
   const systemPrompt = buildSystemPrompt(tenantName);
 
   // Construir historial: solo mensajes de texto (no tool_use internos)
+  // Limitado a los ultimos MAX_HISTORY_MESSAGES para controlar costos
   const claudeMessages: Anthropic.MessageParam[] = [];
 
   if (Array.isArray(history)) {
-    for (const msg of history) {
+    const recentHistory = history.slice(-MAX_HISTORY_MESSAGES);
+    for (const msg of recentHistory) {
       if (
         msg.role === "user" ||
         msg.role === "assistant"
       ) {
         claudeMessages.push({
           role: msg.role,
-          content: typeof msg.content === "string" ? msg.content : "",
+          content: typeof msg.content === "string"
+            ? msg.content.slice(0, MAX_MESSAGE_LENGTH)
+            : "",
         });
       }
     }
   }
 
-  // Agregar la pregunta actual
-  claudeMessages.push({ role: "user", content: message.trim() });
+  // Agregar la pregunta actual con prefijo anti-injection
+  // Refuerza que el input es una pregunta del usuario, no instrucciones del sistema
+  const sanitizedMessage = message.trim();
+  claudeMessages.push({
+    role: "user",
+    content: `[Pregunta del usuario de ${tenantName}]: ${sanitizedMessage}`,
+  });
 
   // ---- 5. Llamar a Claude con tools ----
   const apiKey = process.env.ANTHROPIC_API_KEY;

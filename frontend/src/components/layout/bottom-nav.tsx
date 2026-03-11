@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Database, BarChart3, Trophy, Columns3 } from "lucide-react";
+import { Home, Database, BarChart3, Trophy, Columns3, Bot } from "lucide-react";
 import { NotificationBadge } from "@/components/notifications/notification-badge";
 
 const navItems = [
@@ -11,6 +11,7 @@ const navItems = [
   { href: "/metricas", label: "Metricas", icon: BarChart3 },
   { href: "/logros", label: "Mis ventas", icon: Trophy },
   { href: "/datos", label: "Datos", icon: Database },
+  { href: "/asesor", label: "Asesor", icon: Bot },
 ];
 
 export function BottomNav({ unreadCount = 0 }: { unreadCount?: number }) {

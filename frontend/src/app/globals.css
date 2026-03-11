@@ -41,6 +41,16 @@ body {
   -webkit-backdrop-filter: blur(16px);
 }
 
+/* Animacion shimmer — efecto brillo en botones */
+@keyframes shimmer {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
 /* Animacion fadeInUp — entrada sutil de cards */
 @keyframes fadeInUp {
   from {

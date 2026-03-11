@@ -627,8 +627,8 @@ def update_prediction_attribution(
 def get_run_summary(
     conn,
     tenant_id: str,
+    vertical: str,
     run_date: date | None = None,
-    vertical: str = 'reposicion',
 ) -> dict:
     """Obtiene resumen de predicciones generadas en una fecha.
 
@@ -639,9 +639,8 @@ def get_run_summary(
     Args:
         conn: Conexion con tenant context.
         tenant_id: UUID del tenant.
+        vertical: Tipo de vertical a resumir (obligatorio).
         run_date: Fecha del run (default: hoy).
-        vertical: Tipo de vertical a resumir (default 'reposicion').
-            Permite obtener resumen de cualquier vertical.
 
     Returns:
         Dict con total, by_priority, avg_confidence, total_potential_value.
