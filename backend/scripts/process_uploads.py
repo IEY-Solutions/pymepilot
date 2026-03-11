@@ -271,10 +271,33 @@ def _download_from_storage(storage_path: str, local_path: str) -> None:
     req.add_header("Authorization", f"Bearer {SUPABASE_SERVICE_ROLE_KEY}")
     req.add_header("apikey", SUPABASE_SERVICE_ROLE_KEY)
 
+    # Limite de tamano: 50MB. Previene OOM si alguien sube un archivo enorme
+    # directamente a Storage bypasseando la validacion del frontend.
+    max_size = 50 * 1024 * 1024  # 50MB
+
     try:
         with urlopen(req, timeout=60) as response:
+            # Verificar Content-Length antes de descargar
+            content_length = response.headers.get("Content-Length")
+            if content_length and int(content_length) > max_size:
+                raise ValueError(
+                    f"Archivo demasiado grande: {int(content_length)} bytes "
+                    f"(maximo {max_size} bytes)"
+                )
+
+            # Descargar en chunks para no cargar todo en RAM
+            downloaded = 0
             with open(local_path, "wb") as f:
-                f.write(response.read())
+                while True:
+                    chunk = response.read(8192)
+                    if not chunk:
+                        break
+                    downloaded += len(chunk)
+                    if downloaded > max_size:
+                        raise ValueError(
+                            f"Archivo excede limite de {max_size} bytes durante descarga"
+                        )
+                    f.write(chunk)
     except URLError as exc:
         raise ConnectionError(
             f"No se pudo descargar archivo de Storage: {storage_path}"

@@ -115,6 +115,10 @@ class SyncEngine:
         ):
             with get_db_connection(tenant_id) as conn:
                 # Check 1: Ya hubo sync exitoso hoy para este tenant?
+                # NOTA: Este check y el INSERT en sync_log (mas abajo) son
+                # conexiones separadas. Dos syncs simultaneos podrian pasar
+                # ambos el check. En la practica, flock en cron_wrapper previene
+                # esto para crons, y Pato no ejecuta 2 syncs manuales a la vez.
                 already_synced = conn.execute(
                     """
                     SELECT id FROM sync_log

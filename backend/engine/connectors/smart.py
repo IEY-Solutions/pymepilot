@@ -617,11 +617,13 @@ def _normalize_date(value) -> date | None:
     como "24/01/2026", tira error. Al convertir a date de Python,
     psycopg3 lo serializa correctamente.
 
-    Formatos soportados:
+    Formatos soportados (en orden de prioridad):
     - datetime/date de Python → retorna .date()
-    - DD/MM/YYYY o DD-MM-YYYY (formato argentino)
+    - DD/MM/YYYY o DD-MM-YYYY (formato argentino, se intenta primero)
     - YYYY-MM-DD o YYYY/MM/DD (formato ISO)
-    - MM/DD/YYYY (formato USA, solo si dia > 12)
+    - DD/MM/YY o DD-MM-YY (formato argentino abreviado)
+    NOTA: Para fechas ambiguas como 05/03/2026, siempre se interpreta
+    como DD/MM/YYYY (5 de marzo) porque los distribuidores son argentinos.
     """
     if value is None:
         return None

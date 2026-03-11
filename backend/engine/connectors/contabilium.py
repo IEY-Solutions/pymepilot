@@ -66,8 +66,11 @@ class RateLimitError(ContabiliumError):
 
 # La base URL de Contabilium. El /token esta en la raiz, los endpoints de datos en /api.
 # CONTABILIUM_API_URL en settings tiene el valor base (ej: https://rest.contabilium.com/api)
-# Para /token necesitamos la raiz sin /api.
-_TOKEN_URL = CONTABILIUM_API_URL.replace('/api', '') + '/token'
+# Para /token necesitamos la raiz sin /api al final.
+# rstrip('/') + removesuffix('/api') es mas robusto que replace() porque:
+# - replace() reemplaza la PRIMERA ocurrencia (podria matchear en otro lugar)
+# - removesuffix() solo remueve si esta al final (lo esperado)
+_TOKEN_URL = CONTABILIUM_API_URL.rstrip('/').removesuffix('/api') + '/token'
 
 
 class IPv4HTTPAdapter(HTTPAdapter):
@@ -182,12 +185,17 @@ class ContabiliumConnector(ERPConnector):
         # NO loguear el token. Solo confirmar exito:
         logger.info("authenticate(): token obtenido OK")
 
-    def _get(self, endpoint: str, params: dict | None = None) -> dict | list:
+    def _get(self, endpoint: str, params: dict | None = None, skip_batch_pacing: bool = False) -> dict | list:
         """GET con Bearer token, retry automatico, y manejo de errores.
 
         _auth_retried y _retries son locales por invocacion (NO atributos de instancia).
         401 NO incrementa _retries (es mecanismo de auth, no de disponibilidad).
         timeout=30 es explicito — sin el, requests espera para siempre.
+
+        skip_batch_pacing: Si True, omite la pausa de batch (10s cada 20 requests).
+        Usar cuando el caller ya aplica su propio rate delay entre llamadas
+        (ej: fetch_orders con time.sleep(2s) entre cada GET de comprobante).
+        Sin esto, se suman ambos delays: 2s + 10s = 12s cada 20 requests.
         """
         _auth_retried = False
         _retries = 0
@@ -195,7 +203,8 @@ class ContabiliumConnector(ERPConnector):
         while True:
             # Batch pacing: pausa forzada cada _BATCH_SIZE requests
             # para no exceder la ventana de 25 req/10s de Contabilium.
-            if self._request_count > 0 and self._request_count % self._BATCH_SIZE == 0:
+            # Se omite si el caller ya maneja rate limiting (skip_batch_pacing=True).
+            if not skip_batch_pacing and self._request_count > 0 and self._request_count % self._BATCH_SIZE == 0:
                 logger.info(
                     f"Batch pacing: {self._request_count} requests acumulados, "
                     f"pausa de {self._BATCH_PAUSE_SECS}s"
@@ -356,10 +365,19 @@ class ContabiliumConnector(ERPConnector):
         """
         if client_ids:
             # Modo dirigido: solo clientes especificos (mayorista)
+            # NOTA: since_date se ignora en modo dirigido porque la API
+            # de Contabilium no soporta filtro de fecha en GET individual.
+            # Cada cliente se descarga completo via GET clientes/?id=XXX.
+            if since_date:
+                logger.debug(
+                    f"fetch_customers(): since_date={since_date} ignorado en modo dirigido "
+                    f"(API no soporta filtro de fecha en GET individual)"
+                )
             raw: list[dict] = []
             for cid in client_ids:
                 try:
-                    client = self._get("clientes/", params={"id": cid})
+                    # skip_batch_pacing=True porque el time.sleep debajo ya protege
+                    client = self._get("clientes/", params={"id": cid}, skip_batch_pacing=True)
                     if isinstance(client, dict):
                         raw.append(client)
                     time.sleep(SYNC_RATE_LIMIT_DELAY)
@@ -461,7 +479,8 @@ class ContabiliumConnector(ERPConnector):
             comp_id = comp.get('Id')
 
             # GET detalle para obtener Items (productos del comprobante)
-            detail = self._get("comprobantes/", params={"id": comp_id})
+            # skip_batch_pacing=True porque el time.sleep debajo ya protege
+            detail = self._get("comprobantes/", params={"id": comp_id}, skip_batch_pacing=True)
             time.sleep(SYNC_RATE_LIMIT_DELAY)
 
             # Transformar Items al formato que sync.py espera
@@ -507,16 +526,35 @@ class ContabiliumConnector(ERPConnector):
             return None
 
     @staticmethod
-    def _parse_argentine_money(money_str: str) -> float | None:
+    def _parse_argentine_money(money_str: str | int | float | None) -> float | None:
         """Parsea monto en formato argentino '371.708,00' a float.
 
         Contabilium usa punto como separador de miles y coma como decimal:
         '371.708,00' -> 371708.00
+
+        IMPORTANTE: La API puede devolver el monto como numero (float/int)
+        en vez de string. En ese caso, retornarlo directo sin parsear.
+        Si se aplica el replace de formato argentino a un float como
+        47341.01, se obtiene 4734101.0 (montos x100). Este check previene
+        esa corrupcion silenciosa de datos.
         """
+        if money_str is None:
+            return None
+        # Si ya es numerico, retornar directo (API devolvio JSON number)
+        if isinstance(money_str, (int, float)):
+            return float(money_str)
         if not money_str:
             return None
         try:
-            clean = str(money_str).replace('.', '').replace(',', '.')
+            # Detectar formato: si tiene coma, es formato argentino (371.708,00)
+            # Si NO tiene coma pero tiene punto, es formato numerico (47341.01)
+            text = str(money_str).strip()
+            if ',' in text:
+                # Formato argentino: punto = miles, coma = decimal
+                clean = text.replace('.', '').replace(',', '.')
+            else:
+                # Formato numerico directo (sin coma): punto = decimal
+                clean = text
             return float(clean)
         except (ValueError, TypeError):
             logger.warning(f"No se pudo parsear monto: '{money_str}'")
@@ -567,8 +605,11 @@ class ContabiliumConnector(ERPConnector):
                     )
                     conn.commit()
                 logger.info(f"429 registrado en sync_log para tenant {self._tenant_id[:8]}...")
-            except Exception as e:
-                logger.warning(f"No se pudo registrar 429 en sync_log: {e}")
+            except (OSError, Exception) as e:
+                # Best-effort: si la DB esta caida o el tenant_id es invalido,
+                # solo loguear. El flujo principal (retry del 429) no debe fallar
+                # porque no pudimos registrar el evento.
+                logger.warning(f"No se pudo registrar 429 en sync_log: {type(e).__name__}: {e}")
 
             # Enviar push notification
             try:
