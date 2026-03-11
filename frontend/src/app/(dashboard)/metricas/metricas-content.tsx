@@ -165,7 +165,17 @@ export function MetricasContent({
     setExporting(true);
     setShowExport(false);
     const { exportToPdf } = await import("./exports/export-pdf");
-    await exportToPdf({ revenue, churn, ticket, value, rankings });
+    await exportToPdf({
+      revenue,
+      churn,
+      ticket,
+      value,
+      sales,
+      rankings,
+      productRankings,
+      demandProjections,
+      clientDemand,
+    });
     setExporting(false);
   }
 
