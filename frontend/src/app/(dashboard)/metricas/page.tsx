@@ -20,7 +20,7 @@ export default async function MetricasPage() {
         .limit(50),
       supabase.rpc("get_client_trends", { p_months_window: 3 }),
       supabase.rpc("get_product_rankings"),
-      supabase.rpc("get_demand_projection", { p_limit: 15 }),
+      supabase.rpc("get_demand_projection"),
       supabase.rpc("get_client_demand_projection", { p_limit: 15 }),
     ]);
 

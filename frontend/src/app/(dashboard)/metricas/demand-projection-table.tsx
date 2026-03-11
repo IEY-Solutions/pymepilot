@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { ChevronDown, ChevronRight, TrendingUp, TrendingDown, Package } from "lucide-react";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { createClient } from "@/lib/supabase/client";
@@ -13,6 +13,7 @@ export interface DemandProjectionRow {
   product_id: string;
   product_name: string;
   product_sku: string;
+  product_rubro: string;
   projected_demand_30d: number;
   avg_monthly_units: number;
   trend_pct: number;
@@ -32,6 +33,13 @@ interface DemandDetailRow {
   demand_estimate: number;
 }
 
+interface RubroGroup {
+  rubro: string;
+  products: DemandProjectionRow[];
+  totalDemand: number;
+  totalProducts: number;
+}
+
 // ============================================================
 // COMPONENTE PRINCIPAL
 // ============================================================
@@ -41,31 +49,40 @@ export function DemandProjectionTable({
 }: {
   projections: DemandProjectionRow[];
 }) {
+  const [expandedRubro, setExpandedRubro] = useState<string | null>(null);
   const [expandedProduct, setExpandedProduct] = useState<string | null>(null);
   const [details, setDetails] = useState<Record<string, DemandDetailRow[]>>({});
   const [loadingDetail, setLoadingDetail] = useState<string | null>(null);
 
-  // KPIs globales
-  const totalDemand = projections.reduce(
-    (sum, p) => sum + Number(p.projected_demand_30d),
-    0
-  );
-  const totalProducts = projections.length;
-  const totalCustomers = new Set(
-    projections.flatMap((p) =>
-      p.top_customer_name ? [p.top_customer_name] : []
-    )
-  ).size;
+  // Agrupar por rubro
+  const rubros = useMemo(() => {
+    const map = new Map<string, DemandProjectionRow[]>();
+    for (const p of projections) {
+      const rubro = p.product_rubro || "Otros";
+      if (!map.has(rubro)) map.set(rubro, []);
+      map.get(rubro)!.push(p);
+    }
 
-  async function toggleExpand(productId: string) {
+    const groups: RubroGroup[] = [];
+    for (const [rubro, products] of map) {
+      groups.push({
+        rubro,
+        products,
+        totalDemand: products.reduce((s, p) => s + Number(p.projected_demand_30d), 0),
+        totalProducts: products.length,
+      });
+    }
+
+    // Ordenar por demanda total descendente
+    return groups.sort((a, b) => b.totalDemand - a.totalDemand);
+  }, [projections]);
+
+  async function toggleProduct(productId: string) {
     if (expandedProduct === productId) {
       setExpandedProduct(null);
       return;
     }
-
     setExpandedProduct(productId);
-
-    // Cargar detalle si no lo tenemos
     if (!details[productId]) {
       setLoadingDetail(productId);
       const supabase = createClient();
@@ -95,50 +112,77 @@ export function DemandProjectionTable({
   }
 
   return (
-    <div>
-      <div className="bg-[#1a2a2c] rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.3)] overflow-hidden">
-        <div className="px-4 py-3 border-b border-white/[0.06]">
-          <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-            Top {totalProducts} productos por demanda proyectada
-            <InfoTooltip text="Proyeccion basada en patrones de compra de los ultimos 6 meses. Las ultimas compras tienen mayor peso en el calculo." />
-          </h3>
-        </div>
+    <div className="space-y-3">
+      {rubros.map((rubro) => (
+        <div
+          key={rubro.rubro}
+          className="bg-[#1a2a2c] rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.3)] overflow-hidden"
+        >
+          {/* Header del rubro */}
+          <button
+            onClick={() =>
+              setExpandedRubro(expandedRubro === rubro.rubro ? null : rubro.rubro)
+            }
+            className="w-full px-4 py-3 flex items-center justify-between hover:bg-white/[0.03] transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              {expandedRubro === rubro.rubro ? (
+                <ChevronDown className="h-4 w-4 text-white/40" />
+              ) : (
+                <ChevronRight className="h-4 w-4 text-white/40" />
+              )}
+              <h3 className="text-sm font-semibold text-white">{rubro.rubro}</h3>
+              <span className="text-xs text-white/30">
+                {rubro.totalProducts} {rubro.totalProducts === 1 ? "producto" : "productos"}
+              </span>
+            </div>
+            <div className="flex items-center gap-4">
+              <span className="text-sm font-semibold text-white">
+                {rubro.totalDemand.toLocaleString("es-AR")} uds
+              </span>
+              <span className="text-[10px] text-white/30 hidden sm:inline">prox. 30d</span>
+            </div>
+          </button>
 
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="text-white/40 text-xs uppercase tracking-wider border-b border-white/[0.06]">
-                <th className="text-left px-4 py-2.5 w-8">#</th>
-                <th className="text-left px-4 py-2.5">Producto</th>
-                <th className="text-right px-4 py-2.5">Se van a necesitar</th>
-                <th className="text-right px-4 py-2.5 hidden sm:table-cell">Venta mensual</th>
-                <th className="text-center px-4 py-2.5 hidden md:table-cell">Tendencia</th>
-                <th className="text-right px-4 py-2.5 hidden md:table-cell">Clientes que compran</th>
-                <th className="text-left px-4 py-2.5 hidden lg:table-cell">Mayor comprador</th>
-              </tr>
-            </thead>
-            <tbody>
-              {projections.map((p, i) => (
-                <ProductRow
-                  key={p.product_id}
-                  product={p}
-                  rank={i + 1}
-                  isExpanded={expandedProduct === p.product_id}
-                  isLoading={loadingDetail === p.product_id}
-                  detail={details[p.product_id]}
-                  onToggle={() => toggleExpand(p.product_id)}
-                  formatDate={formatDate}
-                />
-              ))}
-            </tbody>
-          </table>
+          {/* Tabla de productos del rubro */}
+          {expandedRubro === rubro.rubro && (
+            <div className="border-t border-white/[0.06]">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="text-white/40 text-xs uppercase tracking-wider border-b border-white/[0.06]">
+                      <th className="text-left px-4 py-2 w-8">#</th>
+                      <th className="text-left px-4 py-2">Producto</th>
+                      <th className="text-right px-4 py-2">Se van a necesitar</th>
+                      <th className="text-right px-4 py-2 hidden sm:table-cell">Venta mensual</th>
+                      <th className="text-center px-4 py-2 hidden md:table-cell">Tendencia</th>
+                      <th className="text-right px-4 py-2 hidden md:table-cell">Clientes</th>
+                      <th className="text-left px-4 py-2 hidden lg:table-cell">Mayor comprador</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rubro.products.map((p, i) => (
+                      <ProductRow
+                        key={p.product_id}
+                        product={p}
+                        rank={i + 1}
+                        isExpanded={expandedProduct === p.product_id}
+                        isLoading={loadingDetail === p.product_id}
+                        detail={details[p.product_id]}
+                        onToggle={() => toggleProduct(p.product_id)}
+                        formatDate={formatDate}
+                      />
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </div>
-      </div>
+      ))}
     </div>
   );
 }
-
-// NOTE: KPIs moved to DemandSubTabs in metricas-content.tsx
 
 // ============================================================
 // FILA DE PRODUCTO (expandible)
@@ -176,8 +220,8 @@ function ProductRow({
         className="border-b border-white/[0.04] hover:bg-white/[0.03] transition-colors cursor-pointer"
         onClick={onToggle}
       >
-        <td className="px-4 py-3 text-white/30 text-xs">{rank}</td>
-        <td className="px-4 py-3">
+        <td className="px-4 py-2.5 text-white/30 text-xs">{rank}</td>
+        <td className="px-4 py-2.5">
           <div className="flex items-center gap-2">
             {isExpanded ? (
               <ChevronDown className="h-3.5 w-3.5 text-white/30 flex-shrink-0" />
@@ -194,27 +238,27 @@ function ProductRow({
             </div>
           </div>
         </td>
-        <td className="px-4 py-3 text-right">
+        <td className="px-4 py-2.5 text-right">
           <span className="text-sm font-semibold text-white">
             {Number(product.projected_demand_30d).toLocaleString("es-AR")} uds
           </span>
         </td>
-        <td className="px-4 py-3 text-right hidden sm:table-cell">
+        <td className="px-4 py-2.5 text-right hidden sm:table-cell">
           <span className="text-sm text-white/60">
             {Number(product.avg_monthly_units).toLocaleString("es-AR")}
           </span>
         </td>
-        <td className="px-4 py-3 text-center hidden md:table-cell">
+        <td className="px-4 py-2.5 text-center hidden md:table-cell">
           <span className={`inline-flex items-center gap-1 text-xs ${trendColor}`}>
             <TrendIcon className="h-3 w-3" />
             {trend > 0 ? "+" : ""}
             {trend.toFixed(1)}%
           </span>
         </td>
-        <td className="px-4 py-3 text-right hidden md:table-cell">
+        <td className="px-4 py-2.5 text-right hidden md:table-cell">
           <span className="text-sm text-white/60">{Number(product.unique_customers)}</span>
         </td>
-        <td className="px-4 py-3 hidden lg:table-cell">
+        <td className="px-4 py-2.5 hidden lg:table-cell">
           <span className="text-xs text-white/40 truncate max-w-[150px] inline-block">
             {product.top_customer_name || "—"}
             {product.top_customer_units > 0 && (
@@ -264,7 +308,7 @@ function ProductRow({
                           {Number(d.avg_quantity)} uds
                         </td>
                         <td className="px-3 py-1.5 text-xs text-white/40 text-right hidden sm:table-cell">
-                          {d.frequency_days ? `${Number(d.frequency_days)}d` : "—"}
+                          {d.frequency_days ? `${Number(d.frequency_days)} dias` : "—"}
                         </td>
                         <td className="px-3 py-1.5 text-xs text-white/40 text-right hidden sm:table-cell">
                           {formatDate(d.next_purchase_estimate)}
