@@ -25,7 +25,9 @@ BEGIN;
 -- 1. FIX get_tenant_info_secure() (H-01)
 -- =============================================
 -- Agrega SET search_path, REVOKE FROM PUBLIC, y branding_config
-CREATE OR REPLACE FUNCTION public.get_tenant_info_secure()
+-- DROP necesario porque el tipo de retorno cambia (se agrega branding_config)
+DROP FUNCTION IF EXISTS public.get_tenant_info_secure();
+CREATE FUNCTION public.get_tenant_info_secure()
 RETURNS TABLE (
     id uuid,
     name text,
