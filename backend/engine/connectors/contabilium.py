@@ -627,6 +627,80 @@ class ContabiliumConnector(ERPConnector):
             except Exception as e:
                 logger.warning(f"No se pudo enviar push de 429: {e}")
 
+    def fetch_stock_by_sku(self, sku: str, warehouse: str) -> float | None:
+        """Obtiene stock disponible de un producto en un deposito especifico.
+
+        QUE HACE: Consulta el endpoint de inventarios de Contabilium para
+        obtener el stock disponible (StockConReservas) de un deposito
+        especifico. Busca en el array Stock[] el deposito cuyo Codigo
+        coincida (case-insensitive) con el parametro warehouse.
+
+        POR QUE POR DEPOSITO: Un distribuidor puede tener stock repartido
+        en varios depositos. Solo nos interesa el deposito de despacho
+        (configurado por tenant en erp_config.stock_warehouse).
+
+        SEGURIDAD: Solo usa _get() (HTTP GET). Es fisicamente imposible
+        modificar stock via este metodo.
+
+        Args:
+            sku: Codigo/SKU del producto en Contabilium.
+            warehouse: Nombre del deposito a buscar (case-insensitive).
+
+        Returns:
+            Stock disponible (float) del deposito, o None si:
+            - El SKU no existe en Contabilium
+            - El deposito no se encuentra en la respuesta
+            - La API falla (se loguea warning, no rompe el flujo)
+        """
+        if not sku or not warehouse:
+            return None
+
+        try:
+            data = self._get(
+                "inventarios/getStockBySKU",
+                params={"codigo": sku},
+            )
+        except Exception as e:
+            logger.warning(
+                f"fetch_stock_by_sku({sku}): error consultando API: "
+                f"{sanitize_text(str(e))}"
+            )
+            return None
+
+        if not isinstance(data, dict):
+            logger.warning(f"fetch_stock_by_sku({sku}): respuesta no es dict")
+            return None
+
+        # Buscar en el array de depositos.
+        # Contabilium usa 'stock' (minuscula) como clave del array.
+        depositos = data.get('stock') or data.get('Stock') or []
+        if not isinstance(depositos, list):
+            logger.warning(f"fetch_stock_by_sku({sku}): campo de depositos no es array")
+            return None
+
+        # Buscar deposito con comparacion case-insensitive por contenido.
+        # El nombre en Contabilium puede ser "Deposito Oficina" y la config
+        # del tenant dice "oficina" → buscamos si warehouse aparece dentro
+        # del nombre del deposito (ej: "oficina" in "deposito oficina").
+        warehouse_lower = warehouse.lower()
+        for dep in depositos:
+            dep_name = str(dep.get('Codigo', '')).lower()
+            if warehouse_lower in dep_name:
+                # Usar stock disponible del deposito (total - reservado)
+                # El campo puede llamarse StockConReservas o StockDisponible
+                stock = dep.get('StockConReservas')
+                if stock is None:
+                    stock = dep.get('StockDisponible')
+                if stock is None:
+                    stock = dep.get('Disponible', 0)
+                return float(stock)
+
+        logger.debug(
+            f"fetch_stock_by_sku({sku}): deposito '{warehouse}' no encontrado "
+            f"(depositos disponibles: {[d.get('Codigo') for d in depositos]})"
+        )
+        return None
+
     def __reduce__(self):
         raise TypeError("ContabiliumConnector no es serializable")
 

@@ -186,6 +186,7 @@ def get_product_context(
             SELECT
                 po.product_id,
                 p.name AS product_name,
+                p.sku,
                 p.category,
                 p.price AS current_price,
                 COUNT(*) AS times_ordered,
@@ -204,7 +205,7 @@ def get_product_context(
                 ELSE NULL END AS predicted_reorder_date
             FROM product_orders po
             JOIN products p ON p.id = po.product_id
-            GROUP BY po.product_id, p.name, p.category, p.price
+            GROUP BY po.product_id, p.name, p.sku, p.category, p.price
             ORDER BY COUNT(*) DESC, SUM(po.total_price) DESC
             """,
             {

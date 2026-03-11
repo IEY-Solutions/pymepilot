@@ -34,7 +34,11 @@
       "Bash(git -C /home/pato/projects/pymepilot status --short)",
       "mcp__context7__resolve-library-id",
       "mcp__context7__query-docs",
-      "Bash(docker cp /home/pato/projects/pymepilot/database/migrations/018_create_upload_jobs.sql orion-menteax_postgres:/tmp/018.sql && docker exec orion-menteax_postgres psql -U postgres -d orion_db -f /tmp/018.sql)"
+      "Bash(docker cp /home/pato/projects/pymepilot/database/migrations/018_create_upload_jobs.sql orion-menteax_postgres:/tmp/018.sql && docker exec orion-menteax_postgres psql -U postgres -d orion_db -f /tmp/018.sql)",
+      "Bash(grep -l \"border-nav\\\\|border-subtle\\\\|border-default\" src/**/*.tsx src/**/*.ts 2>/dev/null | sort)",
+      "Bash(grep -l \"brand-on-\\\\|brand-soft-\" src/**/*.tsx src/**/*.ts 2>/dev/null | sort)",
+      "Bash(docker cp:*)",
+      "Bash(ls -la /home/pato/projects/pymepilot/database/migrations/*.sql | tail -20)"
     ]
   }
 }

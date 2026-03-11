@@ -30,6 +30,7 @@
 | Producto por codigo | `GET api/conceptos?codigo=X` | `codigo` |
 | Comprobantes (facturas) | `GET api/comprobantes/search` | `filtro`, `fechaDesde`, `fechaHasta`, `page` |
 | Comprobante por ID | `GET api/comprobantes?id=X` | `id` |
+| Stock por SKU | `GET api/inventarios/getStockBySKU?codigo=X` | `codigo` |
 
 ### Paginacion
 
@@ -106,6 +107,28 @@ Los endpoints de datos usan el prefijo `/api`.
 2. Revisar datos recibidos vs campos esperados
 3. Actualizar cada campo a [CONFIRMADO] si coincide
 4. Corregir nombre en columna "Contabilium" si difiere
+
+---
+
+### Stock por SKU (api/inventarios/getStockBySKU)
+
+| Contabilium | Descripcion | Tipo |
+|-------------|-------------|------|
+| Id | ID del concepto | integer |
+| Codigo | SKU del producto | string |
+| StockActual | Unidades totales en la cuenta | decimal |
+| StockReservado | Unidades reservadas totales | decimal |
+| StockConReservas | Disponible = Actual - Reservado | decimal |
+| Stock[] | Array de depositos | array |
+| Stock[].Id | ID del deposito | integer |
+| Stock[].Codigo | Nombre del deposito | string |
+| Stock[].StockActual | Unidades totales en deposito | decimal |
+| Stock[].StockReservado | Unidades reservadas en deposito | decimal |
+| Stock[].StockConReservas | Disponible en deposito | decimal |
+
+**Uso:** Se consulta por producto (SKU) durante la vertical de reposicion.
+Solo se usa el stock del deposito configurado en `erp_config.stock_warehouse`
+del tenant (comparacion case-insensitive). Para IEY: "oficina".
 
 ---
 

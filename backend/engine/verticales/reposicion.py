@@ -24,9 +24,12 @@ No todos los clientes son igual de predecibles. El score combina:
 El score va de 0.0 (no confio nada) a 1.0 (certeza maxima).
 """
 
+import json
+import time
 from datetime import date
 
-from backend.engine.core.logger import get_logger
+from backend.engine.core.logger import get_logger, sanitize_text
+from backend.engine.db.connection import get_db_connection, get_tenant_id_by_slug
 from backend.engine.db.queries import (
     get_product_context,
     get_reorder_candidates,
@@ -59,6 +62,107 @@ class VerticalReposicion(VerticalBase):
     days_ahead: int = 14
     days_overdue: int = 14
 
+    def __init__(self) -> None:
+        super().__init__()
+        # Conector de stock (se configura en run() si el tenant lo soporta)
+        self._stock_connector = None
+        self._stock_warehouse: str | None = None
+        self._stock_creds_cm = None  # Context manager de TenantCredentials
+
+    # ================================================================
+    # OVERRIDE DE run() — Setup/teardown del conector de stock
+    # ================================================================
+
+    def run(
+        self,
+        tenant_slug: str,
+        dry_run: bool = False,
+        limit: int | None = None,
+        min_confidence: float = 0.0,
+    ) -> dict:
+        """Extiende run() para configurar el conector de stock antes de procesar.
+
+        QUE HACE: Antes de ejecutar el flujo normal de la vertical, verifica
+        si el tenant tiene configurado un deposito de stock (erp_config.stock_warehouse).
+        Si lo tiene y es de tipo contabilium, crea un conector autenticado que
+        se reutiliza para todos los candidatos (1 sola autenticacion por corrida).
+
+        POR QUE OVERRIDE run() Y NO get_context():
+        Crear un conector por cada candidato (en get_context) significaria
+        N autenticaciones (POST /token) por corrida. Con el override de run(),
+        autenticamos UNA vez y reutilizamos para todos los candidatos.
+
+        SEGURIDAD: El conector solo tiene _get() — es fisicamente imposible
+        escribir en el ERP del cliente via este conector.
+        """
+        self._setup_stock_connector(tenant_slug)
+        try:
+            return super().run(tenant_slug, dry_run, limit, min_confidence)
+        finally:
+            self._teardown_stock_connector()
+
+    def _setup_stock_connector(self, tenant_slug: str) -> None:
+        """Configura el conector de stock si el tenant lo soporta.
+
+        Condiciones para activar stock:
+        1. erp_type = 'contabilium' (unico ERP con endpoint de stock)
+        2. erp_config.stock_warehouse configurado (nombre del deposito)
+
+        Si alguna condicion falla → stock deshabilitado (graceful degradation).
+        """
+        try:
+            tenant_id = get_tenant_id_by_slug(tenant_slug)
+            with get_db_connection(tenant_id) as conn:
+                row = conn.execute(
+                    "SELECT erp_type, erp_config FROM tenants WHERE id = %s",
+                    (tenant_id,),
+                ).fetchone()
+
+            if not row or row[0] != 'contabilium':
+                logger.debug("Stock deshabilitado: tenant no es contabilium")
+                return
+
+            erp_config = row[1] or {}
+            if isinstance(erp_config, str):
+                erp_config = json.loads(erp_config)
+
+            warehouse = erp_config.get('stock_warehouse')
+            if not warehouse:
+                logger.debug("Stock deshabilitado: stock_warehouse no configurado")
+                return
+
+            self._stock_warehouse = warehouse
+
+            # Crear conector con lifecycle de credenciales manejado
+            from backend.engine.connectors.contabilium import ContabiliumConnector
+            from backend.engine.connectors.crypto import TenantCredentials
+
+            self._stock_creds_cm = TenantCredentials.load(tenant_slug)
+            creds = self._stock_creds_cm.__enter__()
+            connector = ContabiliumConnector(creds, tenant_id)
+            connector.authenticate()
+            self._stock_connector = connector
+
+            logger.info(f"Stock connector configurado (deposito: '{warehouse}')")
+
+        except Exception as e:
+            logger.warning(
+                f"No se pudo configurar stock connector: "
+                f"{sanitize_text(str(e))}. Stock deshabilitado."
+            )
+            self._teardown_stock_connector()
+
+    def _teardown_stock_connector(self) -> None:
+        """Limpia el conector de stock y sus credenciales."""
+        if self._stock_creds_cm:
+            try:
+                self._stock_creds_cm.__exit__(None, None, None)
+            except Exception:
+                pass
+        self._stock_connector = None
+        self._stock_warehouse = None
+        self._stock_creds_cm = None
+
     # ================================================================
     # METODOS ABSTRACTOS IMPLEMENTADOS
     # ================================================================
@@ -77,15 +181,44 @@ class VerticalReposicion(VerticalBase):
         )
 
     def get_context(self, conn, tenant_id: str, candidate: dict) -> dict:
-        """Obtiene historial de productos del candidato.
+        """Obtiene historial de productos del candidato + stock disponible.
 
-        Retorna dict con key 'products': lista de productos que
-        el cliente compra, con cantidades, frecuencia, y prediccion
-        de recompra por producto.
+        QUE HACE: Primero obtiene los productos que el cliente compra
+        (historial de compras). Si hay conector de stock configurado,
+        consulta la API de Contabilium para saber cuantas unidades
+        tenemos en deposito de cada producto.
+
+        CONCEPTO - Enriquecimiento de datos:
+        Los datos de la DB (historial) se combinan con datos en vivo
+        de la API (stock) para tener una imagen mas completa.
+
+        Retorna dict con:
+        - 'products': lista enriquecida con stock_disponible
+        - 'has_stock_info': True si se consulto stock
         """
         customer_id = str(candidate['customer_id'])
         products = get_product_context(conn, tenant_id, customer_id)
-        return {'products': products}
+
+        has_stock_info = False
+
+        # Enriquecer con stock si hay conector configurado
+        if self._stock_connector and self._stock_warehouse:
+            has_stock_info = True
+            from backend.config.settings import SYNC_RATE_LIMIT_DELAY
+
+            for p in products:
+                sku = p.get('sku')
+                if not sku:
+                    p['stock_disponible'] = None  # Sin SKU, no se puede consultar
+                    continue
+
+                stock = self._stock_connector.fetch_stock_by_sku(
+                    sku, self._stock_warehouse,
+                )
+                p['stock_disponible'] = stock
+                time.sleep(SYNC_RATE_LIMIT_DELAY)
+
+        return {'products': products, 'has_stock_info': has_stock_info}
 
     def calculate_confidence(self, candidate: dict, context: dict) -> float:
         """Calcula confidence score con 5 factores ponderados.
@@ -148,9 +281,10 @@ class VerticalReposicion(VerticalBase):
         else:
             days_description = f"{abs(days_until)} dias de atraso"
 
-        # Formatear resumen de productos
+        # Formatear resumen de productos (con stock si hay info)
         products_summary = self._format_products_summary(
             context.get('products', []), today,
+            has_stock_info=context.get('has_stock_info', False),
         )
 
         # Formatear monto con separador de miles
@@ -192,7 +326,7 @@ class VerticalReposicion(VerticalBase):
         profile: str,
         confidence: float,
     ) -> dict:
-        """Extiende metadata base con factores de confianza detallados."""
+        """Extiende metadata base con factores de confianza + stock alert."""
         # Metadata base (incluye profile, sequence_step, etc.)
         meta = super().build_metadata(candidate, context, profile, confidence)
 
@@ -210,6 +344,25 @@ class VerticalReposicion(VerticalBase):
         meta['predicted_date'] = str(candidate.get('predicted_date', ''))
         meta['days_until_predicted'] = candidate.get('days_until_predicted', 0)
         meta['avg_days'] = float(candidate.get('avg_days_between_purchases') or 0)
+
+        # Stock alert (solo si se consulto stock)
+        if context.get('has_stock_info'):
+            products_without_stock = []
+            products_with_stock = {}
+            for p in context.get('products', [])[:6]:
+                name = p.get('product_name', '?')
+                stock = p.get('stock_disponible')
+                if stock is not None and stock > 0:
+                    products_with_stock[name] = int(stock)
+                elif stock is not None:
+                    products_without_stock.append(name)
+                # stock=None (desconocido) no se incluye en ninguna lista
+
+            if products_without_stock:
+                meta['stock_alert'] = {
+                    'products_without_stock': products_without_stock,
+                    'products_with_stock': products_with_stock,
+                }
 
         return meta
 
@@ -327,13 +480,16 @@ class VerticalReposicion(VerticalBase):
         return min(months / 12.0, 1.0)
 
     def _format_products_summary(
-        self, products: list[dict], today: date,
+        self, products: list[dict], today: date, has_stock_info: bool = False,
     ) -> str:
         """Formatea la lista de productos para el prompt.
 
-        Ejemplo de output:
-          - Funda MagSafe iPhone 15: ~36 unidades, ultima hace 56 dias
-          - PopGrip MagSafe: ~17 unidades, ultima hace 56 dias
+        Si hay info de stock, agrega [STOCK: N] o [SIN STOCK] a cada linea.
+        Claude usa esta info para adaptar el mensaje (ofrecer vs avisar).
+
+        Ejemplo de output con stock:
+          - Funda MagSafe iPhone 15: ~36 unidades, ultima hace 56 dias [STOCK: 120]
+          - PopGrip MagSafe: ~17 unidades, ultima hace 56 dias [SIN STOCK]
         """
         if not products:
             return '(sin historial de productos)'
@@ -360,6 +516,17 @@ class VerticalReposicion(VerticalBase):
                 else:
                     reorder_info = f", reposicion {abs(days_until)} dias atrasada"
 
-            lines.append(f"- {name}: ~{avg_qty} unidades{days_ago}{reorder_info}")
+            # Info de stock (solo si se consulto la API)
+            stock_info = ''
+            if has_stock_info:
+                stock = p.get('stock_disponible')
+                if stock is not None and stock > 0:
+                    stock_info = f" [STOCK: {int(stock)}]"
+                elif stock is not None:
+                    stock_info = " [SIN STOCK]"
+                else:
+                    stock_info = " [STOCK DESCONOCIDO]"
+
+            lines.append(f"- {name}: ~{avg_qty} unidades{days_ago}{reorder_info}{stock_info}")
 
         return '\n'.join(lines)

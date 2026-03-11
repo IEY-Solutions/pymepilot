@@ -18,7 +18,7 @@ export default async function PipelinePage() {
       `id, tenant_id, prediction_id, customer_id, column_name, vertical,
        priority, is_expired, stage_messages, stage_deadline, created_at, updated_at,
        customer:customers!inner(name, phone, email),
-       prediction:predictions(message_text, confidence_score, next_reposition_estimate)`
+       prediction:predictions(message_text, confidence_score, next_reposition_estimate, metadata)`
     )
     .order("is_expired", { ascending: true })
     .order("priority", { ascending: true })
@@ -75,8 +75,8 @@ export default async function PipelinePage() {
       ? (c.customer as unknown as { name: string; phone: string | null; email: string | null }[])[0]
       : c.customer as { name: string; phone: string | null; email: string | null },
     prediction: Array.isArray(c.prediction)
-      ? (c.prediction as unknown as { message_text: string | null; confidence_score: number | null; next_reposition_estimate: string | null }[])[0] ?? null
-      : c.prediction as { message_text: string | null; confidence_score: number | null; next_reposition_estimate: string | null } | null,
+      ? (c.prediction as unknown as PipelineCard["prediction"][])[0] ?? null
+      : c.prediction as PipelineCard["prediction"],
     followups: (followupsByCard.get(c.id) ?? []) as PipelineCard["followups"],
     latest_note: (latestNoteByCard.get(c.id) ?? null) as PipelineCard["latest_note"],
   }));

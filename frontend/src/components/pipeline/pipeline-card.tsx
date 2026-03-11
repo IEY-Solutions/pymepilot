@@ -2,7 +2,7 @@
 
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
-import { Phone, Mail, Clock, X, Sparkles } from "lucide-react";
+import { Phone, Mail, Clock, X, Sparkles, AlertTriangle } from "lucide-react";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { TOOLTIPS } from "@/lib/tooltips";
 import type { PipelineCard as PipelineCardType } from "@/lib/pipeline/types";
@@ -197,6 +197,16 @@ export function PipelineCard({ card, isGenerating, onClick, onDiscard }: Props) 
           {deadline.text}
         </div>
       )}
+
+      {/* Stock alert banner */}
+      {card.prediction?.metadata?.stock_alert?.products_without_stock?.length ? (
+        <div className="flex items-start gap-1.5 bg-amber-500/10 rounded px-2 py-1">
+          <AlertTriangle className="h-3 w-3 text-amber-400 mt-0.5 shrink-0" />
+          <span className="text-[10px] text-amber-400 leading-tight">
+            Sin stock: {card.prediction.metadata.stock_alert.products_without_stock.join(", ")}
+          </span>
+        </div>
+      ) : null}
 
       {/* Contacto rapido */}
       <div className="flex items-center gap-2 text-xs text-white/40">

@@ -108,6 +108,13 @@ export interface PipelineCard {
     message_text: string | null;
     confidence_score: number | null;
     next_reposition_estimate: string | null;
+    metadata: {
+      stock_alert?: {
+        products_without_stock: string[];
+        products_with_stock: Record<string, number>;
+      };
+      [key: string]: unknown;
+    } | null;
   } | null;
   followups: Followup[];
   latest_note: ContactNote | null;

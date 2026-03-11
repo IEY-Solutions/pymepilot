@@ -26,7 +26,8 @@ HTTP GET. No existe `_post()`, `_put()`, ni `_delete()`.
 |----------|----------|
 | Stock de todos los productos o solo candidatos? | Solo productos del candidato (~3-6 por cliente) |
 | Filtrar sin stock antes de Claude? | NO. Pasar info a Claude para que adapte el mensaje |
-| Que campo usar? | `StockConReservas` (disponible real = actual - reservado) |
+| Que campo usar? | Stock disponible del deposito configurado (NO el total global) |
+| Deposito? | Configurable por tenant via `erp_config.stock_warehouse`. IEY: "oficina". Comparacion case-insensitive. |
 | Candidato sin stock en ningun producto? | Se genera prediccion igual, Claude adapta mensaje |
 | Donde guardar stock? | En `predictions.metadata` (JSONB), no en tabla nueva |
 | Alerta visual? | Banner amarillo en card + recordatorio en modal |
@@ -42,10 +43,34 @@ GET /api/inventarios/getStockBySKU?codigo={SKU}
 Respuesta:
 - `Id`: ID del concepto (integer)
 - `Codigo`: SKU del producto (string)
-- `StockActual`: unidades totales (decimal)
-- `StockReservado`: unidades reservadas (decimal)
-- `StockConReservas`: disponible real = StockActual - StockReservado (decimal)
-- `Stock[]`: desglose por deposito (ID, nombre, stock total/reservado/disponible)
+- `StockActual`: unidades totales en la cuenta (decimal)
+- `StockReservado`: unidades reservadas totales (decimal)
+- `StockConReservas`: disponible total = StockActual - StockReservado (decimal)
+- `Stock[]`: desglose por deposito, cada uno con:
+  - `Id`: ID del deposito (integer)
+  - `Codigo`: nombre del deposito (string) — ej: "Oficina", "OFICINA"
+  - Stock total, reservado y disponible por deposito
+
+**IMPORTANTE:** NO usamos `StockConReservas` del nivel raiz (es el total
+de todos los depositos). Buscamos dentro de `Stock[]` el deposito cuyo
+`Codigo` coincida (case-insensitive) con `erp_config.stock_warehouse`
+del tenant, y usamos el stock disponible de ESE deposito especifico.
+
+### Configuracion por tenant
+
+En `tenants.erp_config` (JSONB):
+```json
+{
+  "client_id": "...",
+  "client_secret": "...",
+  "stock_warehouse": "oficina"
+}
+```
+
+- Cada tenant configura su propio `stock_warehouse`.
+- Comparacion case-insensitive ("oficina" matchea "Oficina", "OFICINA").
+- Si `stock_warehouse` no esta configurado → se saltea consulta de stock
+  (comportamiento actual sin stock).
 
 ---
 
@@ -84,9 +109,11 @@ get_context() en reposicion.py
 
 ### 1. Conector — ContabiliumConnector
 
-Nuevo metodo `fetch_stock_by_sku(sku: str) -> dict | None`.
+Nuevo metodo `fetch_stock_by_sku(sku: str, warehouse: str) -> float | None`.
 
 - Usa `_get()` existente -> hereda retry, rate limit, batch pacing.
+- Busca en `Stock[]` el deposito cuyo `Codigo` matchea `warehouse` (case-insensitive).
+- Retorna stock disponible de ese deposito, o None si no lo encuentra.
 - NO se agrega al ABC (ERPConnector) — no todos los ERPs tienen stock.
 - Si el SKU no existe o falla -> retorna None, no rompe el flujo.
 
@@ -145,6 +172,7 @@ Cuando llegue stock, contactar a este cliente.
 | Rate limit | ~3-6 requests extra por candidato. ~60-90 requests adicionales por corrida. Dentro del margen. |
 | Fallo de API stock | Asumir stock desconocido, no bloquear prediccion. Loguear warning. |
 | Excel/SmartFile | No tienen stock. get_context() detecta tipo de conector y saltea. |
+| Sin stock_warehouse config | Tenant sin `erp_config.stock_warehouse` → se saltea stock (graceful degradation). |
 | Producto sin SKU | No se puede consultar. Marcar como "stock desconocido". |
 | Seguridad | Solo GET, tenant aislado, sin datos sensibles. |
 

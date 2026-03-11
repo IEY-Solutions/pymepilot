@@ -4,7 +4,7 @@ import { useState } from "react";
 import {
   X, Phone, PhoneOff, FileText, MessageCircle, Send,
   CheckCircle2, XCircle, StickyNote, Mail, Copy, Check,
-  Info, FileSpreadsheet,
+  Info, FileSpreadsheet, AlertTriangle,
 } from "lucide-react";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { TOOLTIPS } from "@/lib/tooltips";
@@ -629,6 +629,24 @@ export function ContactModal({
 
           {/* Plan de seguimiento */}
           <FollowupPlan card={card} />
+
+          {/* Stock alert — recordatorio de seguimiento */}
+          {card.prediction?.metadata?.stock_alert?.products_without_stock?.length ? (
+            <div className="mx-4 mt-3 bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 space-y-1.5">
+              <div className="flex items-center gap-1.5">
+                <AlertTriangle className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+                <p className="text-xs font-medium text-amber-400">
+                  Accion pendiente: Registrar seguimiento para ingreso de stock
+                </p>
+              </div>
+              <p className="text-xs text-amber-300/70">
+                Productos sin stock: {card.prediction.metadata.stock_alert.products_without_stock.join(", ")}
+              </p>
+              <p className="text-[10px] text-white/40">
+                Cuando llegue stock, contactar a este cliente.
+              </p>
+            </div>
+          ) : null}
 
           {/* Timeline de actividad */}
           {allNotes.length > 0 && (

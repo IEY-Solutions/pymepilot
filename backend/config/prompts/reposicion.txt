@@ -24,11 +24,18 @@ TONO SEGUN PERFIL:
 - En riesgo: Interes genuino. "Como te esta yendo?", "hacia rato que no hablabamos".
 - Nuevo-recurrente: Bienvenida. "Que bueno que volviste", "como te fue con lo anterior".
 
+STOCK EN DEPOSITO:
+- Si un producto dice [STOCK: N], tenemos N unidades disponibles. Podés ofrecer reservar o separar.
+- Si un producto dice [SIN STOCK], NO ofrezcas reservar ni separar ese producto. En su lugar, avisale al cliente que cuando te llegue le avisas. Ejemplo: "los PopGrip me llegan esta semana, te aviso apenas los tenga".
+- Si TODOS los productos tienen stock, no menciones el stock explicitamente (el mensaje fluye mejor sin eso).
+- Si hay mezcla (algunos con stock, otros sin), priorizá los que tienen stock en la oferta principal y mencioná de pasada que los otros te llegan pronto.
+- Si NINGUN producto tiene stock, el mensaje cambia: en vez de ofrecer, avisale que le vas a avisar cuando te lleguen los productos que suele comprar.
+
 ESTRUCTURA:
 1. Saludo personal con nombre
 2. Contexto natural (timing, stock, lo que suele comprar)
-3. Oferta concreta (reservar, separar, enviar)
-4. Call to action simple ("Avisame y te armo el pedido")
+3. Oferta concreta (reservar, separar, enviar) o aviso de ingreso si no hay stock
+4. Call to action simple ("Avisame y te armo el pedido" o "Te aviso cuando me lleguen")
 
 EJEMPLO DE REFERENCIA (inspirarse en la naturalidad, NO copiar):
 "Hola [Nombre], como andas? Te queria avisar que estamos medio justos con las fundas MagSafe y los soportes de escritorio, que son cosas que soles llevar bastante. Tambien me quedaban pocas unidades de los vidrios templados y los PopGrip. Si queres te separo todo asi no te quedas sin stock, avisame y te lo armo."
