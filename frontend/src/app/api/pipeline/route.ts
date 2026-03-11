@@ -49,6 +49,15 @@ export async function GET(): Promise<Response> {
     .eq("is_expired", false)
     .lt("created_at", threeDaysAgo);
 
+  // 2c. Marcar vencidas: cards en "vendido" con mas de 7 dias
+  const sevenDaysAgo = new Date(Date.now() - 7 * 86_400_000).toISOString();
+  await supabase
+    .from("pipeline_cards")
+    .update({ is_expired: true })
+    .eq("column_name", "vendido")
+    .eq("is_expired", false)
+    .lt("updated_at", sevenDaysAgo);
+
   // 2b. Auto-mover cards con stage_deadline vencido a "en_seguimiento"
   // Aplica a: contactado, por_cotizar, cotizacion_enviada
   const today = new Date().toISOString().split("T")[0];
@@ -107,7 +116,7 @@ export async function GET(): Promise<Response> {
       `id, tenant_id, prediction_id, customer_id, column_name, vertical,
        priority, is_expired, stage_messages, stage_deadline, created_at, updated_at,
        customer:customers!inner(name, phone, email),
-       prediction:predictions(message_text, confidence_score, next_reposition_estimate)`
+       prediction:predictions(message_text, confidence_score, next_reposition_estimate, metadata)`
     )
     .order("is_expired", { ascending: true })
     .order("priority", { ascending: true })

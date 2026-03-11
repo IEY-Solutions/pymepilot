@@ -42,7 +42,7 @@ export function ChatBubble() {
       {/* Panel de chat */}
       {isOpen && (
         <div
-          className="fixed z-40 glass-dark shadow-[0_8px_32px_rgba(0,0,0,0.6)] overflow-hidden
+          className="fixed z-[60] glass-dark shadow-[0_8px_32px_rgba(0,0,0,0.6)] overflow-hidden
                      bottom-0 left-0 right-0 top-0
                      md:bottom-6 md:right-6 md:left-auto md:top-auto
                      md:w-[400px] md:h-[500px] md:rounded-2xl"

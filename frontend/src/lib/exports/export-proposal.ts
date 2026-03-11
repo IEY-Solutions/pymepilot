@@ -22,10 +22,10 @@ interface DemandDetail {
 // COLORES
 // ============================================================
 
-const TEAL = "81b5a1";
-const TEAL_DARK = "5a9a84";
+const IEY_BLUE = "04a9ff";
+const IEY_BLUE_DARK = "0387cc";
 const DARK = "1a2a2c";
-const DETAIL_BG = "e8f5f0";
+const DETAIL_BG = "e6f4ff";
 const ROW_ALT = "f7f8fa";
 const BORDER_COLOR = "d1d5db";
 const TEXT_MID = "6b7280";
@@ -133,7 +133,7 @@ export async function exportProposal(
   titleCell.fill = {
     type: "pattern",
     pattern: "solid",
-    fgColor: { argb: TEAL },
+    fgColor: { argb: IEY_BLUE },
   };
   titleCell.alignment = { vertical: "middle", horizontal: "center" };
 
@@ -163,7 +163,7 @@ export async function exportProposal(
   // Aplicar fondo oscuro a C2 y D2 tambien
   const dateCell = ws.getCell("D2");
   dateCell.value = today;
-  dateCell.font = { size: 10, color: { argb: TEAL } };
+  dateCell.font = { size: 10, color: { argb: IEY_BLUE } };
   dateCell.fill = {
     type: "pattern",
     pattern: "solid",
@@ -195,7 +195,7 @@ export async function exportProposal(
     cell.fill = {
       type: "pattern",
       pattern: "solid",
-      fgColor: { argb: TEAL_DARK },
+      fgColor: { argb: IEY_BLUE_DARK },
     };
     cell.alignment = {
       vertical: "middle",
@@ -254,7 +254,7 @@ export async function exportProposal(
     // D: Detalle — fondo teal suave
     const detailCell = row.getCell(4);
     detailCell.value = buildDetailText(item);
-    detailCell.font = { size: 9, italic: true, color: { argb: TEAL_DARK } };
+    detailCell.font = { size: 9, italic: true, color: { argb: IEY_BLUE_DARK } };
     detailCell.fill = {
       type: "pattern",
       pattern: "solid",
@@ -285,17 +285,15 @@ export async function exportProposal(
   totalLabelCell.alignment = { vertical: "middle", horizontal: "right" };
   totalLabelCell.border = allBorders;
 
-  const totalUnits = items.reduce(
-    (sum, d) => sum + Number(d.demand_estimate),
-    0
-  );
+  const firstDataRow = 5;
+  const lastDataRow = 5 + items.length - 1;
   const totalValCell = totalRow.getCell(3);
-  totalValCell.value = `${totalUnits} uds`;
+  totalValCell.value = { formula: `SUM(C${firstDataRow}:C${lastDataRow})` };
   totalValCell.font = { size: 13, bold: true, color: { argb: "FFFFFF" } };
   totalValCell.fill = {
     type: "pattern",
     pattern: "solid",
-    fgColor: { argb: TEAL },
+    fgColor: { argb: IEY_BLUE },
   };
   totalValCell.alignment = { vertical: "middle", horizontal: "center" };
   totalValCell.border = allBorders;
@@ -317,6 +315,23 @@ export async function exportProposal(
   footerCell.value = "Generado por PymePilot — pymepilot.cloud";
   footerCell.font = { size: 8, italic: true, color: { argb: TEXT_MID } };
   footerCell.alignment = { horizontal: "right" };
+
+  // ===========================================================
+  // PROTECCION: solo columna C (cantidad) es editable
+  // ===========================================================
+  ws.protect("", {
+    selectLockedCells: true,
+    selectUnlockedCells: true,
+    formatCells: false,
+    formatColumns: false,
+    formatRows: false,
+  });
+
+  // Desbloquear celdas de cantidad para que el cliente pueda editarlas
+  for (let i = 0; i < items.length; i++) {
+    const qtyCell = ws.getRow(firstDataRow + i).getCell(3);
+    qtyCell.protection = { locked: false };
+  }
 
   // ===========================================================
   // GENERAR Y DESCARGAR

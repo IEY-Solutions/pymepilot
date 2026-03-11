@@ -2,7 +2,7 @@
 
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
-import { Phone, Mail, Clock, X, Sparkles, AlertTriangle } from "lucide-react";
+import { Phone, Mail, Clock, X, Sparkles, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { TOOLTIPS } from "@/lib/tooltips";
 import type { PipelineCard as PipelineCardType } from "@/lib/pipeline/types";
@@ -236,8 +236,16 @@ export function PipelineCard({ card, isGenerating, onClick, onDiscard }: Props) 
         </span>
       </div>
 
-      {/* Ultima nota (truncada) */}
-      {card.latest_note?.note_text && !isGenerating && (
+      {/* Vendido: mensaje especial en vez de nota */}
+      {card.column_name === "vendido" && !isGenerating && (
+        <div className="flex items-center gap-1 text-[10px] text-green-400">
+          <CheckCircle2 className="h-3 w-3" />
+          <span>Venta cerrada — en circuito de reposicion</span>
+        </div>
+      )}
+
+      {/* Ultima nota (truncada) — no en vendido */}
+      {card.column_name !== "vendido" && card.latest_note?.note_text && !isGenerating && (
         <p className="text-[10px] text-white/40 truncate italic">
           {card.latest_note.note_text}
         </p>

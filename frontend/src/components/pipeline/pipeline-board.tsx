@@ -6,6 +6,7 @@ import type { DragEndEvent, DragStartEvent } from "@dnd-kit/core";
 import { PipelineColumn } from "./pipeline-column";
 import { PipelineCard as PipelineCardComponent } from "./pipeline-card";
 import { ContactModal } from "./contact-modal";
+import { SaleCelebration } from "./sale-celebration";
 import { RefreshCw, Bell, X } from "lucide-react";
 import {
   COLUMN_ORDER,
@@ -29,6 +30,7 @@ export function PipelineBoard({ initialCards }: Props) {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [generatingCardIds, setGeneratingCardIds] = useState<Set<string>>(new Set());
   const [notifications, setNotifications] = useState<FollowupNotification[]>([]);
+  const [celebrationName, setCelebrationName] = useState<string | null>(null);
 
   // Mantener modalCard sincronizada con cards state
   // Cuando refreshBoard() actualiza cards, el modal abierto se actualiza también
@@ -106,6 +108,10 @@ export function PipelineBoard({ initialCards }: Props) {
             )
           );
         } else {
+          // Celebracion si llega a vendido
+          if (toColumn === "vendido") {
+            setCelebrationName(card.customer.name);
+          }
           // Refrescar para traer stage_messages generado por Claude
           await refreshBoard();
         }
@@ -272,6 +278,10 @@ export function PipelineBoard({ initialCards }: Props) {
   const handleAdvance = useCallback(
     async (toColumn: ColumnName, noteText: string) => {
       if (!modalCard) return;
+      // Disparar celebracion si avanza a vendido
+      if (toColumn === "vendido") {
+        setCelebrationName(modalCard.customer.name);
+      }
       await apiAction({
         action: "advance",
         card_id: modalCard.id,
@@ -410,6 +420,14 @@ export function PipelineBoard({ initialCards }: Props) {
           onAdvance={handleAdvance}
           onDeleteNote={handleDeleteNote}
           onClose={closeModal}
+        />
+      )}
+
+      {/* Celebracion de venta */}
+      {celebrationName && (
+        <SaleCelebration
+          customerName={celebrationName}
+          onComplete={() => setCelebrationName(null)}
         />
       )}
     </div>

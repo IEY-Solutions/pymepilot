@@ -808,19 +808,28 @@ function renderActions(
     case "vendido": {
       const nextRepo = card.prediction?.next_reposition_estimate;
       return (
-        <>
-          {banner}
-          {card.vertical === "reposicion" && nextRepo && (
-            <div className="bg-green-500/15 rounded-lg p-3 space-y-1">
-              <p className="text-xs font-medium text-white">
+        <div className="space-y-3">
+          <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4 text-center space-y-2">
+            <CheckCircle2 className="h-8 w-8 text-green-400 mx-auto" />
+            <p className="text-sm font-semibold text-white">Venta cerrada</p>
+            <p className="text-xs text-white/60">
+              Excelente trabajo. Gracias a tu gestion y al seguimiento de PymePilot, cerraste otra operacion exitosa.
+            </p>
+          </div>
+          <div className="bg-white/[0.03] rounded-lg p-3 space-y-1">
+            <p className="text-xs text-[#04a9ff] font-medium">
+              Cliente en circuito de reposicion
+            </p>
+            <p className="text-[11px] text-white/50">
+              PymePilot te avisara cuando sea momento de contactarlo de nuevo y programara la secuencia de seguimiento para generar otra venta.
+            </p>
+            {card.vertical === "reposicion" && nextRepo && (
+              <p className="text-[11px] text-green-400 mt-1">
                 Proxima reposicion estimada: ~{formatDateShort(nextRepo)}
               </p>
-              <p className="text-[10px] text-green-400">
-                El motor de PymePilot generara una nueva oportunidad cuando se acerque la fecha.
-              </p>
-            </div>
-          )}
-        </>
+            )}
+          </div>
+        </div>
       );
     }
 
