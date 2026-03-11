@@ -114,15 +114,20 @@ export function ClientDetail({ customerId }: { customerId: string }) {
   }
 
   if (error) {
+    const maxRetries = 3;
     return (
       <div className="flex items-center gap-2 py-3">
         <span className="text-xs text-red-400">Error al cargar detalle.</span>
-        <button
-          onClick={() => setRetryCount((c) => c + 1)}
-          className="text-xs text-[#81b5a1] hover:text-[#a3cabb] underline"
-        >
-          Reintentar
-        </button>
+        {retryCount < maxRetries ? (
+          <button
+            onClick={() => setRetryCount((c) => c + 1)}
+            className="text-xs text-[#81b5a1] hover:text-[#a3cabb] underline"
+          >
+            Reintentar ({maxRetries - retryCount} restantes)
+          </button>
+        ) : (
+          <span className="text-xs text-white/40">Recarga la pagina para intentar de nuevo.</span>
+        )}
       </div>
     );
   }
@@ -200,7 +205,7 @@ export function ClientDetail({ customerId }: { customerId: string }) {
                   </span>
                   <div className="flex-1 min-w-0">
                     <span className="text-white/80 truncate block">
-                      {p.product_name}
+                      {p.product_name || "Producto sin nombre"}
                     </span>
                     <div className="w-full h-1 bg-surface-muted rounded-full mt-1">
                       <div

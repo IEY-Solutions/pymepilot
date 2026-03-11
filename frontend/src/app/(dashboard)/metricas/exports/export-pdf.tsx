@@ -508,7 +508,7 @@ function ReportDocument({ data }: { data: PdfData }) {
           {top15products.map((p, i) => (
             <View key={p.product_id} style={[s.tableRow, i % 2 === 1 ? s.tableRowAlt : {}]}>
               <Text style={[s.cellTextMuted, { width: "6%" }]}>{i + 1}</Text>
-              <Text style={[s.cellText, { width: "40%" }]}>{p.product_name}</Text>
+              <Text style={[s.cellText, { width: "40%" }]}>{p.product_name || "Producto sin nombre"}</Text>
               <Text style={[s.cellTextMuted, { width: "14%" }]}>{p.product_sku || "—"}</Text>
               <Text style={[s.cellTextBold, { width: "20%" }]}>
                 {Number(p.total_units).toLocaleString("es-AR")}
@@ -575,7 +575,7 @@ function ReportDocument({ data }: { data: PdfData }) {
                 const trend = Number(p.trend_pct);
                 return (
                   <View key={p.product_id} style={[s.tableRow, i % 2 === 1 ? s.tableRowAlt : {}]}>
-                    <Text style={[s.cellText, { width: "36%" }]}>{p.product_name}</Text>
+                    <Text style={[s.cellText, { width: "36%" }]}>{p.product_name || "Producto sin nombre"}</Text>
                     <Text style={[s.cellTextBold, { width: "16%" }]}>
                       {Number(p.projected_demand_30d).toLocaleString("es-AR")}
                     </Text>
@@ -622,7 +622,7 @@ function ReportDocument({ data }: { data: PdfData }) {
               {data.clientDemand.map((c, i) => (
                 <View key={c.customer_id} style={[s.tableRow, i % 2 === 1 ? s.tableRowAlt : {}]}>
                   <Text style={[s.cellTextMuted, { width: "6%" }]}>{i + 1}</Text>
-                  <Text style={[s.cellText, { width: "28%" }]}>{c.customer_name}</Text>
+                  <Text style={[s.cellText, { width: "28%" }]}>{c.customer_name || "Cliente sin nombre"}</Text>
                   <Text style={[s.cellTextBold, { width: "18%" }]}>
                     {formatCurrency(Number(c.total_revenue))}
                   </Text>

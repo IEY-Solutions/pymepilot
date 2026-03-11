@@ -93,7 +93,7 @@ export function ProductRankingTable({ products }: Props) {
               {/* Product info + bar */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-baseline gap-2">
-                  <span className="text-sm font-medium text-white truncate">{p.product_name}</span>
+                  <span className="text-sm font-medium text-white truncate">{p.product_name || "Producto sin nombre"}</span>
                   {p.product_sku && (
                     <span className="text-[10px] text-white/40 shrink-0">{p.product_sku}</span>
                   )}

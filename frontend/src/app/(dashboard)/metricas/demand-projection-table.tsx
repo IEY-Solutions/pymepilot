@@ -230,7 +230,7 @@ function ProductRow({
             )}
             <div>
               <p className="text-sm text-white font-medium truncate max-w-[200px]">
-                {product.product_name}
+                {product.product_name || "Producto sin nombre"}
               </p>
               {product.product_sku && (
                 <p className="text-[10px] text-white/30">{product.product_sku}</p>
@@ -296,7 +296,7 @@ function ProductRow({
                     {detail.map((d) => (
                       <tr key={d.customer_id} className="border-t border-white/[0.03]">
                         <td className="px-3 py-1.5 text-xs text-white/70 truncate max-w-[150px]">
-                          {d.customer_name}
+                          {d.customer_name || "Cliente sin nombre"}
                         </td>
                         <td className="px-3 py-1.5 text-xs text-white/40 text-right">
                           {formatDate(d.last_order_date)}
