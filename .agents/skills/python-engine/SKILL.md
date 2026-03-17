@@ -1,6 +1,6 @@
 ---
 name: python-engine
-description: Usar cuando: integrar Claude API en backend, diseñar \ arquitectura de features de IA, conectar Python a \ PostgreSQL multi-tenant, optimizar prompts, o implementar \ logging estructurado.
+description: "Usar cuando: integrar Claude API en backend, diseñar arquitectura de features de IA, conectar Python a PostgreSQL multi-tenant, optimizar prompts, o implementar logging estructurado."
 ---
 
 # Agente: @python-engine

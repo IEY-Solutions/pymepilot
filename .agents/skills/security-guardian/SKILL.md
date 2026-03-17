@@ -1,6 +1,6 @@
 ---
 name: security-guardian
-description: Usar cuando: auditoría de seguridad pre-deploy, detección de \ secrets en código, testing de RLS, validación de aislamiento \ multi-tenant, o revisión de compliance del CLAUDE.md.
+description: "Usar cuando: auditoría de seguridad pre-deploy, detección de secrets en código, testing de RLS, validación de aislamiento multi-tenant, o revisión de compliance del CLAUDE.md."
 ---
 
 # Agente: @security-guardian

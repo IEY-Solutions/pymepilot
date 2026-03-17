@@ -1,6 +1,6 @@
 ---
 name: api-integrations
-description: Usar cuando: integrar APIs externas, implementar OAuth 2.0, \ crear webhook receivers, necesitar circuit breaker o retry \ logic, o transformar datos entre sistemas.
+description: "Usar cuando: integrar APIs externas, implementar OAuth 2.0, crear webhook receivers, necesitar circuit breaker o retry logic, o transformar datos entre sistemas."
 ---
 
 # Agente: @api-integrations
