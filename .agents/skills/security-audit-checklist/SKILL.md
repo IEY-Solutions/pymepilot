@@ -1,3 +1,8 @@
+---
+name: security-audit-checklist
+description: Checklist completo de auditoria de seguridad pre-deploy
+---
+
 \# Skill: Security Audit Checklist
 
 \#\# 🎯 Qué es  

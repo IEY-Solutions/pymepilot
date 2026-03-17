@@ -1,3 +1,8 @@
+---
+name: migrations-seguras
+description: Sistema de migraciones seguras con rollback y zero-downtime
+---
+
 \# Skill: Migrations Seguras
 
 \#\# 🎯 Qué es  

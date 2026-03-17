@@ -1,3 +1,8 @@
+---
+name: db-architect
+description: Usar cuando: diseño de schemas PostgreSQL, implementar RLS \ multi-tenant, crear migraciones seguras, optimizar queries \ lentas, o testear aislamiento entre tenants.
+---
+
 # Agente: @db-architect
 
 ## 🎯 Propósito  

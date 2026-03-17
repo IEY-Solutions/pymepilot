@@ -1,3 +1,8 @@
+---
+name: supabase-realtime
+description: Subscriptions realtime con tenant filtering y broadcast
+---
+
 \# Skill: Supabase Realtime
 
 \#\# 🎯 Qué es  

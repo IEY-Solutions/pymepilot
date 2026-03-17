@@ -1,3 +1,8 @@
+---
+name: server-actions
+description: Forms con Server Actions, mutations y validacion Zod
+---
+
 \# Skill: Server Actions
 
 \#\# 🎯 Qué es  

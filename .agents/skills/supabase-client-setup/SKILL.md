@@ -1,3 +1,8 @@
+---
+name: supabase-client-setup
+description: Setup de cliente Supabase en Next.js con SSR y cookies
+---
+
 \# Skill: Supabase Client Setup (Next.js)
 
 \#\# 🎯 Qué es  

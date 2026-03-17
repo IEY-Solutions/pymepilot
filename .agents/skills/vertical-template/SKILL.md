@@ -1,3 +1,8 @@
+---
+name: vertical-template
+description: Base class template para implementar verticales de IA
+---
+
 \# Skill: Vertical Template
 
 \#\# 🎯 Qué es  

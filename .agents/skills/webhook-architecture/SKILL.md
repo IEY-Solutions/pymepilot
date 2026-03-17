@@ -1,3 +1,8 @@
+---
+name: webhook-architecture
+description: Receivers seguros con HMAC signature e idempotency
+---
+
 \# Skill: Webhook Architecture
 
 \#\# 🎯 Qué es  

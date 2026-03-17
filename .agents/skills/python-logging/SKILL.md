@@ -1,3 +1,8 @@
+---
+name: python-logging
+description: Logging estructurado JSON para el motor Python
+---
+
 \# Skill: Python Logging
 
 \#\# 🎯 Qué es  

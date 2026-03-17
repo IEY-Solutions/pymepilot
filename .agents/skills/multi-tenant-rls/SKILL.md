@@ -1,3 +1,8 @@
+---
+name: multi-tenant-rls
+description: Row Level Security completo para arquitectura multi-tenant
+---
+
 \# Skill: Multi-Tenant RLS (Row Level Security)
 
 \#\# 🎯 Qué es  

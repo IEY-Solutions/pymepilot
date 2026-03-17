@@ -1,3 +1,8 @@
+---
+name: tenant-isolation-testing
+description: Suite de testing de aislamiento entre tenants
+---
+
 \# Skill: Tenant Isolation Testing
 
 \#\# 🎯 Qué es  

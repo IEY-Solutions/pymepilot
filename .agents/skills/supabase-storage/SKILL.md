@@ -1,3 +1,8 @@
+---
+name: supabase-storage
+description: Buckets de Storage con RLS policies y signed URLs
+---
+
 \# Skill: Supabase Storage
 
 \#\# 🎯 Qué es  

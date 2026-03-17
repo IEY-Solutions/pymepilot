@@ -1,3 +1,8 @@
+---
+name: multi-tenant-validation
+description: Valida aislamiento de datos entre tenants en todas las operaciones
+---
+
 \# Skill: Multi-Tenant Validation
 
 \#\# 🎯 Qué es  

@@ -1,3 +1,8 @@
+---
+name: claude-api-integration
+description: Cliente Anthropic SDK completo con retry logic y token tracking
+---
+
 \# Skill: Claude API Integration
 
 \#\# 🎯 Qué es  

@@ -1,3 +1,8 @@
+---
+name: rest-api-patterns
+description: Consumo de REST APIs con pagination, retry y error handling
+---
+
 \# Skill: REST API Patterns
 
 \#\# 🎯 Qué es  

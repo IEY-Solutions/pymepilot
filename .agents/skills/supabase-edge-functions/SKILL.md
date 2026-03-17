@@ -1,3 +1,8 @@
+---
+name: supabase-edge-functions
+description: Edge Functions serverless con tenant context en Deno
+---
+
 \# Skill: Supabase Edge Functions
 
 \#\# 🎯 Qué es  

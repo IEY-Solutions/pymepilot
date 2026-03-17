@@ -1,3 +1,8 @@
+---
+name: psycopg3-multi-tenant
+description: Connection pooling con tenant context automatico en psycopg3
+---
+
 \# Skill: psycopg3 Multi-Tenant
 
 \#\# 🎯 Qué es  

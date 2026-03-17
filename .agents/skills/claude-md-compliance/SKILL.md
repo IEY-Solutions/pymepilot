@@ -1,3 +1,8 @@
+---
+name: claude-md-compliance
+description: Verifica compliance del archivo CLAUDE.md y reglas de seguridad del proyecto
+---
+
 \# Skill: CLAUDE.md Compliance
 
 \#\# 🎯 Qué es  

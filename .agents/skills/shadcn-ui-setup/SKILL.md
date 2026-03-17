@@ -1,3 +1,8 @@
+---
+name: shadcn-ui-setup
+description: Instalacion y customizacion de shadcn/ui components
+---
+
 \# Skill: shadcn/ui Setup
 
 \#\# 🎯 Qué es  

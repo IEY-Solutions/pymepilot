@@ -1,3 +1,8 @@
+---
+name: query-optimization
+description: EXPLAIN ANALYZE y optimizacion de queries PostgreSQL
+---
+
 \# Skill: Query Optimization
 
 \#\# 🎯 Qué es  

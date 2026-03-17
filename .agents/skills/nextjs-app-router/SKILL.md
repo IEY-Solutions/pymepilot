@@ -1,3 +1,8 @@
+---
+name: nextjs-app-router
+description: Estructura completa de App Router para Next.js 14+
+---
+
 **\# Skill: Next.js App Router**
 
 **\#\# 🎯 Qué es**  

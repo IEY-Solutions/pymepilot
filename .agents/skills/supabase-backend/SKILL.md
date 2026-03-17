@@ -1,3 +1,8 @@
+---
+name: supabase-backend
+description: Usar cuando: configurar autenticación Supabase, crear Edge \ Functions, implementar file uploads, necesitar features \ realtime, o setup inicial de Supabase en el proyecto.
+---
+
 # Agente: @supabase-backend
 
 ## 🎯 Propósito  

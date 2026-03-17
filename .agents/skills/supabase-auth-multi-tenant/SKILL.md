@@ -1,3 +1,8 @@
+---
+name: supabase-auth-multi-tenant
+description: Configuracion de Auth con tenant_id en JWT metadata
+---
+
 \# Skill: Supabase Auth Multi-Tenant
 
 \#\# 🎯 Qué es  

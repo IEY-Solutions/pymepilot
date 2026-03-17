@@ -1,3 +1,8 @@
+---
+name: oauth-authentication
+description: OAuth 2.0 completo con todos los flows y PKCE
+---
+
 \# Skill: OAuth Authentication
 
 \#\# 🎯 Qué es  

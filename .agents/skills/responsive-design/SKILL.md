@@ -1,3 +1,8 @@
+---
+name: responsive-design
+description: Breakpoints y diseno mobile-first con Tailwind CSS
+---
+
 \# Skill: Responsive Design
 
 \#\# 🎯 Qué es  

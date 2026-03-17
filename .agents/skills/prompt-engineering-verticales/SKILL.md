@@ -1,3 +1,8 @@
+---
+name: prompt-engineering-verticales
+description: Optimizacion de prompts para las 4 verticales de IA
+---
+
 \# Skill: Prompt Engineering para Verticales
 
 \#\# 🎯 Qué es  

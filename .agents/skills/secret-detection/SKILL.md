@@ -1,3 +1,8 @@
+---
+name: secret-detection
+description: Deteccion automatica de secrets hardcodeados en codigo
+---
+
 \# Skill: Secret Detection
 
 \#\# 🎯 Qué es  

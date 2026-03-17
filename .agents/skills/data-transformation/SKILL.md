@@ -1,3 +1,8 @@
+---
+name: data-transformation
+description: Schema mapping, validacion y transformacion de datos entre APIs
+---
+
 \# Skill: Data Transformation
 
 \#\# 🎯 Qué es  

@@ -1,3 +1,8 @@
+---
+name: api-resilience
+description: Circuit breaker, exponential backoff y fallback strategies
+---
+
 \# Skill: API Resilience
 
 \#\# 🎯 Qué es  

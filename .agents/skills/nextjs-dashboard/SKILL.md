@@ -1,3 +1,8 @@
+---
+name: nextjs-dashboard
+description: Usar cuando: crear estructura App Router, implementar forms \ con Server Actions, configurar shadcn/ui, optimizar data \ fetching, o hacer layouts responsive mobile-first.
+---
+
 # Agente: @nextjs-dashboard
 
 ## 🎯 Propósito  

@@ -1,3 +1,8 @@
+---
+name: postgresql-schemas
+description: Templates de tablas y schemas PostgreSQL multi-tenant
+---
+
 \# Skill: PostgreSQL Schemas para Multi-Tenant
 
 \#\# 🎯 Qué es  

@@ -1,3 +1,8 @@
+---
+name: rls-testing
+description: Testing de Row Level Security en PostgreSQL multi-tenant
+---
+
 \# Skill: RLS Testing (Row Level Security)
 
 \#\# 🎯 Qué es  

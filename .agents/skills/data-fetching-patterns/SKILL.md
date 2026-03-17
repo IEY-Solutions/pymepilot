@@ -1,3 +1,8 @@
+---
+name: data-fetching-patterns
+description: Patterns de data fetching en Server y Client Components
+---
+
 \# Skill: Data Fetching Patterns
 
 \#\# 🎯 Qué es  
