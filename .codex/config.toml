@@ -1,0 +1,16 @@
+# Codex Configuration for PymePilot
+# Equivalente a .claude/settings.local.json para Claude Code
+
+[model]
+default = "o4-mini"
+
+[approval]
+# Modo por defecto: pedir aprobacion para comandos de escritura
+mode = "suggest"
+
+[mcp]
+# Context7 — Documentacion actualizada de librerias
+[mcp.context7]
+type = "stdio"
+command = "npx"
+args = ["-y", "@anthropic-ai/context7-mcp@latest"]
