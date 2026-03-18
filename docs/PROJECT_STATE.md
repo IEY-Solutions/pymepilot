@@ -3,7 +3,7 @@
 > **Archivo compartido entre Claude Code y Codex.**
 > Ambas IAs deben leer este archivo al iniciar una sesion y actualizarlo
 > al finalizar si hubo cambios relevantes en el estado del proyecto.
-> Ultima actualizacion: 2026-03-17
+> Ultima actualizacion: 2026-03-18
 
 ---
 
@@ -54,6 +54,16 @@ Sistema funciona para IEY sin intervencion manual.
 ---
 
 ## En curso / pendiente
+
+### Diseños aprobados
+- **Centro de monitoreo Grafana:** design aprobado el 2026-03-18.
+  Enfoque elegido: integrar sobre el Grafana actual sin romperlo,
+  y dejar dashboard principal + documentacion versionados en repo.
+- **Infra monitoreo host/containers:** `node-exporter` + `cadvisor`
+  activados en Prometheus el 2026-03-18. Targets verificados `up`.
+- **Dashboard versionado:** `grafana/dashboards/pymepilot-centro-monitoreo.json`
+  creado e importado en Grafana el 2026-03-18. Datasources mapeados
+  y panel principal verificado funcionando.
 
 ### Bloqueados
 - **WhatsApp Cloud API (Fase 6 Parte 2):** requiere SIM chip fisico

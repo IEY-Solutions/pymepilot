@@ -1,0 +1,778 @@
+{
+  "__inputs": [
+    {
+      "name": "DS_POSTGRES",
+      "label": "PostgreSQL",
+      "description": "Datasource con las VIEWs seguras de monitoreo de PymePilot",
+      "type": "datasource",
+      "pluginId": "postgres",
+      "pluginName": "PostgreSQL"
+    },
+    {
+      "name": "DS_PROMETHEUS",
+      "label": "Prometheus",
+      "description": "Datasource con metricas de VPS y containers",
+      "type": "datasource",
+      "pluginId": "prometheus",
+      "pluginName": "Prometheus"
+    }
+  ],
+  "id": null,
+  "uid": "pymepilot-centro-monitoreo",
+  "title": "PymePilot — Centro de Monitoreo",
+  "description": "Portada operativa: VPS, disco, observabilidad, containers y salud de PymePilot",
+  "timezone": "America/Argentina/Buenos_Aires",
+  "editable": true,
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "1m",
+  "time": {
+    "from": "now-24h",
+    "to": "now"
+  },
+  "tags": ["pymepilot", "monitoring", "infra", "overview"],
+  "templating": { "list": [] },
+  "annotations": { "list": [] },
+  "links": [
+    {
+      "title": "Detalle Operaciones",
+      "url": "/d/pymepilot-operaciones",
+      "targetBlank": false,
+      "includeVars": false,
+      "keepTime": true
+    },
+    {
+      "title": "Detalle Costos Claude",
+      "url": "/d/pymepilot-costos",
+      "targetBlank": false,
+      "includeVars": false,
+      "keepTime": true
+    }
+  ],
+  "panels": [
+    {
+      "id": 1,
+      "title": "VPS reachable",
+      "description": "Que muestra: si el exporter del servidor responde. Si cae, puede indicar que el VPS o su monitoreo no estan accesibles.",
+      "type": "stat",
+      "gridPos": { "x": 0, "y": 0, "w": 4, "h": 5 },
+      "datasource": "${DS_PROMETHEUS}",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "up{job=\"node\"}",
+          "instant": true
+        }
+      ],
+      "options": {
+        "graphMode": "none",
+        "textMode": "value",
+        "colorMode": "background",
+        "justifyMode": "center",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": { "text": "CAIDO", "color": "red", "index": 0 },
+                "1": { "text": "OK", "color": "green", "index": 1 }
+              }
+            }
+          ],
+          "noValue": "SIN DATOS"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 2,
+      "title": "Containers visibles",
+      "description": "Que muestra: cantidad de containers Docker que cAdvisor esta observando ahora. Sirve como señal rapida de visibilidad de containers.",
+      "type": "stat",
+      "gridPos": { "x": 4, "y": 0, "w": 4, "h": 5 },
+      "datasource": "${DS_PROMETHEUS}",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "count(container_last_seen{id=~\"/system.slice/docker-.*\",job=\"cadvisor\"})",
+          "instant": true
+        }
+      ],
+      "options": {
+        "graphMode": "none",
+        "textMode": "value",
+        "colorMode": "background",
+        "justifyMode": "center",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "fixed", "fixedColor": "blue" },
+          "decimals": 0,
+          "noValue": "0"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 3,
+      "title": "Prometheus collector",
+      "description": "Que muestra: si Prometheus esta scrapeando sus propias metricas. Es un semaforo de la herramienta que junta los datos.",
+      "type": "stat",
+      "gridPos": { "x": 8, "y": 0, "w": 4, "h": 5 },
+      "datasource": "${DS_PROMETHEUS}",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "up{job=\"prometheus\"}",
+          "instant": true
+        }
+      ],
+      "options": {
+        "graphMode": "none",
+        "textMode": "value",
+        "colorMode": "background",
+        "justifyMode": "center",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": { "text": "CAIDO", "color": "red", "index": 0 },
+                "1": { "text": "OK", "color": "green", "index": 1 }
+              }
+            }
+          ],
+          "noValue": "SIN DATOS"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 4,
+      "title": "Ultimo orquestador",
+      "description": "Que muestra: si la ejecucion principal de PymePilot termino bien o fallo en su ultimo run.",
+      "type": "stat",
+      "gridPos": { "x": 12, "y": 0, "w": 4, "h": 5 },
+      "datasource": "${DS_POSTGRES}",
+      "targets": [
+        {
+          "refId": "A",
+          "rawSql": "SELECT CASE status WHEN 'completed' THEN 1 WHEN 'running' THEN 2 WHEN 'partial' THEN 3 WHEN 'failed' THEN 4 WHEN 'limit_exceeded' THEN 5 ELSE 0 END AS state_code FROM monitoring_operations ORDER BY started_at DESC LIMIT 1;",
+          "format": "table"
+        }
+      ],
+      "options": {
+        "graphMode": "none",
+        "textMode": "value",
+        "colorMode": "background",
+        "justifyMode": "center",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": { "text": "SIN RUN", "color": "gray", "index": 0 },
+                "1": { "text": "OK", "color": "green", "index": 1 },
+                "2": { "text": "CORRIENDO", "color": "yellow", "index": 2 },
+                "3": { "text": "PARCIAL", "color": "orange", "index": 3 },
+                "4": { "text": "FALLO", "color": "red", "index": 4 },
+                "5": { "text": "LIMITE", "color": "orange", "index": 5 }
+              }
+            }
+          ],
+          "noValue": "SIN RUN"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 5,
+      "title": "Ultimo sync ERP",
+      "description": "Que muestra: si la ultima sincronizacion con el ERP termino bien o quedo con error.",
+      "type": "stat",
+      "gridPos": { "x": 16, "y": 0, "w": 4, "h": 5 },
+      "datasource": "${DS_POSTGRES}",
+      "targets": [
+        {
+          "refId": "A",
+          "rawSql": "SELECT CASE status WHEN 'completed' THEN 1 WHEN 'running' THEN 2 WHEN 'partial' THEN 3 WHEN 'failed' THEN 4 WHEN 'requires_review' THEN 5 ELSE 0 END AS state_code FROM monitoring_syncs ORDER BY started_at DESC LIMIT 1;",
+          "format": "table"
+        }
+      ],
+      "options": {
+        "graphMode": "none",
+        "textMode": "value",
+        "colorMode": "background",
+        "justifyMode": "center",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": { "text": "SIN SYNC", "color": "gray", "index": 0 },
+                "1": { "text": "OK", "color": "green", "index": 1 },
+                "2": { "text": "CORRIENDO", "color": "yellow", "index": 2 },
+                "3": { "text": "PARCIAL", "color": "orange", "index": 3 },
+                "4": { "text": "FALLO", "color": "red", "index": 4 },
+                "5": { "text": "REVISAR", "color": "orange", "index": 5 }
+              }
+            }
+          ],
+          "noValue": "SIN SYNC"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 6,
+      "title": "Errores ultimas 24h",
+      "description": "Que muestra: cantidad de ejecuciones con errores registradas durante las ultimas 24 horas.",
+      "type": "stat",
+      "gridPos": { "x": 20, "y": 0, "w": 4, "h": 5 },
+      "datasource": "${DS_POSTGRES}",
+      "targets": [
+        {
+          "refId": "A",
+          "rawSql": "SELECT COALESCE(SUM(CASE WHEN error_count > 0 THEN 1 ELSE 0 END), 0) AS incidentes FROM monitoring_operations WHERE started_at >= NOW() - INTERVAL '24 hours';",
+          "format": "table"
+        }
+      ],
+      "options": {
+        "graphMode": "none",
+        "textMode": "value",
+        "colorMode": "background",
+        "justifyMode": "center",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 1 },
+              { "color": "red", "value": 3 }
+            ]
+          },
+          "decimals": 0,
+          "noValue": "0"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 7,
+      "title": "Uso de disco /",
+      "description": "Que muestra: porcentaje ocupado del disco principal del servidor. Si sube mucho, el sistema empieza a correr riesgo.",
+      "type": "gauge",
+      "gridPos": { "x": 0, "y": 5, "w": 4, "h": 6 },
+      "datasource": "${DS_PROMETHEUS}",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "100 * (1 - (node_filesystem_avail_bytes{job=\"node\",mountpoint=\"/\",fstype!~\"tmpfs|overlay\"} / node_filesystem_size_bytes{job=\"node\",mountpoint=\"/\",fstype!~\"tmpfs|overlay\"}))",
+          "instant": true
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 70 },
+              { "color": "red", "value": 85 }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 8,
+      "title": "Disco libre (GB)",
+      "description": "Que muestra: espacio real disponible en el disco principal antes de que aparezcan fallas por capacidad.",
+      "type": "stat",
+      "gridPos": { "x": 4, "y": 5, "w": 4, "h": 6 },
+      "datasource": "${DS_PROMETHEUS}",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "node_filesystem_avail_bytes{job=\"node\",mountpoint=\"/\",fstype!~\"tmpfs|overlay\"} / 1024 / 1024 / 1024",
+          "instant": true
+        }
+      ],
+      "options": {
+        "graphMode": "none",
+        "textMode": "value",
+        "colorMode": "background",
+        "justifyMode": "center",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "gbytes",
+          "decimals": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 10 },
+              { "color": "green", "value": 20 }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 9,
+      "title": "RAM usada",
+      "description": "Que muestra: porcentaje de memoria ocupada por el servidor en este momento.",
+      "type": "gauge",
+      "gridPos": { "x": 8, "y": 5, "w": 4, "h": 6 },
+      "datasource": "${DS_PROMETHEUS}",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "100 * (1 - (node_memory_MemAvailable_bytes{job=\"node\"} / node_memory_MemTotal_bytes{job=\"node\"}))",
+          "instant": true
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 75 },
+              { "color": "red", "value": 90 }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 10,
+      "title": "CPU promedio 5m",
+      "description": "Que muestra: carga promedio reciente del procesador. Sirve mas que un pico instantaneo para detectar saturacion real.",
+      "type": "gauge",
+      "gridPos": { "x": 12, "y": 5, "w": 4, "h": 6 },
+      "datasource": "${DS_PROMETHEUS}",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "100 * (1 - avg(rate(node_cpu_seconds_total{job=\"node\",mode=\"idle\"}[5m])) by (instance))",
+          "instant": true
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 70 },
+              { "color": "red", "value": 90 }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 11,
+      "title": "Load average (5m)",
+      "description": "Que muestra: cuantas tareas estan compitiendo por recursos. Ayuda a detectar presion general del sistema.",
+      "type": "stat",
+      "gridPos": { "x": 16, "y": 5, "w": 4, "h": 6 },
+      "datasource": "${DS_PROMETHEUS}",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "node_load5{job=\"node\"}",
+          "instant": true
+        }
+      ],
+      "options": {
+        "graphMode": "none",
+        "textMode": "value",
+        "colorMode": "background",
+        "justifyMode": "center",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 2,
+          "color": { "mode": "palette-classic" }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 12,
+      "title": "Uptime host (h)",
+      "description": "Que muestra: cuantas horas lleva encendido el servidor desde el ultimo reinicio.",
+      "type": "stat",
+      "gridPos": { "x": 20, "y": 5, "w": 4, "h": 6 },
+      "datasource": "${DS_PROMETHEUS}",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "(time() - node_boot_time_seconds{job=\"node\"}) / 3600",
+          "instant": true
+        }
+      ],
+      "options": {
+        "graphMode": "none",
+        "textMode": "value",
+        "colorMode": "background",
+        "justifyMode": "center",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "h",
+          "decimals": 1,
+          "color": { "mode": "fixed", "fixedColor": "blue" }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 13,
+      "title": "CPU Docker total (5m)",
+      "description": "Que muestra: consumo agregado de CPU de los containers Docker observados. Es una vista general, no por servicio individual.",
+      "type": "stat",
+      "gridPos": { "x": 0, "y": 11, "w": 6, "h": 5 },
+      "datasource": "${DS_PROMETHEUS}",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "100 * sum(rate(container_cpu_usage_seconds_total{id=~\"/system.slice/docker-.*\",cpu=\"total\"}[5m]))",
+          "instant": true
+        }
+      ],
+      "options": {
+        "graphMode": "none",
+        "textMode": "value",
+        "colorMode": "background",
+        "justifyMode": "center",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 70 },
+              { "color": "red", "value": 90 }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 14,
+      "title": "Memoria Docker total (GB)",
+      "description": "Que muestra: memoria agregada que estan usando los containers Docker observados.",
+      "type": "stat",
+      "gridPos": { "x": 6, "y": 11, "w": 6, "h": 5 },
+      "datasource": "${DS_PROMETHEUS}",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(container_memory_usage_bytes{id=~\"/system.slice/docker-.*\"}) / 1024 / 1024 / 1024",
+          "instant": true
+        }
+      ],
+      "options": {
+        "graphMode": "none",
+        "textMode": "value",
+        "colorMode": "background",
+        "justifyMode": "center",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "gbytes",
+          "decimals": 2,
+          "color": { "mode": "fixed", "fixedColor": "blue" }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 15,
+      "title": "Predicciones hoy",
+      "description": "Que muestra: cantidad total de predicciones generadas hoy por el motor de PymePilot.",
+      "type": "stat",
+      "gridPos": { "x": 12, "y": 11, "w": 6, "h": 5 },
+      "datasource": "${DS_POSTGRES}",
+      "targets": [
+        {
+          "refId": "A",
+          "rawSql": "SELECT COALESCE(SUM(prediction_count), 0) AS predicciones FROM monitoring_predictions WHERE prediction_date = CURRENT_DATE;",
+          "format": "table"
+        }
+      ],
+      "options": {
+        "graphMode": "none",
+        "textMode": "value",
+        "colorMode": "background",
+        "justifyMode": "center",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "fixed", "fixedColor": "green" },
+          "decimals": 0,
+          "noValue": "0"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 16,
+      "title": "Costo Claude hoy (USD)",
+      "description": "Que muestra: gasto acumulado de Claude en el dia actual.",
+      "type": "stat",
+      "gridPos": { "x": 18, "y": 11, "w": 6, "h": 5 },
+      "datasource": "${DS_POSTGRES}",
+      "targets": [
+        {
+          "refId": "A",
+          "rawSql": "SELECT COALESCE((SELECT cost_usd FROM monitoring_costs WHERE usage_date = CURRENT_DATE), 0) AS costo_hoy;",
+          "format": "table"
+        }
+      ],
+      "options": {
+        "graphMode": "none",
+        "textMode": "value",
+        "colorMode": "background",
+        "justifyMode": "center",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "decimals": 2,
+          "color": { "mode": "fixed", "fixedColor": "blue" },
+          "noValue": "0"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 17,
+      "title": "Tendencia de disco (24h)",
+      "description": "Que muestra: evolucion del porcentaje usado del disco principal durante las ultimas 24 horas.",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 16, "w": 12, "h": 8 },
+      "datasource": "${DS_PROMETHEUS}",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "100 * (1 - (node_filesystem_avail_bytes{job=\"node\",mountpoint=\"/\",fstype!~\"tmpfs|overlay\"} / node_filesystem_size_bytes{job=\"node\",mountpoint=\"/\",fstype!~\"tmpfs|overlay\"}))",
+          "legendFormat": "Disco /"
+        }
+      ],
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 15,
+            "pointSize": 2,
+            "showPoints": "never"
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 18,
+      "title": "Historial del orquestador (7 dias)",
+      "description": "Que muestra: predicciones generadas y tenants procesados por cada ejecucion reciente del orquestador.",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 16, "w": 12, "h": 8 },
+      "datasource": "${DS_POSTGRES}",
+      "targets": [
+        {
+          "refId": "A",
+          "rawSql": "SELECT started_at AS time, predictions_generated AS \"Predicciones\", tenants_processed AS \"Tenants\" FROM monitoring_operations WHERE started_at >= NOW() - INTERVAL '7 days' ORDER BY started_at;",
+          "format": "time_series"
+        }
+      ],
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 20,
+            "pointSize": 4,
+            "showPoints": "always"
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 19,
+      "title": "Incidentes recientes",
+      "description": "Que muestra: ejecuciones con errores recientes. Sirve para bajar al detalle cuando el tablero superior muestra alertas.",
+      "type": "table",
+      "gridPos": { "x": 0, "y": 24, "w": 24, "h": 7 },
+      "datasource": "${DS_POSTGRES}",
+      "targets": [
+        {
+          "refId": "A",
+          "rawSql": "SELECT run_date AS \"Fecha\", status AS \"Estado\", error_count AS \"Errores\", predictions_generated AS \"Predicciones\", tenants_processed AS \"Tenants\", ROUND(duration_seconds::numeric, 0) AS \"Duracion (s)\" FROM monitoring_operations WHERE error_count > 0 ORDER BY started_at DESC LIMIT 20;",
+          "format": "table"
+        }
+      ],
+      "options": {
+        "showHeader": true,
+        "footer": { "show": false }
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Errores" },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": { "type": "color-text" }
+              },
+              {
+                "id": "color",
+                "value": { "mode": "fixed", "fixedColor": "red" }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
