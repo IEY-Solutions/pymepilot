@@ -155,6 +155,7 @@ pymepilot/
 
 | Archivo | Tema |
 |---------|------|
+| `docs/handoffs/2026-03-18_cambio_credenciales_login_handoff.md` | Cambio seguro de credenciales de acceso |
 | `docs/handoffs/2026-03-15_coexistencia_claude_codex.md` | Diseño coexistencia IAs |
 | `docs/handoffs/2026-03-11_auditoria_pre_mvp_sesion2.md` | Auditoria pre-MVP paso 2 |
 | `docs/handoffs/2026-03-10_dashboard_metricas_mejoras.md` | Mejoras dashboard metricas |
