@@ -64,6 +64,10 @@ Sistema funciona para IEY sin intervencion manual.
 - **Dashboard versionado:** `grafana/dashboards/pymepilot-centro-monitoreo.json`
   creado e importado en Grafana el 2026-03-18. Datasources mapeados
   y panel principal verificado funcionando.
+- **Servicios criticos monitoreados:** `blackbox-exporter` agregado el
+  2026-03-18 con probes reales para `Postgres`, `Kong/API`, `Auth`,
+  `Grafana` y `App PymePilot`. Probes verificados `up` y dashboard
+  principal actualizado para mostrarlos en una fila dedicada.
 
 ### Bloqueados
 - **WhatsApp Cloud API (Fase 6 Parte 2):** requiere SIM chip fisico

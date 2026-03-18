@@ -24,7 +24,7 @@
   "timezone": "America/Argentina/Buenos_Aires",
   "editable": true,
   "schemaVersion": 39,
-  "version": 1,
+  "version": 2,
   "refresh": "1m",
   "time": {
     "from": "now-24h",
@@ -301,11 +301,257 @@
       }
     },
     {
+      "id": 20,
+      "title": "Postgres",
+      "description": "Que muestra: si la base de datos acepta conexion TCP desde el stack. Si cae, el producto entero queda comprometido.",
+      "type": "stat",
+      "gridPos": { "x": 0, "y": 5, "w": 4, "h": 5 },
+      "datasource": "${DS_PROMETHEUS}",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "probe_success{service=\"postgres\"}",
+          "instant": true
+        }
+      ],
+      "options": {
+        "graphMode": "none",
+        "textMode": "value",
+        "colorMode": "background",
+        "justifyMode": "center",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": { "text": "CAIDO", "color": "red", "index": 0 },
+                "1": { "text": "OK", "color": "green", "index": 1 }
+              }
+            }
+          ],
+          "noValue": "SIN DATOS"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 21,
+      "title": "Kong / API",
+      "description": "Que muestra: si la puerta de entrada publica de la API responde desde una URL real. Detecta caidas de gateway, Traefik o SSL.",
+      "type": "stat",
+      "gridPos": { "x": 4, "y": 5, "w": 4, "h": 5 },
+      "datasource": "${DS_PROMETHEUS}",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "probe_success{service=\"kong\"}",
+          "instant": true
+        }
+      ],
+      "options": {
+        "graphMode": "none",
+        "textMode": "value",
+        "colorMode": "background",
+        "justifyMode": "center",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": { "text": "CAIDO", "color": "red", "index": 0 },
+                "1": { "text": "OK", "color": "green", "index": 1 }
+              }
+            }
+          ],
+          "noValue": "SIN DATOS"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 22,
+      "title": "Auth",
+      "description": "Que muestra: si el servicio de autenticacion responde en su endpoint de salud interno.",
+      "type": "stat",
+      "gridPos": { "x": 8, "y": 5, "w": 4, "h": 5 },
+      "datasource": "${DS_PROMETHEUS}",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "probe_success{service=\"auth\"}",
+          "instant": true
+        }
+      ],
+      "options": {
+        "graphMode": "none",
+        "textMode": "value",
+        "colorMode": "background",
+        "justifyMode": "center",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": { "text": "CAIDO", "color": "red", "index": 0 },
+                "1": { "text": "OK", "color": "green", "index": 1 }
+              }
+            }
+          ],
+          "noValue": "SIN DATOS"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 23,
+      "title": "Grafana",
+      "description": "Que muestra: si la URL publica de Grafana responde de verdad desde el probe externo.",
+      "type": "stat",
+      "gridPos": { "x": 12, "y": 5, "w": 4, "h": 5 },
+      "datasource": "${DS_PROMETHEUS}",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "probe_success{service=\"grafana\"}",
+          "instant": true
+        }
+      ],
+      "options": {
+        "graphMode": "none",
+        "textMode": "value",
+        "colorMode": "background",
+        "justifyMode": "center",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": { "text": "CAIDO", "color": "red", "index": 0 },
+                "1": { "text": "OK", "color": "green", "index": 1 }
+              }
+            }
+          ],
+          "noValue": "SIN DATOS"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 24,
+      "title": "App PymePilot",
+      "description": "Que muestra: si la aplicacion publica responde desde su URL real, incluyendo redireccion al login cuando corresponde.",
+      "type": "stat",
+      "gridPos": { "x": 16, "y": 5, "w": 4, "h": 5 },
+      "datasource": "${DS_PROMETHEUS}",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "probe_success{service=\"app\"}",
+          "instant": true
+        }
+      ],
+      "options": {
+        "graphMode": "none",
+        "textMode": "value",
+        "colorMode": "background",
+        "justifyMode": "center",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": { "text": "CAIDO", "color": "red", "index": 0 },
+                "1": { "text": "OK", "color": "green", "index": 1 }
+              }
+            }
+          ],
+          "noValue": "SIN DATOS"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 25,
+      "title": "Servicios criticos OK",
+      "description": "Que muestra: cuantos de los 5 servicios criticos estan sanos ahora mismo segun los probes reales.",
+      "type": "stat",
+      "gridPos": { "x": 20, "y": 5, "w": 4, "h": 5 },
+      "datasource": "${DS_PROMETHEUS}",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(probe_success{service=~\"app|auth|grafana|kong|postgres\"})",
+          "instant": true
+        }
+      ],
+      "options": {
+        "graphMode": "none",
+        "textMode": "value",
+        "colorMode": "background",
+        "justifyMode": "center",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 3 },
+              { "color": "green", "value": 5 }
+            ]
+          },
+          "noValue": "0"
+        },
+        "overrides": []
+      }
+    },
+    {
       "id": 7,
       "title": "Uso de disco /",
       "description": "Que muestra: porcentaje ocupado del disco principal del servidor. Si sube mucho, el sistema empieza a correr riesgo.",
       "type": "gauge",
-      "gridPos": { "x": 0, "y": 5, "w": 4, "h": 6 },
+      "gridPos": { "x": 0, "y": 10, "w": 4, "h": 6 },
       "datasource": "${DS_PROMETHEUS}",
       "targets": [
         {
@@ -345,7 +591,7 @@
       "title": "Disco libre (GB)",
       "description": "Que muestra: espacio real disponible en el disco principal antes de que aparezcan fallas por capacidad.",
       "type": "stat",
-      "gridPos": { "x": 4, "y": 5, "w": 4, "h": 6 },
+      "gridPos": { "x": 4, "y": 10, "w": 4, "h": 6 },
       "datasource": "${DS_PROMETHEUS}",
       "targets": [
         {
@@ -386,7 +632,7 @@
       "title": "RAM usada",
       "description": "Que muestra: porcentaje de memoria ocupada por el servidor en este momento.",
       "type": "gauge",
-      "gridPos": { "x": 8, "y": 5, "w": 4, "h": 6 },
+      "gridPos": { "x": 8, "y": 10, "w": 4, "h": 6 },
       "datasource": "${DS_PROMETHEUS}",
       "targets": [
         {
@@ -426,7 +672,7 @@
       "title": "CPU promedio 5m",
       "description": "Que muestra: carga promedio reciente del procesador. Sirve mas que un pico instantaneo para detectar saturacion real.",
       "type": "gauge",
-      "gridPos": { "x": 12, "y": 5, "w": 4, "h": 6 },
+      "gridPos": { "x": 12, "y": 10, "w": 4, "h": 6 },
       "datasource": "${DS_PROMETHEUS}",
       "targets": [
         {
@@ -466,7 +712,7 @@
       "title": "Load average (5m)",
       "description": "Que muestra: cuantas tareas estan compitiendo por recursos. Ayuda a detectar presion general del sistema.",
       "type": "stat",
-      "gridPos": { "x": 16, "y": 5, "w": 4, "h": 6 },
+      "gridPos": { "x": 16, "y": 10, "w": 4, "h": 6 },
       "datasource": "${DS_PROMETHEUS}",
       "targets": [
         {
@@ -499,7 +745,7 @@
       "title": "Uptime host (h)",
       "description": "Que muestra: cuantas horas lleva encendido el servidor desde el ultimo reinicio.",
       "type": "stat",
-      "gridPos": { "x": 20, "y": 5, "w": 4, "h": 6 },
+      "gridPos": { "x": 20, "y": 10, "w": 4, "h": 6 },
       "datasource": "${DS_PROMETHEUS}",
       "targets": [
         {
@@ -533,7 +779,7 @@
       "title": "CPU Docker total (5m)",
       "description": "Que muestra: consumo agregado de CPU de los containers Docker observados. Es una vista general, no por servicio individual.",
       "type": "stat",
-      "gridPos": { "x": 0, "y": 11, "w": 6, "h": 5 },
+      "gridPos": { "x": 0, "y": 16, "w": 6, "h": 5 },
       "datasource": "${DS_PROMETHEUS}",
       "targets": [
         {
@@ -574,7 +820,7 @@
       "title": "Memoria Docker total (GB)",
       "description": "Que muestra: memoria agregada que estan usando los containers Docker observados.",
       "type": "stat",
-      "gridPos": { "x": 6, "y": 11, "w": 6, "h": 5 },
+      "gridPos": { "x": 6, "y": 16, "w": 6, "h": 5 },
       "datasource": "${DS_PROMETHEUS}",
       "targets": [
         {
@@ -608,7 +854,7 @@
       "title": "Predicciones hoy",
       "description": "Que muestra: cantidad total de predicciones generadas hoy por el motor de PymePilot.",
       "type": "stat",
-      "gridPos": { "x": 12, "y": 11, "w": 6, "h": 5 },
+      "gridPos": { "x": 12, "y": 16, "w": 6, "h": 5 },
       "datasource": "${DS_POSTGRES}",
       "targets": [
         {
@@ -642,7 +888,7 @@
       "title": "Costo Claude hoy (USD)",
       "description": "Que muestra: gasto acumulado de Claude en el dia actual.",
       "type": "stat",
-      "gridPos": { "x": 18, "y": 11, "w": 6, "h": 5 },
+      "gridPos": { "x": 18, "y": 16, "w": 6, "h": 5 },
       "datasource": "${DS_POSTGRES}",
       "targets": [
         {
@@ -677,7 +923,7 @@
       "title": "Tendencia de disco (24h)",
       "description": "Que muestra: evolucion del porcentaje usado del disco principal durante las ultimas 24 horas.",
       "type": "timeseries",
-      "gridPos": { "x": 0, "y": 16, "w": 12, "h": 8 },
+      "gridPos": { "x": 0, "y": 21, "w": 12, "h": 8 },
       "datasource": "${DS_PROMETHEUS}",
       "targets": [
         {
@@ -710,7 +956,7 @@
       "title": "Historial del orquestador (7 dias)",
       "description": "Que muestra: predicciones generadas y tenants procesados por cada ejecucion reciente del orquestador.",
       "type": "timeseries",
-      "gridPos": { "x": 12, "y": 16, "w": 12, "h": 8 },
+      "gridPos": { "x": 12, "y": 21, "w": 12, "h": 8 },
       "datasource": "${DS_POSTGRES}",
       "targets": [
         {
@@ -742,7 +988,7 @@
       "title": "Incidentes recientes",
       "description": "Que muestra: ejecuciones con errores recientes. Sirve para bajar al detalle cuando el tablero superior muestra alertas.",
       "type": "table",
-      "gridPos": { "x": 0, "y": 24, "w": 24, "h": 7 },
+      "gridPos": { "x": 0, "y": 29, "w": 24, "h": 7 },
       "datasource": "${DS_POSTGRES}",
       "targets": [
         {
