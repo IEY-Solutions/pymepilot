@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { BrandLockup } from "@/components/layout/brand-lockup";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 
@@ -36,7 +37,7 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-[#1a2a2c] px-4">
       <div className="w-full max-w-sm animate-fade-in-up">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-[#81b5a1]">PymePilot</h1>
+          <BrandLockup variant="login" />
           <p className="text-white/50 mt-1">Ingresá a tu cuenta</p>
         </div>
 

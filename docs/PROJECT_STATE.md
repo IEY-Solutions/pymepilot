@@ -50,6 +50,7 @@ Sistema funciona para IEY sin intervencion manual.
 | Dashboard Metricas | 2026-03-10 | Comparar periodos, ranking productos, top 10 |
 | Auditoria Pre-MVP | 2026-03-11 | 3C+15H+4M corregidos, reconexion Contabilium |
 | Hotfix Contabilium | 2026-03-07/08 | 14 de 15 fixes, env_guard, cron_wrapper |
+| Branding UI | 2026-03-19 | Favicon PymePilot productivo + logo integrado en login y header |
 
 ---
 
@@ -165,6 +166,7 @@ pymepilot/
 
 | Archivo | Tema |
 |---------|------|
+| `docs/handoffs/2026-03-19_branding_ui_handoff.md` | Branding inicial frontend + favicon + lockup login/header |
 | `docs/handoffs/2026-03-18_cambio_credenciales_login_handoff.md` | Cambio seguro de credenciales de acceso |
 | `docs/handoffs/2026-03-15_coexistencia_claude_codex.md` | Diseño coexistencia IAs |
 | `docs/handoffs/2026-03-11_auditoria_pre_mvp_sesion2.md` | Auditoria pre-MVP paso 2 |

@@ -12,6 +12,10 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "PymePilot",
   description: "Seguimiento inteligente para distribuidores B2B",
+  icons: {
+    icon: "/favicon.ico?v=20260319",
+    shortcut: "/favicon.ico?v=20260319",
+  },
 };
 
 export default function RootLayout({
