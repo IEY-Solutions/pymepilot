@@ -55,6 +55,16 @@ Sistema funciona para IEY sin intervencion manual.
 
 ## En curso / pendiente
 
+### Operativo
+- **Cambio de credenciales login IEY:** el 2026-03-18 se detecto que
+  `create_tenant.py` fallaba con `401 Invalid authentication credentials`
+  via `Kong` en `/auth/v1/admin/users`, aunque el mismo service-role JWT
+  era aceptado por GoTrue directo. Se agrego fallback automatico a Auth
+  directo del contenedor para endpoints admin. Ademas, se corrigio el
+  falso negativo del Paso 5 que contaba `user_profiles` sin tenant context
+  y RLS devolvia `0` aunque existieran perfiles. Cobertura agregada en
+  `backend/tests/test_create_tenant_auth_fallback.py`.
+
 ### Diseños aprobados
 - **Centro de monitoreo Grafana:** design aprobado el 2026-03-18.
   Enfoque elegido: integrar sobre el Grafana actual sin romperlo,

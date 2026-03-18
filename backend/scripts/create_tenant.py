@@ -32,6 +32,7 @@ import getpass
 import json
 import os
 import re
+import subprocess
 import sys
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
@@ -69,6 +70,49 @@ SLUG_REGEX = re.compile(r'^[a-z0-9][a-z0-9-]*[a-z0-9]$|^[a-z0-9]$')
 VALID_ERP_TYPES = ["contabilium", "excel", "xubio", "alegra", "colppy", "custom"]
 
 
+def _discover_direct_gotrue_base_url() -> str | None:
+    """Descubre la URL directa del contenedor Auth en Docker.
+
+    POR QUE: En este stack self-hosted, Kong puede rechazar la SERVICE_ROLE_KEY
+    para endpoints /auth/v1/admin/* aunque el contenedor GoTrue la acepte. Si
+    eso pasa, usamos la ruta interna directa como fallback para no bloquear el
+    onboarding.
+    """
+    try:
+        result = subprocess.run(
+            [
+                "docker",
+                "inspect",
+                "orion-menteax_auth",
+                "--format",
+                "{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}",
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except (OSError, subprocess.CalledProcessError):
+        return None
+
+    auth_ip = result.stdout.strip()
+    if not auth_ip:
+        return None
+
+    return f"http://{auth_ip}:9999"
+
+
+def _iter_gotrue_base_urls(path: str) -> list[str]:
+    """Devuelve las URLs base a probar para llamadas a GoTrue."""
+    base_urls = [f"{SUPABASE_URL.rstrip('/')}/auth/v1"]
+
+    if path.startswith("/admin/"):
+        direct_url = _discover_direct_gotrue_base_url()
+        if direct_url and direct_url not in base_urls:
+            base_urls.append(direct_url)
+
+    return base_urls
+
+
 def _gotrue_request(method: str, path: str, data: dict | None = None) -> dict:
     """Hace un request a la GoTrue Admin API.
 
@@ -90,26 +134,58 @@ def _gotrue_request(method: str, path: str, data: dict | None = None) -> dict:
     Raises:
         ConnectionError: si la llamada falla
     """
-    url = f"{SUPABASE_URL}/auth/v1{path}"
     body = json.dumps(data).encode("utf-8") if data else None
+    last_error: ConnectionError | None = None
+    base_urls = _iter_gotrue_base_urls(path)
 
-    req = Request(url, data=body, method=method)
-    req.add_header("Authorization", f"Bearer {SUPABASE_SERVICE_ROLE_KEY}")
-    req.add_header("apikey", SUPABASE_SERVICE_ROLE_KEY)
-    req.add_header("Content-Type", "application/json")
+    for idx, base_url in enumerate(base_urls):
+        url = f"{base_url}{path}"
+        req = Request(url, data=body, method=method)
+        req.add_header("Authorization", f"Bearer {SUPABASE_SERVICE_ROLE_KEY}")
+        req.add_header("apikey", SUPABASE_SERVICE_ROLE_KEY)
+        req.add_header("Content-Type", "application/json")
 
-    try:
-        with urlopen(req, timeout=30) as response:
-            return json.loads(response.read().decode("utf-8"))
-    except HTTPError as exc:
-        error_body = exc.read().decode("utf-8", errors="replace")[:500]
-        raise ConnectionError(
-            f"GoTrue API error {exc.code}: {sanitize_text(error_body)}"
-        ) from exc
-    except URLError as exc:
-        raise ConnectionError(
-            f"No se pudo conectar a GoTrue: {exc.reason}"
-        ) from exc
+        try:
+            with urlopen(req, timeout=30) as response:
+                return json.loads(response.read().decode("utf-8"))
+        except HTTPError as exc:
+            error_body = exc.read().decode("utf-8", errors="replace")[:500]
+            should_retry_direct = (
+                idx == 0
+                and path.startswith("/admin/")
+                and exc.code == 401
+                and "Invalid authentication credentials" in error_body
+                and len(base_urls) > 1
+            )
+            if should_retry_direct:
+                logger.warning(
+                    "GoTrue admin API rechazo la SERVICE_ROLE_KEY via Kong; "
+                    "reintentando contra Auth directo"
+                )
+                continue
+
+            last_error = ConnectionError(
+                f"GoTrue API error {exc.code}: {sanitize_text(error_body)}"
+            )
+            break
+        except URLError as exc:
+            last_error = ConnectionError(
+                f"No se pudo conectar a GoTrue: {exc.reason}"
+            )
+            break
+
+    if last_error:
+        raise last_error
+
+    raise ConnectionError("No se pudo completar la llamada a GoTrue.")
+
+
+def _count_profiles_for_tenant(tenant_id: str) -> int:
+    """Cuenta perfiles visibles para un tenant usando contexto RLS correcto."""
+    with get_db_connection(tenant_id) as conn:
+        return conn.execute(
+            "SELECT COUNT(*) FROM user_profiles"
+        ).fetchone()[0]
 
 
 def step1_collect_data() -> dict:
@@ -407,11 +483,7 @@ def step5_verify(tenant_id: str, data: dict) -> None:
 
     # Check 2: Profile exists
     print("  [2/3] Verificando perfil de usuario...")
-    with get_db_connection_no_tenant() as conn:
-        profile_count = conn.execute(
-            "SELECT COUNT(*) FROM user_profiles WHERE tenant_id = %s",
-            (tenant_id,),
-        ).fetchone()[0]
+    profile_count = _count_profiles_for_tenant(tenant_id)
 
     if profile_count > 0:
         print(f"    OK: {profile_count} perfil(es) encontrado(s)")
