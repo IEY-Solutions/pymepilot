@@ -95,6 +95,23 @@ final esta mejor alineado con lo que Pato realmente queria.
 
 ---
 
+# WORKTREES — AISLAMIENTO PROACTIVO DE PRODUCCION
+
+**REGLA:** Usar `claude --worktree feature-name` de forma PROACTIVA
+cuando la tarea involucre:
+
+1. Refactorings que tocan 3+ archivos en diferentes modulos
+2. Features nuevas que pueden romper flujos existentes o la DB
+3. Cambios experimentales donde no se esta seguro del approach
+4. Modificaciones a docker-compose, migraciones SQL, o configs de prod
+5. Sesiones autonomas ("hace esto mientras yo hago otra cosa")
+6. Trabajo paralelo (ej: debugging + feature nueva)
+
+**Workflow:** worktree → trabajar → diff a Pato → merge manual.
+**NO aplica a:** fixes simples, copy, docs, o cambios sin riesgo.
+
+---
+
 # PROCESO Y CALIBRACION DE CLAUDE CODE
 
 > Restricciones operativas derivadas de 13 iteraciones de revision de seguridad.
