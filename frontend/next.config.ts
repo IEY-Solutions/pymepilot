@@ -2,6 +2,8 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  transpilePackages: ["remotion", "@remotion/player"],
+  serverExternalPackages: ["@remotion/renderer"],
   headers: async () => [
     {
       source: "/(.*)",
