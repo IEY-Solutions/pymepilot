@@ -1,133 +1,91 @@
-import { AbsoluteFill, useCurrentFrame, interpolate, Sequence } from "remotion";
+import { AbsoluteFill, useCurrentFrame, interpolate } from "remotion";
 import { BASE_COMPOSITION_STYLE, COLORS } from "../styles";
 import { TextOverlay } from "../components/text-overlay";
-import { Highlight } from "../components/annotation";
-import { AnimatedCursor } from "../components/cursor";
+import { FocusWrapper } from "../components/focus-wrapper";
 import { mockKeyAccounts } from "../data/mock-data";
 
-// --- Sub-componentes visuales ---
+/**
+ * Escenas del video Cuentas Clave (total ~30s = 900 frames):
+ *
+ * 0-50:     Entrada
+ * 50-190:   Escena 1 — Banner de alertas
+ * 190-350:  Escena 2 — Cuenta saludable (verde) con detalle
+ * 350-510:  Escena 3 — Cuenta en riesgo (roja) con acciones pendientes
+ * 510-650:  Escena 4 — Detalle expandido (notas, score, acciones)
+ * 650-780:  Escena 5 — Boton agregar cuenta
+ * 780-900:  Cierre
+ */
+
+const S1 = [50, 190] as const;
+const S2 = [190, 350] as const;
+const S3 = [350, 510] as const;
+const S4 = [510, 650] as const;
+const S5 = [650, 780] as const;
+
+function getActiveScene(frame: number): number {
+  if (frame >= S1[0] && frame <= S1[1]) return 1;
+  if (frame >= S2[0] && frame <= S2[1]) return 2;
+  if (frame >= S3[0] && frame <= S3[1]) return 3;
+  if (frame >= S4[0] && frame <= S4[1]) return 4;
+  if (frame >= S5[0] && frame <= S5[1]) return 5;
+  return 0;
+}
 
 function HealthDot({ score }: { score: number }) {
   const color = score >= 70 ? COLORS.green : score >= 40 ? COLORS.yellow : COLORS.red;
-  return (
-    <div
-      style={{
-        width: 10,
-        height: 10,
-        borderRadius: "50%",
-        backgroundColor: color,
-        boxShadow: `0 0 8px ${color}40`,
-      }}
-    />
-  );
+  return <div style={{ width: 10, height: 10, borderRadius: "50%", backgroundColor: color, boxShadow: `0 0 8px ${color}40` }} />;
 }
 
 function AlertBanner() {
   const frame = useCurrentFrame();
-  const opacity = interpolate(frame, [0, 15], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-
+  const opacity = interpolate(frame, [0, 15], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
   return (
-    <div
-      style={{
-        backgroundColor: "rgba(239, 68, 68, 0.08)",
-        border: "1px solid rgba(239, 68, 68, 0.2)",
-        borderRadius: 10,
-        padding: "10px 16px",
-        display: "flex",
-        alignItems: "center",
-        gap: 8,
-        marginBottom: 16,
-        opacity,
-      }}
-    >
+    <div style={{ backgroundColor: "rgba(239, 68, 68, 0.08)", border: "1px solid rgba(239, 68, 68, 0.2)", borderRadius: 10, padding: "10px 16px", display: "flex", alignItems: "center", gap: 8, opacity }}>
       <span style={{ fontSize: 14 }}>⚠️</span>
-      <p style={{ color: COLORS.red, fontSize: 13, margin: 0 }}>
-        2 cuentas clave necesitan atencion
-      </p>
+      <p style={{ color: COLORS.red, fontSize: 13, margin: 0 }}>2 cuentas clave necesitan atencion</p>
     </div>
   );
 }
 
-function AccountCard({
-  account,
-  index,
-  isExpanded,
-}: {
-  account: typeof mockKeyAccounts[0];
-  index: number;
-  isExpanded: boolean;
-}) {
+function AccountCard({ account, index, isExpanded }: { account: typeof mockKeyAccounts[0]; index: number; isExpanded: boolean }) {
   const frame = useCurrentFrame();
   const delay = 15 + index * 10;
-  const opacity = interpolate(frame - delay, [0, 15], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-
+  const opacity = interpolate(frame - delay, [0, 15], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
   const trendIcon = account.trend === "up" ? "↑" : account.trend === "down" ? "↓" : "→";
   const trendColor = account.trend === "up" ? COLORS.green : account.trend === "down" ? COLORS.red : COLORS.textMuted;
 
   return (
-    <div
-      style={{
-        backgroundColor: COLORS.bgCard,
-        border: `1px solid ${isExpanded ? "rgba(129, 181, 161, 0.3)" : COLORS.border}`,
-        borderRadius: 12,
-        padding: 16,
-        opacity,
-        transition: "border-color 0.2s",
-      }}
-    >
-      {/* Header */}
+    <div style={{ backgroundColor: COLORS.bgCard, border: `1px solid ${isExpanded ? "rgba(129, 181, 161, 0.3)" : COLORS.border}`, borderRadius: 12, padding: 16, opacity }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <HealthDot score={account.health_score} />
-          <p style={{ color: COLORS.textPrimary, fontSize: 15, fontWeight: 600, margin: 0 }}>
-            {account.customer.name}
-          </p>
+          <p style={{ color: COLORS.textPrimary, fontSize: 15, fontWeight: 600, margin: 0 }}>{account.customer.name}</p>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <span style={{ color: trendColor, fontSize: 16 }}>{trendIcon}</span>
-          <span style={{ color: COLORS.textMuted, fontSize: 13 }}>
-            {account.health_score}%
-          </span>
+          <span style={{ color: COLORS.textMuted, fontSize: 13 }}>{account.health_score}%</span>
         </div>
       </div>
-
-      {/* Stats row */}
       <div style={{ display: "flex", gap: 16 }}>
         <div>
           <p style={{ color: COLORS.textMuted, fontSize: 11, margin: 0 }}>Facturacion</p>
-          <p style={{ color: COLORS.textSecondary, fontSize: 13, fontWeight: 600, margin: 0, marginTop: 2 }}>
-            ${(account.customer.total_purchases / 1000).toFixed(0)}k
-          </p>
+          <p style={{ color: COLORS.textSecondary, fontSize: 13, fontWeight: 600, margin: 0, marginTop: 2 }}>${(account.customer.total_purchases / 1000).toFixed(0)}k</p>
         </div>
         <div>
           <p style={{ color: COLORS.textMuted, fontSize: 11, margin: 0 }}>Ultima compra</p>
-          <p style={{ color: COLORS.textSecondary, fontSize: 13, fontWeight: 600, margin: 0, marginTop: 2 }}>
-            {account.customer.last_purchase}
-          </p>
+          <p style={{ color: COLORS.textSecondary, fontSize: 13, fontWeight: 600, margin: 0, marginTop: 2 }}>{account.customer.last_purchase}</p>
         </div>
         <div>
           <p style={{ color: COLORS.textMuted, fontSize: 11, margin: 0 }}>Notas</p>
-          <p style={{ color: COLORS.textSecondary, fontSize: 13, fontWeight: 600, margin: 0, marginTop: 2 }}>
-            {account.notes_count}
-          </p>
+          <p style={{ color: COLORS.textSecondary, fontSize: 13, fontWeight: 600, margin: 0, marginTop: 2 }}>{account.notes_count}</p>
         </div>
         {account.pending_actions > 0 && (
           <div>
             <p style={{ color: COLORS.textMuted, fontSize: 11, margin: 0 }}>Pendientes</p>
-            <p style={{ color: COLORS.red, fontSize: 13, fontWeight: 600, margin: 0, marginTop: 2 }}>
-              {account.pending_actions}
-            </p>
+            <p style={{ color: COLORS.red, fontSize: 13, fontWeight: 600, margin: 0, marginTop: 2 }}>{account.pending_actions}</p>
           </div>
         )}
       </div>
-
-      {/* Expanded detail (solo para la primera card) */}
       {isExpanded && (
         <div style={{ marginTop: 14, paddingTop: 14, borderTop: `1px solid ${COLORS.border}` }}>
           <div style={{ display: "flex", gap: 12 }}>
@@ -142,9 +100,7 @@ function AccountCard({
             </div>
             <div style={{ flex: 1, backgroundColor: "rgba(129, 181, 161, 0.06)", borderRadius: 8, padding: 12 }}>
               <p style={{ color: COLORS.brand, fontSize: 12, fontWeight: 600, margin: 0 }}>Ultima nota</p>
-              <p style={{ color: COLORS.textSecondary, fontSize: 12, margin: 0, marginTop: 6 }}>
-                &quot;Hable con Juan, quiere ver catalogo nuevo&quot;
-              </p>
+              <p style={{ color: COLORS.textSecondary, fontSize: 12, margin: 0, marginTop: 6 }}>&quot;Hable con Juan, quiere ver catalogo nuevo&quot;</p>
             </div>
           </div>
         </div>
@@ -153,101 +109,57 @@ function AccountCard({
   );
 }
 
-// --- Composicion principal ---
+function AddButton() {
+  return (
+    <div style={{ backgroundColor: "rgba(129, 181, 161, 0.1)", color: COLORS.brand, fontSize: 13, fontWeight: 500, padding: "6px 14px", borderRadius: 8, display: "inline-block" }}>
+      + Agregar cuenta
+    </div>
+  );
+}
 
 export default function CuentasClaveComposition() {
   const frame = useCurrentFrame();
-  // Expandir detalle de la primera card a los 350 frames
-  const isFirstExpanded = frame >= 350;
+  const scene = getActiveScene(frame);
+  const isFirstExpanded = frame >= S4[0];
 
   return (
     <AbsoluteFill style={BASE_COMPOSITION_STYLE}>
       <div style={{ padding: "30px 40px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-          <h2 style={{ color: COLORS.textPrimary, fontSize: 20, fontWeight: 600, margin: 0 }}>
-            Cuentas Clave
-          </h2>
-          <div
-            style={{
-              backgroundColor: "rgba(129, 181, 161, 0.1)",
-              color: COLORS.brand,
-              fontSize: 13,
-              fontWeight: 500,
-              padding: "6px 14px",
-              borderRadius: 8,
-            }}
-          >
-            + Agregar cuenta
-          </div>
+          <h2 style={{ color: COLORS.textPrimary, fontSize: 20, fontWeight: 600, margin: 0 }}>Cuentas Clave</h2>
+          <FocusWrapper highlightStart={S5[0]} highlightDuration={S5[1] - S5[0]} activeScene={scene} sceneRange={S5}>
+            <AddButton />
+          </FocusWrapper>
         </div>
 
-        <AlertBanner />
+        <div style={{ marginBottom: 16 }}>
+          <FocusWrapper highlightStart={S1[0]} highlightDuration={S1[1] - S1[0]} activeScene={scene} sceneRange={S1}>
+            <AlertBanner />
+          </FocusWrapper>
+        </div>
 
-        {/* Grid de cuentas */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-          {mockKeyAccounts.map((account, i) => (
-            <AccountCard
-              key={account.customer.id}
-              account={account}
-              index={i}
-              isExpanded={i === 0 && isFirstExpanded}
-            />
-          ))}
+          <FocusWrapper highlightStart={S2[0]} highlightDuration={S2[1] - S2[0]} activeScene={scene} sceneRange={S2}>
+            <AccountCard account={mockKeyAccounts[0]} index={0} isExpanded={isFirstExpanded} />
+          </FocusWrapper>
+          <FocusWrapper highlightStart={S2[0]} highlightDuration={S2[1] - S2[0]} activeScene={scene} sceneRange={S2} dimWhenInactive={false}>
+            <AccountCard account={mockKeyAccounts[1]} index={1} isExpanded={false} />
+          </FocusWrapper>
+          <FocusWrapper highlightStart={S3[0]} highlightDuration={S3[1] - S3[0]} activeScene={scene} sceneRange={S3}>
+            <AccountCard account={mockKeyAccounts[2]} index={2} isExpanded={false} />
+          </FocusWrapper>
+          <FocusWrapper highlightStart={S3[0]} highlightDuration={S3[1] - S3[0]} activeScene={scene} sceneRange={S3} dimWhenInactive={false}>
+            <AccountCard account={mockKeyAccounts[3]} index={3} isExpanded={false} />
+          </FocusWrapper>
         </div>
       </div>
 
-      {/* --- Anotaciones --- */}
-
-      {/* Fase 1: Alert banner */}
-      <Sequence from={20} durationInFrames={80}>
-        <Highlight x={40} y={65} width={1200} height={40} startFrame={0} duration={70} />
-      </Sequence>
-      <TextOverlay
-        text="El banner te avisa cuando alguna cuenta necesita atencion urgente"
-        startFrame={25}
-        duration={70}
-      />
-
-      {/* Fase 2: Health scores */}
-      <Sequence from={120} durationInFrames={100}>
-        <Highlight x={40} y={120} width={590} height={130} startFrame={0} duration={90} />
-      </Sequence>
-      <TextOverlay
-        text="El color del punto te dice como esta la cuenta: verde bien, rojo necesita accion"
-        startFrame={125}
-        duration={85}
-      />
-
-      {/* Fase 3: Cuenta roja */}
-      <Sequence from={250} durationInFrames={80}>
-        <Highlight x={40} y={265} width={590} height={130} startFrame={0} duration={70} />
-      </Sequence>
-      <TextOverlay
-        text="Mundo Celular tiene score bajo y 2 acciones pendientes — hay que actuar"
-        startFrame={255}
-        duration={70}
-      />
-
-      {/* Fase 4: Detalle expandido */}
-      <TextOverlay
-        text="Hace click en una cuenta para ver el detalle completo con notas y score"
-        startFrame={370}
-        duration={90}
-      />
-
-      {/* Cursor */}
-      <AnimatedCursor
-        startFrame={15}
-        path={[
-          { x: 640, y: 400, frame: 0 },
-          { x: 400, y: 85, frame: 15 },     // Alert
-          { x: 200, y: 180, frame: 110 },    // Primera cuenta
-          { x: 200, y: 330, frame: 240 },    // Cuenta roja
-          { x: 200, y: 180, frame: 335 },    // Click para expandir
-          { x: 400, y: 400, frame: 450 },
-        ]}
-        showClick
-      />
+      <TextOverlay text="Si alguna cuenta clave necesita atencion urgente, este banner te lo dice apenas entras. El numero indica cuantas cuentas estan en estado critico o tienen acciones pendientes." startFrame={S1[0] + 5} duration={130} position="bottom" fontSize={24} />
+      <TextOverlay text="Las cuentas saludables tienen punto verde y score alto. Aca ves Electronica Sur con 92% — esta comprando regularmente y no necesita accion inmediata." startFrame={S2[0] + 5} duration={150} position="bottom" fontSize={24} />
+      <TextOverlay text="Las cuentas en riesgo tienen punto rojo. Mundo Celular bajo a 45% y tiene 2 acciones pendientes. La flecha roja indica tendencia a la baja — hay que actuar." startFrame={S3[0] + 5} duration={150} position="bottom" fontSize={24} />
+      <TextOverlay text="Al hacer click en una cuenta, se expande mostrando el Health Score visual, las notas que registraste, y las acciones pendientes. Todo en un solo lugar." startFrame={S4[0] + 5} duration={130} position="bottom" fontSize={24} />
+      <TextOverlay text="Con este boton agregas nuevas cuentas clave. Selecciona clientes que consideres estrategicos — no todos necesitan estar aca, solo los mas importantes." startFrame={S5[0] + 5} duration={120} position="bottom" fontSize={24} />
+      <TextOverlay text="Cuentas Clave te ayuda a no descuidar a tus mejores clientes." startFrame={790} duration={90} position="center" fontSize={26} />
     </AbsoluteFill>
   );
 }

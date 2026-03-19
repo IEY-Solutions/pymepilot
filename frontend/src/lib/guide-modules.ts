@@ -59,12 +59,13 @@ export const guideModules: GuideModule[] = [
         title: "Inicio",
         icon: Home,
         description:
-          "Tu resumen diario. De un vistazo sabes cuantos clientes te esperan, como viene tu tasa de contacto, y si tus datos estan frescos.",
+          "Tu resumen diario. Es lo primero que ves al entrar — de un vistazo sabes como esta tu negocio hoy: cuantos clientes te esperan, como viene tu tasa de contacto, si el sistema corrio bien, y si tus datos estan frescos.",
         bullets: [
-          "Ve cuantos clientes tenés pendientes de contactar hoy",
-          "Controla tu tasa de contacto para saber si vas bien",
-          "Detecta de un vistazo si tus datos necesitan actualizarse",
-          "Accede rapido a las secciones que mas usas",
+          "'Pendientes' te dice cuantos clientes PymePilot recomienda contactar hoy. Este numero se actualiza cada manana a las 5 AM automaticamente",
+          "'Tasa de contacto' mide que porcentaje de los clientes sugeridos efectivamente contactaste este mes. Cuanto mas alta, mejor estas aprovechando las recomendaciones",
+          "La tarjeta del orquestador aparece cuando el sistema genero recomendaciones. Te muestra cuantas y te lleva directo al Pipeline con un click",
+          "El indicador de frescura usa colores de semaforo: verde (datos al dia), amarillo (datos de hace 1-3 dias), rojo (desactualizados). Si ves rojo, anda a 'Datos' para sincronizar",
+          "'Clientes activos' cuenta los que compraron recientemente y 'Ultima sync' te dice cuando se actualizaron los datos desde tu ERP",
         ],
         route: "/",
         videoDurationFrames: 750, // 25s x 30fps
@@ -74,12 +75,14 @@ export const guideModules: GuideModule[] = [
         title: "Pipeline",
         icon: Columns3,
         description:
-          "Aca vas a ver todos los clientes que PymePilot te sugiere contactar, organizados como un tablero. Arrastras las tarjetas segun vayas avanzando con cada cliente.",
+          "Tu tablero de ventas del dia a dia. PymePilot analiza tus datos y genera tarjetas con clientes que te conviene contactar. Vos los moves por las columnas a medida que avanzas: desde el primer contacto hasta cerrar la venta.",
         bullets: [
-          "Cada tarjeta tiene el mensaje sugerido listo para copiar y mandar",
-          "Podes agregar notas de lo que hablaste con el cliente",
-          "Los seguimientos se programan solos segun la etapa",
-          "Si no moves una tarjeta en X dias, avanza sola para que no se te escape",
+          "Las tarjetas aparecen automaticamente en 'A contactar' cada manana. PymePilot las genera analizando patrones de compra de tus clientes",
+          "Cada tarjeta incluye un mensaje sugerido que podes copiar con un click. Tambien muestra el nivel de confianza y la prioridad (punto rojo = urgente, amarillo = normal)",
+          "Arrastra las tarjetas entre columnas cuando avances con un cliente: Contactado → En seguimiento → Por cotizar → Cotizacion enviada → Vendido",
+          "El sistema programa seguimientos automaticos. Si un cliente esta en 'En seguimiento', te avisa cuando es momento de volver a contactarlo",
+          "Podes agregar notas en cada tarjeta para registrar que hablaste, que pidio, o cualquier detalle importante para el proximo contacto",
+          "Si no moves una tarjeta en un tiempo determinado, avanza sola para que no se te escape ningun cliente",
         ],
         route: "/pipeline",
         videoDurationFrames: 1050, // 35s x 30fps
@@ -89,12 +92,14 @@ export const guideModules: GuideModule[] = [
         title: "Cuentas Clave",
         icon: Star,
         description:
-          "Tus clientes mas importantes en un solo lugar. Ves como estan, si necesitan atencion, y que hacer con cada uno.",
+          "Aca gestionas tus clientes mas importantes — los que mas facturan o son estrategicos para tu negocio. Cada uno tiene un 'score de salud' que te dice si esta todo bien o si necesita atencion.",
         bullets: [
-          "Cada cuenta tiene un score de salud: verde, amarillo o rojo",
-          "Podes ver el resumen financiero de cada cliente",
-          "Agrega notas y acciones pendientes para no olvidarte de nada",
-          "El sistema te avisa cuando una cuenta necesita atencion",
+          "El Health Score va de 0 a 100 y usa colores de semaforo: verde (70+) esta todo bien, amarillo (40-69) hay que prestar atencion, rojo (<40) necesita accion urgente",
+          "Un banner te avisa apenas entras si hay cuentas en estado critico con acciones pendientes",
+          "Hace click en cualquier cuenta para ver su perfil completo: resumen financiero, historial de compras, notas registradas, y acciones pendientes",
+          "Podes agregar notas en cada cuenta para registrar conversaciones, acuerdos, o cualquier dato importante. Las notas quedan como historial permanente",
+          "El sistema detecta tendencias: flechas verdes (mejorando), rojas (empeorando) o grises (estable). Esto te ayuda a anticiparte a problemas",
+          "Usa el boton '+ Agregar cuenta' para marcar nuevos clientes como estrategicos. No todos necesitan estar aca — solo los que realmente importan",
         ],
         route: "/cuentas-clave",
         videoDurationFrames: 900, // 30s x 30fps
@@ -104,12 +109,14 @@ export const guideModules: GuideModule[] = [
         title: "Metricas",
         icon: BarChart3,
         description:
-          "Los numeros de tu negocio en graficos claros. Facturacion, churn, ticket promedio, ranking de clientes y productos.",
+          "Tu tablero de numeros: facturacion, churn, ticket promedio, y rankings. Tiene 5 pestanas que te dan distintas vistas de como va tu negocio, con graficos claros y datos actualizados.",
         bullets: [
-          "Mira como viene tu facturacion mes a mes",
-          "Detecta si estas perdiendo clientes con el grafico de churn",
-          "Descubri cuales son tus mejores clientes y productos",
-          "Compara periodos para ver si estas mejorando",
+          "'Rendimiento' muestra 4 KPIs clave: facturacion total, tasa de churn (clientes perdidos), ticket promedio, y valor atribuido a PymePilot",
+          "El grafico de facturacion te muestra mes a mes cuanto facturas. Si la tendencia baja, mira el churn y los clientes inactivos para entender por que",
+          "El churn mide que porcentaje de clientes dejaron de comprar. Un 7% significa que de cada 100, 7 no volvieron. Cuanto mas bajo, mejor",
+          "'Clientes' te muestra un ranking de tus mejores compradores ordenados por facturacion. Usa esta info para decidir a quien priorizar",
+          "'Productos' te dice cuales son tus productos estrella y cuales necesitan mas push comercial",
+          "'Comparar' te permite elegir dos periodos y ver las diferencias lado a lado — ideal para medir el impacto de tus acciones comerciales",
         ],
         route: "/metricas",
         videoDurationFrames: 900, // 30s x 30fps
@@ -119,12 +126,13 @@ export const guideModules: GuideModule[] = [
         title: "Mis Ventas",
         icon: Trophy,
         description:
-          "Tu historial de ventas y logros. Aca ves que clientes compraron gracias a que vos los contactaste.",
+          "Tu historial de logros comerciales. Aca ves las ventas que cerraste y, lo mas importante, cuantas vinieron de clientes que PymePilot te sugirio contactar. Es donde medis el impacto real del sistema.",
         bullets: [
-          "Ve cuantas ventas se atribuyeron a tus contactos",
-          "Segui tu racha de dias consecutivos vendiendo",
-          "Filtra por tipo de recomendacion (reposicion, activacion, etc.)",
-          "Festeja cada venta con la animacion de confeti",
+          "'Mis ventas del mes' muestra TODAS tus ventas: cuantas ordenes cerraste y cuanto facturaron en total",
+          "'Ventas con PymePilot' es la metrica clave: cuantas de esas ventas vinieron de recomendaciones del sistema. Asi ves el retorno concreto",
+          "La racha cuenta dias consecutivos vendiendo. Cuando llegas a 3, el icono se prende fuego para motivarte a seguir sin cortar",
+          "Los filtros por vertical te permiten ver logros por tipo: Reposicion (cliente habitual), Cross-sell (producto nuevo), Activacion (cliente nuevo) o Recuperacion (cliente perdido)",
+          "Cada tarjeta de logro muestra el cliente, el monto, los productos que compro, y de que tipo de recomendacion vino. Es tu evidencia concreta de resultados",
         ],
         route: "/logros",
         videoDurationFrames: 750, // 25s x 30fps
@@ -134,12 +142,13 @@ export const guideModules: GuideModule[] = [
         title: "Datos",
         icon: Database,
         description:
-          "Aca controlas de donde vienen tus datos. Conexion al ERP, archivos subidos, y el estado de cada sincronizacion.",
+          "El centro de control de tus datos. Aca verificas que tu ERP esta conectado, revisas el historial de sincronizaciones, subis archivos Excel, y controlas que toda tu informacion este al dia.",
         bullets: [
-          "Mira si tu ERP esta conectado y cuando fue la ultima sync",
-          "Subi archivos Excel si necesitas cargar datos manualmente",
-          "Revisa el historial de sincronizaciones y si hubo errores",
-          "Controla cuantos clientes, productos y pedidos tenes cargados",
+          "La tarjeta de conexion te muestra si tu ERP esta conectado (punto verde) o desconectado (punto rojo). Incluye la fecha y hora de la ultima sincronizacion exitosa",
+          "Los contadores resumen tu base de datos: cuantos clientes, productos, pedidos y predicciones tenes. Si alguno esta en 0, falta sincronizar o subir datos",
+          "La zona de upload te permite arrastrar archivos Excel para cargar datos que no vienen del ERP. PymePilot los analiza automaticamente y extrae la informacion",
+          "El historial de syncs muestra cada sincronizacion con detalle: de donde vino (ERP o upload), si fue exitosa, y cuantos registros trajo (C=clientes, P=productos, O=ordenes)",
+          "El sistema de frescura usa colores: verde (< 24h), amarillo (1-3 dias), rojo (> 3 dias). Si la pagina de Inicio muestra rojo, veni aca a sincronizar",
         ],
         route: "/datos",
         videoDurationFrames: 900, // 30s x 30fps
@@ -149,12 +158,13 @@ export const guideModules: GuideModule[] = [
         title: "Asesor IA",
         icon: Bot,
         description:
-          "Tu asistente inteligente. Preguntale lo que quieras sobre tu negocio y te responde con datos reales.",
+          "Tu asistente de negocios personal. Funciona como un chat: le escribis una pregunta en lenguaje normal y te responde con datos reales de tu negocio. No inventa — consulta tu base de datos para cada respuesta.",
         bullets: [
-          "Pregunta cosas como 'quien es mi mejor cliente?' o 'que producto se vende mas?'",
-          "El asesor consulta tu base de datos real para responderte",
-          "Tenes 20 preguntas por dia incluidas",
-          "Podes usarlo desde la burbuja de chat o desde esta pagina completa",
+          "Escribi preguntas en lenguaje natural: 'quien es mi mejor cliente?', 'que producto se vende mas?', 'cuantos clientes tengo inactivos?', 'como viene mi facturacion este mes?'",
+          "Cada respuesta viene de tus datos reales. El asesor tiene acceso a clientes, productos, pedidos, predicciones, y metricas de tu negocio",
+          "Tenes 20 preguntas por dia incluidas. El contador arriba a la derecha te muestra cuantas usaste hoy",
+          "Podes acceder al asesor de dos formas: desde esta pagina completa o desde la burbuja de chat que aparece en cualquier seccion del dashboard",
+          "El asesor es ideal para sacar insights rapidos sin navegar graficos o tablas. Preguntale y te da la respuesta directa con numeros",
         ],
         route: "/asesor",
         videoDurationFrames: 750, // 25s x 30fps

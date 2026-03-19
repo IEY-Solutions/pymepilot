@@ -1,11 +1,38 @@
-import { AbsoluteFill, useCurrentFrame, interpolate, Sequence } from "remotion";
+import { AbsoluteFill, useCurrentFrame, interpolate } from "remotion";
 import { BASE_COMPOSITION_STYLE, COLORS } from "../styles";
 import { TextOverlay } from "../components/text-overlay";
-import { Highlight } from "../components/annotation";
-import { AnimatedCursor } from "../components/cursor";
+import { FocusWrapper } from "../components/focus-wrapper";
 import { mockKPIs } from "../data/mock-data";
 
-// --- Sub-componentes visuales (wrappers simplificados) ---
+/**
+ * Escenas del video Inicio (total ~25s = 750 frames a 30fps):
+ *
+ * 0-45:     Entrada: todo aparece con stagger
+ * 45-165:   Escena 1 — KPI "Pendientes" (que significa, para que sirve)
+ * 165-285:  Escena 2 — KPI "Tasa contacto" (como se calcula, que indica)
+ * 285-375:  Escena 3 — KPIs "Clientes activos" + "Ultima sync" (vista rapida)
+ * 375-510:  Escena 4 — Card del orquestador (que hace, cuando corre)
+ * 510-630:  Escena 5 — Indicador de frescura (verde/amarillo/rojo)
+ * 630-750:  Escena 6 — Vista general, cierre
+ */
+
+// Escenas
+const S1 = [45, 165] as const;
+const S2 = [165, 285] as const;
+const S3 = [285, 375] as const;
+const S4 = [375, 510] as const;
+const S5 = [510, 630] as const;
+
+function getActiveScene(frame: number): number {
+  if (frame >= S1[0] && frame <= S1[1]) return 1;
+  if (frame >= S2[0] && frame <= S2[1]) return 2;
+  if (frame >= S3[0] && frame <= S3[1]) return 3;
+  if (frame >= S4[0] && frame <= S4[1]) return 4;
+  if (frame >= S5[0] && frame <= S5[1]) return 5;
+  return 0;
+}
+
+// --- Sub-componentes visuales ---
 
 function KPICard({
   title,
@@ -121,14 +148,7 @@ function FreshnessCard() {
         opacity,
       }}
     >
-      <div
-        style={{
-          width: 8,
-          height: 8,
-          borderRadius: "50%",
-          backgroundColor: COLORS.green,
-        }}
-      />
+      <div style={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: COLORS.green }} />
       <p style={{ color: COLORS.green, fontSize: 13, margin: 0 }}>
         Datos frescos — ultima sync hace 2 horas
       </p>
@@ -139,110 +159,98 @@ function FreshnessCard() {
 // --- Composicion principal ---
 
 export default function InicioComposition() {
+  const frame = useCurrentFrame();
+  const scene = getActiveScene(frame);
+
   return (
     <AbsoluteFill style={BASE_COMPOSITION_STYLE}>
       <div style={{ padding: 40 }}>
         {/* Header */}
-        <h2
-          style={{
-            color: COLORS.textPrimary,
-            fontSize: 20,
-            fontWeight: 600,
-            margin: 0,
-            marginBottom: 24,
-          }}
-        >
+        <h2 style={{ color: COLORS.textPrimary, fontSize: 20, fontWeight: 600, margin: 0, marginBottom: 24 }}>
           Inicio
         </h2>
 
         {/* KPI Grid */}
         <div style={{ display: "flex", gap: 16, marginBottom: 20 }}>
-          <KPICard
-            title="Pendientes"
-            value={mockKPIs.pendientes}
-            subtitle="clientes por contactar"
-            color={COLORS.brand}
-            index={0}
-          />
-          <KPICard
-            title="Tasa contacto"
-            value={`${mockKPIs.tasaContacto}%`}
-            subtitle="este mes"
-            color={COLORS.brand}
-            index={1}
-          />
-          <KPICard
-            title="Clientes activos"
-            value={mockKPIs.clientesActivos}
-            subtitle="con compras recientes"
-            color={COLORS.purple}
-            index={2}
-          />
-          <KPICard
-            title="Ultima sync"
-            value={mockKPIs.ultimaSync}
-            subtitle="contabilium"
-            color={COLORS.orange}
-            index={3}
-          />
+          <FocusWrapper highlightStart={S1[0]} highlightDuration={S1[1] - S1[0]} activeScene={scene} sceneRange={S1}>
+            <KPICard title="Pendientes" value={mockKPIs.pendientes} subtitle="clientes por contactar" color={COLORS.brand} index={0} />
+          </FocusWrapper>
+          <FocusWrapper highlightStart={S2[0]} highlightDuration={S2[1] - S2[0]} activeScene={scene} sceneRange={S2}>
+            <KPICard title="Tasa contacto" value={`${mockKPIs.tasaContacto}%`} subtitle="este mes" color={COLORS.brand} index={1} />
+          </FocusWrapper>
+          <FocusWrapper highlightStart={S3[0]} highlightDuration={45} activeScene={scene} sceneRange={S3}>
+            <KPICard title="Clientes activos" value={mockKPIs.clientesActivos} subtitle="con compras recientes" color={COLORS.purple} index={2} />
+          </FocusWrapper>
+          <FocusWrapper highlightStart={S3[0] + 45} highlightDuration={45} activeScene={scene} sceneRange={S3}>
+            <KPICard title="Ultima sync" value={mockKPIs.ultimaSync} subtitle="contabilium" color={COLORS.orange} index={3} />
+          </FocusWrapper>
         </div>
 
         {/* Orchestrator + Freshness */}
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <OrchestratorCard />
-          <FreshnessCard />
+          <FocusWrapper highlightStart={S4[0]} highlightDuration={S4[1] - S4[0]} activeScene={scene} sceneRange={S4}>
+            <OrchestratorCard />
+          </FocusWrapper>
+          <FocusWrapper highlightStart={S5[0]} highlightDuration={S5[1] - S5[0]} activeScene={scene} sceneRange={S5}>
+            <FreshnessCard />
+          </FocusWrapper>
         </div>
       </div>
 
-      {/* --- Anotaciones animadas --- */}
+      {/* --- Textos explicativos por escena --- */}
 
-      {/* Fase 1: Highlight en KPIs (frames 30-120) */}
-      <Sequence from={30} durationInFrames={90}>
-        <Highlight x={40} y={70} width={280} height={110} startFrame={0} duration={90} />
-      </Sequence>
-
+      {/* Escena 1: Pendientes */}
       <TextOverlay
-        text="Aca ves de un vistazo cuantos clientes te esperan hoy"
-        startFrame={30}
-        duration={90}
+        text="'Pendientes' te muestra cuantos clientes PymePilot recomienda contactar hoy. Este numero se actualiza cada manana a las 5 AM cuando el sistema analiza tus datos."
+        startFrame={S1[0] + 5}
+        duration={110}
         position="bottom"
+        fontSize={24}
       />
 
-      {/* Fase 2: Cursor se mueve al orquestador (frames 150-270) */}
-      <Sequence from={150} durationInFrames={120}>
-        <Highlight x={40} y={225} width={1200} height={65} startFrame={0} duration={100} />
-      </Sequence>
-
+      {/* Escena 2: Tasa de contacto */}
       <TextOverlay
-        text="El orquestador te dice cuantos contactos genero hoy a las 5 AM"
-        startFrame={160}
-        duration={90}
+        text="La 'Tasa de contacto' mide que porcentaje de los clientes sugeridos efectivamente contactaste este mes. Cuanto mas alta, mejor estas aprovechando las recomendaciones."
+        startFrame={S2[0] + 5}
+        duration={110}
         position="bottom"
+        fontSize={24}
       />
 
-      {/* Fase 3: Highlight en freshness (frames 300-420) */}
-      <Sequence from={300} durationInFrames={120}>
-        <Highlight x={40} y={305} width={1200} height={45} startFrame={0} duration={100} />
-      </Sequence>
-
+      {/* Escena 3: Clientes activos + Sync */}
       <TextOverlay
-        text="El indicador de frescura te avisa si tus datos necesitan actualizarse"
-        startFrame={310}
-        duration={90}
+        text="'Clientes activos' cuenta los que compraron recientemente. 'Ultima sync' te dice cuando se actualizaron los datos desde tu ERP."
+        startFrame={S3[0] + 5}
+        duration={80}
         position="bottom"
+        fontSize={24}
       />
 
-      {/* Cursor recorriendo los elementos clave */}
-      <AnimatedCursor
-        startFrame={25}
-        path={[
-          { x: 640, y: 400, frame: 0 },
-          { x: 180, y: 120, frame: 30 },    // KPI Pendientes
-          { x: 640, y: 260, frame: 130 },    // Orquestador
-          { x: 300, y: 330, frame: 280 },    // Freshness
-          { x: 640, y: 400, frame: 400 },    // Centro
-        ]}
-        showClick
+      {/* Escena 4: Orquestador */}
+      <TextOverlay
+        text="Esta tarjeta aparece cuando el sistema genero recomendaciones. Te dice cuantos contactos sugirio y a que hora corrio. Hace click en 'Ver contactos' para ir directo al Pipeline."
+        startFrame={S4[0] + 5}
+        duration={125}
+        position="bottom"
+        fontSize={24}
+      />
+
+      {/* Escena 5: Frescura */}
+      <TextOverlay
+        text="El indicador de frescura cambia de color: verde si tus datos son recientes, amarillo si tienen mas de 2 dias, y rojo si estan desactualizados. Si esta rojo, anda a 'Datos' para sincronizar."
+        startFrame={S5[0] + 5}
+        duration={110}
+        position="bottom"
+        fontSize={24}
+      />
+
+      {/* Escena 6: Cierre */}
+      <TextOverlay
+        text="Esta es tu pagina de inicio — de un vistazo sabes como esta tu negocio hoy."
+        startFrame={640}
+        duration={90}
+        position="center"
+        fontSize={26}
       />
     </AbsoluteFill>
   );
