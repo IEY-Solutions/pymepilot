@@ -5,22 +5,22 @@ import { FocusWrapper } from "../components/focus-wrapper";
 import { mockChatMessages } from "../data/mock-data";
 
 /**
- * Escenas del video Asesor IA (total ~25s = 750 frames):
+ * Escenas del video Asesor IA (total ~35s = 1050 frames):
  *
  * 0-40:     Entrada
- * 40-150:   Escena 1 — Header: que es el asesor, contador de preguntas
- * 150-300:  Escena 2 — Primera pregunta + respuesta (typing animation)
- * 300-420:  Escena 3 — Explicacion de como funciona (consulta datos reales)
- * 420-570:  Escena 4 — Segunda pregunta + respuesta
- * 570-660:  Escena 5 — Input: como escribir preguntas
- * 660-750:  Cierre
+ * 40-210:   Escena 1 — Header: que es el asesor, contador de preguntas
+ * 210-430:  Escena 2 — Primera pregunta + respuesta (typing animation)
+ * 430-600:  Escena 3 — Explicacion de como funciona (consulta datos reales)
+ * 600-810:  Escena 4 — Segunda pregunta + respuesta
+ * 810-940:  Escena 5 — Input: como escribir preguntas
+ * 940-1050: Cierre
  */
 
-const S1 = [40, 150] as const;
-const S2 = [150, 300] as const;
-const S3 = [300, 420] as const;
-const S4 = [420, 570] as const;
-const S5 = [570, 660] as const;
+const S1 = [40, 210] as const;
+const S2 = [210, 430] as const;
+const S3 = [430, 600] as const;
+const S4 = [600, 810] as const;
+const S5 = [810, 940] as const;
 
 function getActiveScene(frame: number): number {
   if (frame >= S1[0] && frame <= S1[1]) return 1;
@@ -140,12 +140,12 @@ export default function AsesorComposition() {
         </FocusWrapper>
       </div>
 
-      <TextOverlay text="Este es tu asistente inteligente. Funciona como un chat: le escribis una pregunta y te responde con datos reales de tu negocio. Tenes 20 preguntas por dia incluidas." startFrame={S1[0] + 5} duration={100} position="bottom" fontSize={24} />
-      <TextOverlay text="Mira como funciona: le preguntas 'Quien es mi mejor cliente?' y el asesor busca en tu base de datos para darte una respuesta precisa con numeros reales." startFrame={S2[0] + 5} duration={140} position="bottom" fontSize={24} />
-      <TextOverlay text="Cada respuesta viene de tus datos reales, no es inventada. El asesor tiene acceso a tus clientes, productos, pedidos, predicciones y metricas." startFrame={S3[0] + 5} duration={110} position="bottom" fontSize={24} />
-      <TextOverlay text="Podes hacer cualquier pregunta sobre tu negocio: mejores clientes, productos mas vendidos, tendencias, clientes inactivos, y mucho mas." startFrame={S4[0] + 5} duration={140} position="bottom" fontSize={24} />
-      <TextOverlay text="Escribi tu pregunta aca abajo y toca enviar. Tambien podes acceder al asesor desde la burbuja de chat que aparece en cualquier pagina del dashboard." startFrame={S5[0] + 5} duration={80} position="bottom" fontSize={24} />
-      <TextOverlay text="Tu asesor personal de negocios, disponible cuando lo necesites." startFrame={670} duration={70} position="center" fontSize={26} />
+      <TextOverlay text="Este es tu asistente inteligente. Funciona como un chat: le escribis una pregunta y te responde con datos reales de tu negocio. Tenes 20 preguntas por dia incluidas." startFrame={S1[0] + 5} duration={200} position="bottom" fontSize={24} />
+      <TextOverlay text="Mira como funciona: le preguntas 'Quien es mi mejor cliente?' y el asesor busca en tu base de datos para darte una respuesta precisa con numeros reales." startFrame={S2[0] + 5} duration={240} position="bottom" fontSize={24} />
+      <TextOverlay text="Cada respuesta viene de tus datos reales, no es inventada. El asesor tiene acceso a tus clientes, productos, pedidos, predicciones y metricas." startFrame={S3[0] + 5} duration={200} position="bottom" fontSize={24} />
+      <TextOverlay text="Podes hacer cualquier pregunta sobre tu negocio: mejores clientes, productos mas vendidos, tendencias, clientes inactivos, y mucho mas." startFrame={S4[0] + 5} duration={230} position="bottom" fontSize={24} />
+      <TextOverlay text="Escribi tu pregunta aca abajo y toca enviar. Tambien podes acceder al asesor desde la burbuja de chat que aparece en cualquier pagina del dashboard." startFrame={S5[0] + 5} duration={200} position="bottom" fontSize={24} />
+      <TextOverlay text="Tu asesor personal de negocios, disponible cuando lo necesites." startFrame={950} duration={200} position="center" fontSize={26} />
     </AbsoluteFill>
   );
 }

@@ -5,24 +5,24 @@ import { FocusWrapper } from "../components/focus-wrapper";
 import { mockPipelineStages, mockPipelineCards } from "../data/mock-data";
 
 /**
- * Escenas del video Pipeline (total ~35s = 1050 frames):
+ * Escenas del video Pipeline (total ~49s = 1470 frames):
  *
- * 0-60:     Entrada: columnas y cards aparecen
- * 60-210:   Escena 1 — Vista general del kanban (que es, como se lee)
- * 210-380:  Escena 2 — Columna "A contactar" (de donde vienen las tarjetas)
- * 380-530:  Escena 3 — Contenido de una tarjeta (mensaje, confianza, copiar)
- * 530-680:  Escena 4 — Drag and drop (animacion de arrastrar)
- * 680-830:  Escena 5 — Columna "Vendido" (cierre del ciclo)
- * 830-950:  Escena 6 — Seguimientos automaticos
- * 950-1050: Cierre
+ * 0-60:      Entrada: columnas y cards aparecen
+ * 60-280:    Escena 1 — Vista general del kanban (que es, como se lee)
+ * 280-510:   Escena 2 — Columna "A contactar" (de donde vienen las tarjetas)
+ * 510-720:   Escena 3 — Contenido de una tarjeta (mensaje, confianza, copiar)
+ * 720-930:   Escena 4 — Drag and drop (animacion de arrastrar)
+ * 930-1140:  Escena 5 — Columna "Vendido" (cierre del ciclo)
+ * 1140-1320: Escena 6 — Seguimientos automaticos
+ * 1320-1470: Cierre
  */
 
-const S1 = [60, 210] as const;
-const S2 = [210, 380] as const;
-const S3 = [380, 530] as const;
-const S4 = [530, 680] as const;
-const S5 = [680, 830] as const;
-const S6 = [830, 950] as const;
+const S1 = [60, 280] as const;
+const S2 = [280, 510] as const;
+const S3 = [510, 720] as const;
+const S4 = [720, 930] as const;
+const S5 = [930, 1140] as const;
+const S6 = [1140, 1320] as const;
 
 function getActiveScene(frame: number): number {
   if (frame >= S1[0] && frame <= S1[1]) return 1;
@@ -82,7 +82,7 @@ function DragAnimation() {
     <div style={{ position: "absolute", left: 42 + x, top: 155, width: 165, zIndex: 25, transform: `translateY(${y}px) rotate(-2deg) scale(1.03)`, opacity: fadeOpacity }}>
       <div style={{ backgroundColor: "rgba(129, 181, 161, 0.1)", border: "1px solid rgba(129, 181, 161, 0.3)", borderRadius: 10, padding: 10, boxShadow: "0 12px 32px rgba(0,0,0,0.4)" }}>
         <p style={{ color: COLORS.textPrimary, fontSize: 12, fontWeight: 600, margin: 0 }}>TechStore Buenos Aires</p>
-        <p style={{ color: COLORS.textMuted, fontSize: 10, margin: 0, marginTop: 3 }}>Cross-sell: Soportes MagSafe...</p>
+        <p style={{ color: COLORS.textMuted, fontSize: 10, margin: 0, marginTop: 3 }}>Venta cruzada: Soportes MagSafe...</p>
       </div>
     </div>
   );
@@ -162,13 +162,13 @@ export default function PipelineComposition() {
 
       <DragAnimation />
 
-      <TextOverlay text="Este es tu tablero de ventas. Cada columna es una etapa: desde 'A contactar' hasta 'Vendido'. Las tarjetas se mueven de izquierda a derecha a medida que avanzas con cada cliente." startFrame={S1[0] + 5} duration={140} position="bottom" fontSize={22} />
-      <TextOverlay text="Aca aparecen los clientes que PymePilot te recomienda contactar. El sistema los analizo automaticamente y te dice por que conviene hablarles ahora." startFrame={S2[0] + 5} duration={160} position="bottom" fontSize={24} />
-      <TextOverlay text="Cada tarjeta incluye: el nombre del cliente, un mensaje sugerido que podes copiar con un click, el nivel de confianza de la recomendacion, y la prioridad (punto rojo = urgente)." startFrame={S3[0] + 5} duration={140} position="bottom" fontSize={22} />
-      <TextOverlay text="Para avanzar un cliente, lo arrastras a la siguiente columna. El sistema registra el movimiento y programa seguimientos automaticos segun la etapa." startFrame={S4[0] + 5} duration={140} position="bottom" fontSize={24} />
-      <TextOverlay text="Cuando cerras una venta, la tarjeta llega a 'Vendido'. Se registra como logro en tu historial y se atribuye a la recomendacion de PymePilot." startFrame={S5[0] + 5} duration={140} position="bottom" fontSize={24} />
-      <TextOverlay text="El sistema programa seguimientos automaticos. Si un cliente esta en 'En seguimiento', te avisa cuando es momento de volver a contactarlo." startFrame={S6[0] + 5} duration={110} position="bottom" fontSize={24} />
-      <TextOverlay text="Pipeline es donde trabjas todos los dias — tu flujo de ventas de principio a fin." startFrame={960} duration={70} position="center" fontSize={26} />
+      <TextOverlay text="Este es tu tablero de ventas. Cada columna es una etapa: desde 'A contactar' hasta 'Vendido'. Las tarjetas se mueven de izquierda a derecha a medida que avanzas con cada cliente." startFrame={S1[0] + 5} duration={230} position="bottom" fontSize={22} />
+      <TextOverlay text="Aca aparecen los clientes que PymePilot te recomienda contactar. El sistema los analizo automaticamente y te dice por que conviene hablarles ahora." startFrame={S2[0] + 5} duration={240} position="bottom" fontSize={24} />
+      <TextOverlay text="Cada tarjeta incluye: el nombre del cliente, un mensaje sugerido que podes copiar con un click, el nivel de confianza de la recomendacion, y la prioridad (punto rojo = urgente)." startFrame={S3[0] + 5} duration={220} position="bottom" fontSize={22} />
+      <TextOverlay text="Para avanzar un cliente, lo arrastras a la siguiente columna. El sistema registra el movimiento y programa seguimientos automaticos segun la etapa." startFrame={S4[0] + 5} duration={220} position="bottom" fontSize={24} />
+      <TextOverlay text="Cuando cerras una venta, la tarjeta llega a 'Vendido'. Se registra como logro en tu historial y se atribuye a la recomendacion de PymePilot." startFrame={S5[0] + 5} duration={220} position="bottom" fontSize={24} />
+      <TextOverlay text="El sistema programa seguimientos automaticos. Si un cliente esta en 'En seguimiento', te avisa cuando es momento de volver a contactarlo." startFrame={S6[0] + 5} duration={200} position="bottom" fontSize={24} />
+      <TextOverlay text="Pipeline es donde trabajas todos los dias — tu flujo de ventas de principio a fin." startFrame={1330} duration={200} position="center" fontSize={26} />
     </AbsoluteFill>
   );
 }

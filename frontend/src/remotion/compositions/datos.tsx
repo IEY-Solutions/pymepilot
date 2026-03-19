@@ -5,22 +5,22 @@ import { FocusWrapper } from "../components/focus-wrapper";
 import { mockSyncLogs, mockDataCounts } from "../data/mock-data";
 
 /**
- * Escenas del video Datos (total ~30s = 900 frames):
+ * Escenas del video Datos (total ~42s = 1260 frames):
  *
- * 0-50:     Entrada
- * 50-190:   Escena 1 — Estado de conexion ERP
- * 190-330:  Escena 2 — Contadores de datos
- * 330-490:  Escena 3 — Zona de upload
- * 490-650:  Escena 4 — Historial de syncs
- * 650-780:  Escena 5 — Frescura y que hacer si esta desactualizado
- * 780-900:  Cierre
+ * 0-50:      Entrada
+ * 50-260:    Escena 1 — Estado de conexion ERP
+ * 260-470:   Escena 2 — Contadores de datos
+ * 470-700:   Escena 3 — Zona de upload
+ * 700-930:   Escena 4 — Historial de actualizaciones
+ * 930-1130:  Escena 5 — Frescura y que hacer si esta desactualizado
+ * 1130-1260: Cierre
  */
 
-const S1 = [50, 190] as const;
-const S2 = [190, 330] as const;
-const S3 = [330, 490] as const;
-const S4 = [490, 650] as const;
-const S5 = [650, 780] as const;
+const S1 = [50, 260] as const;
+const S2 = [260, 470] as const;
+const S3 = [470, 700] as const;
+const S4 = [700, 930] as const;
+const S5 = [930, 1130] as const;
 
 function getActiveScene(frame: number): number {
   if (frame >= S1[0] && frame <= S1[1]) return 1;
@@ -44,7 +44,7 @@ function ERPStatusCard() {
         <p style={{ color: COLORS.textPrimary, fontSize: 16, fontWeight: 600, margin: 0 }}>Contabilium</p>
         <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
           <div style={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: COLORS.green }} />
-          <p style={{ color: COLORS.green, fontSize: 13, margin: 0 }}>Conectado — ultima sync: 19/3 05:12</p>
+          <p style={{ color: COLORS.green, fontSize: 13, margin: 0 }}>Conectado — ultima actualizacion: 19/3 05:12</p>
         </div>
       </div>
     </div>
@@ -119,9 +119,9 @@ function FreshnessIndicator() {
   return (
     <div style={{ display: "flex", gap: 12, opacity }}>
       {[
-        { color: COLORS.green, label: "Verde: datos frescos", desc: "Ultimo sync < 24h" },
-        { color: COLORS.yellow, label: "Amarillo: algo viejos", desc: "Ultimo sync 1-3 dias" },
-        { color: COLORS.red, label: "Rojo: desactualizados", desc: "Ultimo sync > 3 dias" },
+        { color: COLORS.green, label: "Verde: datos frescos", desc: "Ultima actualizacion < 24h" },
+        { color: COLORS.yellow, label: "Amarillo: algo viejos", desc: "Ultima actualizacion 1-3 dias" },
+        { color: COLORS.red, label: "Rojo: desactualizados", desc: "Ultima actualizacion > 3 dias" },
       ].map((item) => (
         <div key={item.label} style={{ flex: 1, backgroundColor: COLORS.bgCard, border: `1px solid ${COLORS.border}`, borderRadius: 10, padding: "10px 12px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
@@ -162,12 +162,12 @@ export default function DatosComposition() {
         </div>
       </div>
 
-      <TextOverlay text="Esta tarjeta te muestra si tu ERP esta conectado. El punto verde significa que todo funciona. Si aparece rojo, revisa tu conexion o contacta soporte." startFrame={S1[0] + 5} duration={130} position="bottom" fontSize={24} />
-      <TextOverlay text="Estos contadores resumen toda tu base de datos: cuantos clientes, productos, pedidos y predicciones tenes cargados. Si alguno esta en 0, falta sincronizar." startFrame={S2[0] + 5} duration={130} position="bottom" fontSize={24} />
-      <TextOverlay text="Si necesitas cargar datos que no vienen del ERP, arrastra un archivo Excel aca. PymePilot lo analiza automaticamente y extrae clientes, productos y pedidos." startFrame={S3[0] + 5} duration={150} position="bottom" fontSize={24} />
-      <TextOverlay text="El historial de syncs te muestra cada sincronizacion: de donde vino, si fue exitosa, y cuantos registros trajo (C=clientes, P=productos, O=ordenes)." startFrame={S4[0] + 5} duration={150} position="bottom" fontSize={24} />
-      <TextOverlay text="El sistema de frescura usa colores de semaforo. Si ves amarillo o rojo en la pagina de Inicio, veni aca a sincronizar o subir un archivo actualizado." startFrame={S5[0] + 5} duration={120} position="bottom" fontSize={24} />
-      <TextOverlay text="Esta seccion es el centro de control de tus datos — aca verificas que todo este al dia." startFrame={790} duration={90} position="center" fontSize={26} />
+      <TextOverlay text="Esta tarjeta te muestra si tu sistema de facturacion esta conectado. El punto verde significa que todo funciona. Si aparece rojo, revisa tu conexion o contacta soporte." startFrame={S1[0] + 5} duration={200} position="bottom" fontSize={24} />
+      <TextOverlay text="Estos contadores resumen toda tu base de datos: cuantos clientes, productos, pedidos y predicciones tenes cargados. Si alguno esta en 0, falta actualizar." startFrame={S2[0] + 5} duration={200} position="bottom" fontSize={24} />
+      <TextOverlay text="Si necesitas cargar datos que no vienen del sistema de facturacion, arrastra un archivo Excel aca. PymePilot lo analiza automaticamente y extrae clientes, productos y pedidos." startFrame={S3[0] + 5} duration={220} position="bottom" fontSize={24} />
+      <TextOverlay text="El historial de actualizaciones te muestra cada actualizacion: de donde vino, si fue exitosa, y cuantos registros trajo (C=clientes, P=productos, O=ordenes)." startFrame={S4[0] + 5} duration={220} position="bottom" fontSize={24} />
+      <TextOverlay text="El sistema de frescura usa colores de semaforo. Si ves amarillo o rojo en la pagina de Inicio, veni aca a actualizar o subir un archivo nuevo." startFrame={S5[0] + 5} duration={200} position="bottom" fontSize={24} />
+      <TextOverlay text="Esta seccion es el centro de control de tus datos — aca verificas que todo este al dia." startFrame={1140} duration={90} position="center" fontSize={26} />
     </AbsoluteFill>
   );
 }

@@ -5,22 +5,22 @@ import { FocusWrapper } from "../components/focus-wrapper";
 import { mockSalesKPIs, mockAchievements } from "../data/mock-data";
 
 /**
- * Escenas del video Mis Ventas (total ~25s = 750 frames):
+ * Escenas del video Mis Ventas (total ~35s = 1050 frames):
  *
  * 0-40:     Entrada
- * 40-170:   Escena 1 — KPI "Mis ventas del mes"
- * 170-300:  Escena 2 — KPI "Ventas con PymePilot" (atribucion)
- * 300-400:  Escena 3 — KPI "Racha de ventas"
- * 400-500:  Escena 4 — Filtros por vertical
- * 500-650:  Escena 5 — Cards de logros
- * 650-750:  Cierre
+ * 40-230:   Escena 1 — KPI "Mis ventas del mes"
+ * 230-420:  Escena 2 — KPI "Ventas con PymePilot" (atribucion)
+ * 420-560:  Escena 3 — KPI "Racha de ventas"
+ * 560-700:  Escena 4 — Filtros por tipo de recomendacion
+ * 700-930:  Escena 5 — Cards de logros
+ * 930-1050: Cierre
  */
 
-const S1 = [40, 170] as const;
-const S2 = [170, 300] as const;
-const S3 = [300, 400] as const;
-const S4 = [400, 500] as const;
-const S5 = [500, 650] as const;
+const S1 = [40, 230] as const;
+const S2 = [230, 420] as const;
+const S3 = [420, 560] as const;
+const S4 = [560, 700] as const;
+const S5 = [700, 930] as const;
 
 function getActiveScene(frame: number): number {
   if (frame >= S1[0] && frame <= S1[1]) return 1;
@@ -51,7 +51,7 @@ function SalesKPICard({ title, value, subtitle, color, emoji, index }: { title: 
 function VerticalFilters() {
   return (
     <div style={{ display: "flex", gap: 8 }}>
-      {["Todas", "Reposicion", "Cross-sell", "Activacion", "Recuperacion"].map((label, i) => (
+      {["Todas", "Reposicion", "Venta cruzada", "Activacion", "Recuperacion"].map((label, i) => (
         <div key={label} style={{ padding: "6px 14px", borderRadius: 20, fontSize: 13, fontWeight: 500, backgroundColor: i === 0 ? "rgba(129, 181, 161, 0.15)" : "rgba(255, 255, 255, 0.04)", color: i === 0 ? COLORS.brand : COLORS.textMuted, border: `1px solid ${i === 0 ? "rgba(129, 181, 161, 0.3)" : COLORS.border}` }}>
           {label}
         </div>
@@ -124,12 +124,12 @@ export default function MisVentasComposition() {
         </FocusWrapper>
       </div>
 
-      <TextOverlay text="'Mis ventas del mes' muestra TODAS tus ventas del mes: cuantas ordenes cerraste y cuanto facturaron en total. Es tu resumen comercial." startFrame={S1[0] + 5} duration={120} position="bottom" fontSize={24} />
-      <TextOverlay text="'Ventas con PymePilot' es la clave: te muestra cuantas de esas ventas vinieron de clientes que PymePilot te sugirio contactar. Asi medis el impacto real del sistema." startFrame={S2[0] + 5} duration={120} position="bottom" fontSize={24} />
-      <TextOverlay text="La racha cuenta dias consecutivos en los que cerraste al menos una venta. Cuando llegas a 3 dias, el icono se prende fuego para motivarte a seguir." startFrame={S3[0] + 5} duration={90} position="bottom" fontSize={24} />
-      <TextOverlay text="Estos filtros te permiten ver logros por tipo de recomendacion: Reposicion (cliente habitual), Cross-sell (producto nuevo), Activacion (cliente nuevo) o Recuperacion (cliente perdido)." startFrame={S4[0] + 5} duration={90} position="bottom" fontSize={24} />
-      <TextOverlay text="Cada tarjeta es una venta atribuida: muestra el cliente, el tipo de recomendacion, el monto, y los productos que compro. Son tus logros concretos." startFrame={S5[0] + 5} duration={140} position="bottom" fontSize={24} />
-      <TextOverlay text="Esta seccion celebra tus resultados — cuanto mas contactes, mas logros acumulas." startFrame={660} duration={70} position="center" fontSize={26} />
+      <TextOverlay text="'Mis ventas del mes' muestra TODAS tus ventas del mes: cuantas ordenes cerraste y cuanto facturaron en total. Es tu resumen comercial." startFrame={S1[0] + 5} duration={210} position="bottom" fontSize={24} />
+      <TextOverlay text="'Ventas con PymePilot' es la clave: te muestra cuantas de esas ventas vinieron de clientes que PymePilot te sugirio contactar. Asi medis el impacto real del sistema." startFrame={S2[0] + 5} duration={210} position="bottom" fontSize={24} />
+      <TextOverlay text="La racha cuenta dias consecutivos en los que cerraste al menos una venta. Cuando llegas a 3 dias, el icono se prende fuego para motivarte a seguir." startFrame={S3[0] + 5} duration={200} position="bottom" fontSize={24} />
+      <TextOverlay text="Estos filtros te permiten ver logros por tipo de recomendacion: Reposicion (cliente habitual), Venta cruzada (producto nuevo), Activacion (cliente nuevo) o Recuperacion (cliente perdido)." startFrame={S4[0] + 5} duration={200} position="bottom" fontSize={24} />
+      <TextOverlay text="Cada tarjeta es una venta atribuida: muestra el cliente, el tipo de recomendacion, el monto, y los productos que compro. Son tus logros concretos." startFrame={S5[0] + 5} duration={240} position="bottom" fontSize={24} />
+      <TextOverlay text="Esta seccion celebra tus resultados — cuanto mas contactes, mas logros acumulas." startFrame={940} duration={200} position="center" fontSize={26} />
     </AbsoluteFill>
   );
 }

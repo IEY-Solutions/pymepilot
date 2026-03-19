@@ -5,22 +5,22 @@ import { FocusWrapper } from "../components/focus-wrapper";
 import { mockRevenueByMonth, mockChurnByMonth, mockCustomers } from "../data/mock-data";
 
 /**
- * Escenas del video Metricas (total ~30s = 900 frames):
+ * Escenas del video Metricas (total ~42s = 1260 frames):
  *
- * 0-50:     Entrada
- * 50-180:   Escena 1 — Tabs de navegacion
- * 180-320:  Escena 2 — KPIs resumen (facturacion, churn, ticket, valor)
- * 320-470:  Escena 3 — Grafico de facturacion
- * 470-600:  Escena 4 — Grafico de churn
- * 600-750:  Escena 5 — Tab Clientes (ranking)
- * 750-900:  Cierre
+ * 0-50:      Entrada
+ * 50-240:    Escena 1 — Tabs de navegacion
+ * 240-450:   Escena 2 — Indicadores resumen (facturacion, clientes perdidos, ticket, valor)
+ * 450-660:   Escena 3 — Grafico de facturacion
+ * 660-870:   Escena 4 — Grafico de clientes perdidos
+ * 870-1130:  Escena 5 — Tab Clientes (ranking)
+ * 1140-1260: Cierre
  */
 
-const S1 = [50, 180] as const;
-const S2 = [180, 320] as const;
-const S3 = [320, 470] as const;
-const S4 = [470, 600] as const;
-const S5 = [600, 750] as const;
+const S1 = [50, 240] as const;
+const S2 = [240, 450] as const;
+const S3 = [450, 660] as const;
+const S4 = [660, 870] as const;
+const S5 = [870, 1130] as const;
 
 function getActiveScene(frame: number): number {
   if (frame >= S1[0] && frame <= S1[1]) return 1;
@@ -120,7 +120,7 @@ export default function MetricasComposition() {
                 <FocusWrapper highlightStart={S2[0]} highlightDuration={S2[1] - S2[0]} activeScene={scene} sceneRange={S2}>
                   <div style={{ display: "flex", gap: 12 }}>
                     <MiniKPI title="Facturacion total" value="$615k" color={COLORS.brand} index={0} />
-                    <MiniKPI title="Churn" value="7%" color={COLORS.red} index={1} />
+                    <MiniKPI title="Clientes perdidos" value="7%" color={COLORS.red} index={1} />
                     <MiniKPI title="Ticket promedio" value="$13.7k" color={COLORS.purple} index={2} />
                     <MiniKPI title="Valor atribuido" value="$345k" color={COLORS.orange} index={3} />
                   </div>
@@ -136,7 +136,7 @@ export default function MetricasComposition() {
                 </FocusWrapper>
                 <FocusWrapper highlightStart={S4[0]} highlightDuration={S4[1] - S4[0]} activeScene={scene} sceneRange={S4}>
                   <div style={{ flex: 1, backgroundColor: COLORS.bgCard, border: `1px solid ${COLORS.border}`, borderRadius: 12, padding: 16 }}>
-                    <p style={{ color: COLORS.textSecondary, fontSize: 14, fontWeight: 600, margin: 0, marginBottom: 12 }}>Tasa de churn</p>
+                    <p style={{ color: COLORS.textSecondary, fontSize: 14, fontWeight: 600, margin: 0, marginBottom: 12 }}>Clientes perdidos</p>
                     <BarChart data={mockChurnByMonth} dataKey="rate" color={COLORS.red} height={160} />
                   </div>
                 </FocusWrapper>
@@ -150,12 +150,12 @@ export default function MetricasComposition() {
         </div>
       </div>
 
-      <TextOverlay text="La seccion Metricas tiene 5 pestanas. 'Rendimiento' te da la foto general. 'Clientes' y 'Productos' muestran rankings. 'Demanda' proyecta que vas a necesitar. 'Comparar' te deja ver periodos lado a lado." startFrame={S1[0] + 5} duration={120} position="bottom" fontSize={22} />
-      <TextOverlay text="Estos 4 numeros resumen tu negocio: cuanto facturas, cuantos clientes perdes (churn), cuanto gasta cada cliente en promedio (ticket), y cuanto se atribuye a PymePilot." startFrame={S2[0] + 5} duration={130} position="bottom" fontSize={24} />
-      <TextOverlay text="El grafico de facturacion muestra tus ingresos mes a mes. Si la tendencia sube, vas bien. Si baja, mira el churn y los clientes inactivos para entender por que." startFrame={S3[0] + 5} duration={140} position="bottom" fontSize={24} />
-      <TextOverlay text="El churn mide que porcentaje de clientes dejaron de comprar. Un churn del 7% significa que de cada 100 clientes, 7 no volvieron este mes. Cuanto mas bajo, mejor." startFrame={S4[0] + 5} duration={120} position="bottom" fontSize={24} />
-      <TextOverlay text="En la pestana 'Clientes' ves tu ranking de mejores compradores. El #1 es tu cliente estrella. Usa esta info para priorizar cuentas clave y detectar oportunidades." startFrame={S5[0] + 5} duration={140} position="bottom" fontSize={24} />
-      <TextOverlay text="Metricas es tu tablero de control — los numeros que necesitas para tomar decisiones." startFrame={760} duration={90} position="center" fontSize={26} />
+      <TextOverlay text="La seccion Metricas tiene 5 pestañas. 'Rendimiento' te da la foto general. 'Clientes' y 'Productos' muestran rankings. 'Demanda' proyecta que vas a necesitar. 'Comparar' te deja ver periodos lado a lado." startFrame={S1[0] + 5} duration={200} position="bottom" fontSize={22} />
+      <TextOverlay text="Estos 4 indicadores resumen tu negocio: cuanto facturas, que porcentaje de clientes perdiste, cuanto gasta cada cliente en promedio (ticket), y cuanto se atribuye a PymePilot." startFrame={S2[0] + 5} duration={210} position="bottom" fontSize={24} />
+      <TextOverlay text="El grafico de facturacion muestra tus ingresos mes a mes. Si la tendencia sube, vas bien. Si baja, mira los clientes perdidos y los inactivos para entender por que." startFrame={S3[0] + 5} duration={210} position="bottom" fontSize={24} />
+      <TextOverlay text="Este indicador mide que porcentaje de clientes dejaron de comprar. Un 7% significa que de cada 100 clientes, 7 no volvieron este mes. Cuanto mas bajo, mejor." startFrame={S4[0] + 5} duration={210} position="bottom" fontSize={24} />
+      <TextOverlay text="En la pestaña 'Clientes' ves tu ranking de mejores compradores. El #1 es tu cliente estrella. Usa esta info para priorizar cuentas clave y detectar oportunidades." startFrame={S5[0] + 5} duration={240} position="bottom" fontSize={24} />
+      <TextOverlay text="Metricas es tu tablero de control — los indicadores que necesitas para tomar decisiones." startFrame={1140} duration={200} position="center" fontSize={26} />
     </AbsoluteFill>
   );
 }

@@ -8,20 +8,20 @@ import { mockKPIs } from "../data/mock-data";
  * Escenas del video Inicio (total ~25s = 750 frames a 30fps):
  *
  * 0-45:     Entrada: todo aparece con stagger
- * 45-165:   Escena 1 — KPI "Pendientes" (que significa, para que sirve)
- * 165-285:  Escena 2 — KPI "Tasa contacto" (como se calcula, que indica)
- * 285-375:  Escena 3 — KPIs "Clientes activos" + "Ultima sync" (vista rapida)
- * 375-510:  Escena 4 — Card del orquestador (que hace, cuando corre)
- * 510-630:  Escena 5 — Indicador de frescura (verde/amarillo/rojo)
- * 630-750:  Escena 6 — Vista general, cierre
+ * 45-240:   Escena 1 — Pendientes (que significa, para que sirve)
+ * 240-435:  Escena 2 — Tasa de contacto (como se calcula, que indica)
+ * 435-600:  Escena 3 — Clientes activos + Ultima actualizacion
+ * 600-820:  Escena 4 — Tarjeta de recomendaciones (que hace, cuando corre)
+ * 820-1020: Escena 5 — Indicador de frescura (verde/amarillo/rojo)
+ * 1020-1140: Escena 6 — Vista general, cierre
  */
 
 // Escenas
-const S1 = [45, 165] as const;
-const S2 = [165, 285] as const;
-const S3 = [285, 375] as const;
-const S4 = [375, 510] as const;
-const S5 = [510, 630] as const;
+const S1 = [45, 240] as const;
+const S2 = [240, 435] as const;
+const S3 = [435, 600] as const;
+const S4 = [600, 820] as const;
+const S5 = [820, 1020] as const;
 
 function getActiveScene(frame: number): number {
   if (frame >= S1[0] && frame <= S1[1]) return 1;
@@ -201,9 +201,9 @@ export default function InicioComposition() {
 
       {/* Escena 1: Pendientes */}
       <TextOverlay
-        text="'Pendientes' te muestra cuantos clientes PymePilot recomienda contactar hoy. Este numero se actualiza cada manana a las 5 AM cuando el sistema analiza tus datos."
+        text="'Pendientes' te muestra cuantos clientes PymePilot recomienda contactar hoy. Este numero se actualiza cada mañana a las 5 AM cuando el sistema analiza tus datos."
         startFrame={S1[0] + 5}
-        duration={110}
+        duration={180}
         position="bottom"
         fontSize={24}
       />
@@ -212,34 +212,34 @@ export default function InicioComposition() {
       <TextOverlay
         text="La 'Tasa de contacto' mide que porcentaje de los clientes sugeridos efectivamente contactaste este mes. Cuanto mas alta, mejor estas aprovechando las recomendaciones."
         startFrame={S2[0] + 5}
-        duration={110}
+        duration={180}
         position="bottom"
         fontSize={24}
       />
 
       {/* Escena 3: Clientes activos + Sync */}
       <TextOverlay
-        text="'Clientes activos' cuenta los que compraron recientemente. 'Ultima sync' te dice cuando se actualizaron los datos desde tu ERP."
+        text="'Clientes activos' cuenta los que compraron recientemente. 'Ultima actualizacion' te dice cuando se sincronizaron los datos desde tu sistema de facturacion."
         startFrame={S3[0] + 5}
-        duration={80}
+        duration={150}
         position="bottom"
         fontSize={24}
       />
 
       {/* Escena 4: Orquestador */}
       <TextOverlay
-        text="Esta tarjeta aparece cuando el sistema genero recomendaciones. Te dice cuantos contactos sugirio y a que hora corrio. Hace click en 'Ver contactos' para ir directo al Pipeline."
+        text="Esta tarjeta aparece cuando el sistema genero recomendaciones nuevas. Te dice cuantos clientes te conviene contactar hoy y a que hora se ejecuto el analisis. Hace click en 'Ver contactos' para ir directo al Pipeline."
         startFrame={S4[0] + 5}
-        duration={125}
+        duration={200}
         position="bottom"
         fontSize={24}
       />
 
       {/* Escena 5: Frescura */}
       <TextOverlay
-        text="El indicador de frescura cambia de color: verde si tus datos son recientes, amarillo si tienen mas de 2 dias, y rojo si estan desactualizados. Si esta rojo, anda a 'Datos' para sincronizar."
+        text="El indicador de frescura cambia de color: verde si tus datos son recientes, amarillo si tienen mas de 2 dias, y rojo si estan desactualizados. Si ves rojo, anda a la seccion 'Datos' para actualizar."
         startFrame={S5[0] + 5}
-        duration={110}
+        duration={180}
         position="bottom"
         fontSize={24}
       />
@@ -247,8 +247,8 @@ export default function InicioComposition() {
       {/* Escena 6: Cierre */}
       <TextOverlay
         text="Esta es tu pagina de inicio — de un vistazo sabes como esta tu negocio hoy."
-        startFrame={640}
-        duration={90}
+        startFrame={1030}
+        duration={100}
         position="center"
         fontSize={26}
       />

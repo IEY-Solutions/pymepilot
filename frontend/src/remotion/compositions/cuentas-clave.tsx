@@ -5,22 +5,22 @@ import { FocusWrapper } from "../components/focus-wrapper";
 import { mockKeyAccounts } from "../data/mock-data";
 
 /**
- * Escenas del video Cuentas Clave (total ~30s = 900 frames):
+ * Escenas del video Cuentas Clave (total ~42s = 1260 frames):
  *
- * 0-50:     Entrada
- * 50-190:   Escena 1 — Banner de alertas
- * 190-350:  Escena 2 — Cuenta saludable (verde) con detalle
- * 350-510:  Escena 3 — Cuenta en riesgo (roja) con acciones pendientes
- * 510-650:  Escena 4 — Detalle expandido (notas, score, acciones)
- * 650-780:  Escena 5 — Boton agregar cuenta
- * 780-900:  Cierre
+ * 0-50:      Entrada
+ * 50-260:    Escena 1 — Banner de alertas
+ * 260-490:   Escena 2 — Cuenta saludable (verde) con detalle
+ * 490-720:   Escena 3 — Cuenta en riesgo (roja) con acciones pendientes
+ * 720-920:   Escena 4 — Detalle expandido (notas, puntaje, acciones)
+ * 920-1100:  Escena 5 — Boton agregar cuenta
+ * 1100-1260: Cierre
  */
 
-const S1 = [50, 190] as const;
-const S2 = [190, 350] as const;
-const S3 = [350, 510] as const;
-const S4 = [510, 650] as const;
-const S5 = [650, 780] as const;
+const S1 = [50, 260] as const;
+const S2 = [260, 490] as const;
+const S3 = [490, 720] as const;
+const S4 = [720, 920] as const;
+const S5 = [920, 1100] as const;
 
 function getActiveScene(frame: number): number {
   if (frame >= S1[0] && frame <= S1[1]) return 1;
@@ -154,12 +154,12 @@ export default function CuentasClaveComposition() {
         </div>
       </div>
 
-      <TextOverlay text="Si alguna cuenta clave necesita atencion urgente, este banner te lo dice apenas entras. El numero indica cuantas cuentas estan en estado critico o tienen acciones pendientes." startFrame={S1[0] + 5} duration={130} position="bottom" fontSize={24} />
-      <TextOverlay text="Las cuentas saludables tienen punto verde y score alto. Aca ves Electronica Sur con 92% — esta comprando regularmente y no necesita accion inmediata." startFrame={S2[0] + 5} duration={150} position="bottom" fontSize={24} />
-      <TextOverlay text="Las cuentas en riesgo tienen punto rojo. Mundo Celular bajo a 45% y tiene 2 acciones pendientes. La flecha roja indica tendencia a la baja — hay que actuar." startFrame={S3[0] + 5} duration={150} position="bottom" fontSize={24} />
-      <TextOverlay text="Al hacer click en una cuenta, se expande mostrando el Health Score visual, las notas que registraste, y las acciones pendientes. Todo en un solo lugar." startFrame={S4[0] + 5} duration={130} position="bottom" fontSize={24} />
-      <TextOverlay text="Con este boton agregas nuevas cuentas clave. Selecciona clientes que consideres estrategicos — no todos necesitan estar aca, solo los mas importantes." startFrame={S5[0] + 5} duration={120} position="bottom" fontSize={24} />
-      <TextOverlay text="Cuentas Clave te ayuda a no descuidar a tus mejores clientes." startFrame={790} duration={90} position="center" fontSize={26} />
+      <TextOverlay text="Si alguna cuenta clave necesita atencion urgente, este banner te lo dice apenas entras. El numero indica cuantas cuentas estan en estado critico o tienen acciones pendientes." startFrame={S1[0] + 5} duration={210} position="bottom" fontSize={24} />
+      <TextOverlay text="Las cuentas saludables tienen punto verde y puntaje alto. Aca ves Electronica Sur con 92% — esta comprando regularmente y no necesita accion inmediata." startFrame={S2[0] + 5} duration={230} position="bottom" fontSize={24} />
+      <TextOverlay text="Las cuentas en riesgo tienen punto rojo. Mundo Celular bajo a 45% y tiene 2 acciones pendientes. La flecha roja indica tendencia a la baja — hay que actuar." startFrame={S3[0] + 5} duration={230} position="bottom" fontSize={24} />
+      <TextOverlay text="Al hacer click en una cuenta, se expande mostrando el puntaje de salud visual, las notas que registraste, y las acciones pendientes. Todo en un solo lugar." startFrame={S4[0] + 5} duration={200} position="bottom" fontSize={24} />
+      <TextOverlay text="Con este boton agregas nuevas cuentas clave. Selecciona clientes que consideres estrategicos — no todos necesitan estar aca, solo los mas importantes." startFrame={S5[0] + 5} duration={200} position="bottom" fontSize={24} />
+      <TextOverlay text="Cuentas Clave te ayuda a no descuidar a tus mejores clientes." startFrame={1110} duration={140} position="center" fontSize={26} />
     </AbsoluteFill>
   );
 }
