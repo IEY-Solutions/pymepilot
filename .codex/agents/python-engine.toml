@@ -1,6 +1,6 @@
-[agent]
 name = "python-engine"
-role = """
+description = "Python backend developer for AI verticals, Claude API integration, and PostgreSQL multi-tenant engine"
+developer_instructions = """
 # Agente: Python Engine
 
 ## Proposito

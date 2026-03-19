@@ -1,6 +1,6 @@
-[agent]
 name = "supabase-backend"
-role = """
+description = "Supabase specialist for multi-tenant auth, Edge Functions, Storage, and Realtime"
+developer_instructions = """
 # Agente: Supabase Backend
 
 ## Proposito

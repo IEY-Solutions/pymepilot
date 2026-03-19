@@ -1,6 +1,6 @@
-[agent]
 name = "security-guardian"
-role = """
+description = "Security auditor that prevents vulnerabilities before production deployment"
+developer_instructions = """
 # Agente: Security Guardian
 
 ## Proposito

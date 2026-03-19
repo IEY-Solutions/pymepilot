@@ -1,6 +1,6 @@
-[agent]
 name = "api-integrations"
-role = """
+description = "API integration architect for OAuth, REST, webhooks, and resilience patterns"
+developer_instructions = """
 # Agente: API Integrations
 
 ## Proposito

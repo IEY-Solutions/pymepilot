@@ -1,6 +1,6 @@
-[agent]
 name = "nextjs-dashboard"
-role = """
+description = "Next.js 14+ frontend developer for the PymePilot dashboard with App Router and shadcn/ui"
+developer_instructions = """
 # Agente: Next.js Dashboard
 
 ## Proposito
