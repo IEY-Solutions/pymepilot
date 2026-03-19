@@ -1,3 +1,5 @@
+"use client";
+
 import { BookOpen } from "lucide-react";
 import { guideModules } from "@/lib/guide-modules";
 import { ModuleCard } from "@/components/guide/module-card";

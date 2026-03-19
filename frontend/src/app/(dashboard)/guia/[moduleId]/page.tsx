@@ -1,15 +1,13 @@
+"use client";
+
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { useParams, notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { getModuleById } from "@/lib/guide-modules";
 import { SectionBlock } from "@/components/guide/section-block";
 
-type Props = {
-  params: Promise<{ moduleId: string }>;
-};
-
-export default async function GuiaModulePage({ params }: Props) {
-  const { moduleId } = await params;
+export default function GuiaModulePage() {
+  const { moduleId } = useParams<{ moduleId: string }>();
   const module = getModuleById(moduleId);
 
   if (!module || !module.available) {
