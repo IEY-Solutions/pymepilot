@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Database, BarChart3, Trophy, Columns3, Bot } from "lucide-react";
+import { Home, Database, BarChart3, Trophy, Columns3, Bot, Star } from "lucide-react";
 import { NotificationBadge } from "@/components/notifications/notification-badge";
 
 const navItems = [
   { href: "/", label: "Inicio", icon: Home },
   { href: "/pipeline", label: "Pipeline", icon: Columns3 },
+  { href: "/cuentas-clave", label: "Cuentas", icon: Star },
   { href: "/metricas", label: "Metricas", icon: BarChart3 },
   { href: "/logros", label: "Mis ventas", icon: Trophy },
   { href: "/datos", label: "Datos", icon: Database },
@@ -29,7 +30,7 @@ export function BottomNav({ unreadCount = 0 }: { unreadCount?: number }) {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex flex-col items-center gap-0.5 py-2 px-3 text-xs transition-colors ${
+              className={`flex flex-col items-center gap-0.5 py-2 px-2 text-xs transition-colors ${
                 isActive
                   ? "text-[#81b5a1]"
                   : "text-white/40 hover:text-white/60"

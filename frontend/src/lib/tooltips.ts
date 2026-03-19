@@ -101,4 +101,14 @@ export const TOOLTIPS = {
     "Ventas cerradas. El cliente compro y el ciclo del pipeline se completo.",
   "pipeline.vencida":
     "Esta card tiene mas de 3 dias sin ser contactada. Todavia podes contactarla o descartarla.",
+
+  // ============================================================
+  // CUENTAS CLAVE
+  // ============================================================
+  "cuentas_clave.semaforo":
+    "Verde: compro en los ultimos 30 dias y todo bien. Amarillo: 30-60 dias sin compra o bajo su facturacion. Rojo: mas de 60 dias sin compra o caida fuerte.",
+  "cuentas_clave.sin_seguimiento":
+    "Esta cuenta no tiene ningun seguimiento futuro programado. Te conviene agendar uno para no perder el contacto.",
+  "cuentas_clave.sugerencias":
+    "Clientes que estan en el top 10% de facturacion de los ultimos 6 meses y todavia no los marcaste como cuenta clave.",
 } as const;

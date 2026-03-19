@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Database, BarChart3, Trophy, Bot, Columns3 } from "lucide-react";
+import { Home, Database, BarChart3, Trophy, Bot, Columns3, Star } from "lucide-react";
 import { NotificationBadge } from "@/components/notifications/notification-badge";
 
 const navItems = [
   { href: "/", label: "Inicio", icon: Home },
   { href: "/pipeline", label: "Pipeline", icon: Columns3 },
+  { href: "/cuentas-clave", label: "Cuentas Clave", icon: Star },
   { href: "/metricas", label: "Metricas", icon: BarChart3 },
   { href: "/logros", label: "Mis ventas", icon: Trophy },
   { href: "/datos", label: "Datos", icon: Database },
