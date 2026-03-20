@@ -19,7 +19,24 @@
       "Bash(git push -f *)",
       "Bash(git reset --hard *)",
       "Bash(git clean -f *)",
-      "Bash(git branch -D *)"
+      "Bash(git branch -D *)",
+      "Bash(docker rmi *)",
+      "Bash(docker image rm *)",
+      "Bash(docker system prune *)",
+      "Bash(docker kill *)",
+      "Bash(kill -9 *)",
+      "Bash(restore-postgresql.sh *)",
+      "Bash(dropdb *)",
+      "Bash(pg_restore *)",
+      "Bash(git rebase *)",
+      "Bash(ufw *)",
+      "Bash(iptables *)",
+      "Bash(systemctl stop *)",
+      "Bash(systemctl disable *)",
+      "Bash(crontab -r*)",
+      "Bash(cp .env*)",
+      "Bash(mv .env*)",
+      "Bash(pip install * --upgrade-all)"
     ],
     "allow": [
       "WebSearch",
@@ -36,6 +53,6 @@
       "mcp__ide__getDiagnostics",
       "mcp__ide__executeCode"
     ],
-    "defaultMode": "acceptEdits"
+    "defaultMode": "bypassPermissions"
   }
 }
