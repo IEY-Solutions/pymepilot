@@ -498,6 +498,7 @@ def main() -> None:
     total_predictions = 0
     daily_limit_hit = False
     tenants: list[dict] = []
+    synced_tenants: list[dict] = []
     status = 'failed'  # Default pesimista, se actualiza si todo sale bien
 
     try:
@@ -527,21 +528,12 @@ def main() -> None:
             f"— {[t['slug'] for t in tenants]}"
         )
 
-        # --- Paso 2b: Refrescar vistas materializadas ---
-        # Se ejecuta UNA vez (no por tenant) porque las MVs contienen
-        # datos de todos los tenants. Necesario ANTES de verticales
-        # para que V3 Cross-Sell vea datos frescos en co_purchases.
-        if not _refresh_views():
-            errors.append({
-                'step': 'refresh_views',
-                'error': 'Refresh de vistas materializadas fallido',
-            })
-            # No es fatal: las MVs tienen datos del dia anterior
-
-        # --- Paso 3: Procesar cada tenant ---
+        # --- Paso 3: Sync ERP de todos los tenants ---
+        # Primera pasada: traer datos frescos. Todavia NO corremos
+        # atribucion ni verticales porque client_rankings/co_purchases
+        # deben refrescarse DESPUES de los syncs, no antes.
         for tenant in tenants:
             tenant_slug = tenant['slug']
-            tenant_id = tenant['id']
 
             logger.info(f"{'─' * 40}")
             logger.info(
@@ -564,10 +556,33 @@ def main() -> None:
                 )
                 continue  # Siguiente tenant
 
-            # 3b. Atribucion (siempre real, no usa Claude)
+            synced_tenants.append(tenant)
+
+        # --- Paso 4: Refrescar vistas materializadas ---
+        # Se ejecuta UNA vez DESPUES de todos los syncs exitosos para que
+        # el dashboard y V3 Cross-Sell vean la foto del dia, no la de ayer.
+        if synced_tenants:
+            if not _refresh_views():
+                errors.append({
+                    'step': 'refresh_views',
+                    'error': 'Refresh de vistas materializadas fallido',
+                })
+                # No es fatal: las MVs tienen datos del dia anterior
+        else:
+            logger.info(
+                "Refresh de vistas materializadas omitido: "
+                "ningun tenant tuvo sync exitoso"
+            )
+
+        # --- Paso 5: Post-sync por tenant exitoso ---
+        for tenant in synced_tenants:
+            tenant_slug = tenant['slug']
+            tenant_id = tenant['id']
+
+            # 5a. Atribucion (siempre real, no usa Claude)
             attributed_count = _run_attribution(tenant_id, tenant_slug)
 
-            # 3c. Verticales
+            # 5b. Verticales
             tenant_predictions = 0
             if not daily_limit_hit:
                 vresult = _run_verticals(tenant, dry_run=args.dry_run)
@@ -591,7 +606,7 @@ def main() -> None:
                     f"limite diario ya alcanzado"
                 )
 
-            # 3d. Push notifications (post-verticales + atribucion)
+            # 5c. Push notifications (post-verticales + atribucion)
             _send_push_notifications(
                 tenant_id, tenant_slug,
                 tenant_predictions,

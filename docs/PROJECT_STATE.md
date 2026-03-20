@@ -55,6 +55,7 @@ Sistema funciona para IEY sin intervencion manual.
 | Metodologia libre Codex | 2026-03-20 | Config global ajustada para sesiones nuevas con `approval_policy=never` y `sandbox_mode=danger-full-access` (Full Access por defecto), manteniendo denylist global en `~/.codex/rules/default.rules` con 41 bloqueos de alto riesgo para Docker/SO/PostgreSQL/Git/Crons/secrets. Override PymePilot alineado con worktrees proactivos. Hotfix Linux sandbox en este VPS: `features.use_linux_sandbox_bwrap=false` + `features.use_legacy_landlock=true` para evitar el fallo `bwrap: loopback: Failed RTM_NEWADDR: Operation not permitted` y restaurar ejecucion normal |
 | Guia Onboarding | 2026-03-19 | /guia con Remotion Player embebido, 7 composiciones con wrappers visuales + cursor + highlights + text overlay, datos mock "Distribuidora Demo", IntersectionObserver autoplay, selector de modulos escalable |
 | **Auditoria Post-MVP** | **2026-03-20** | **1C + 5H + 12M + 8L corregidos. 5 agentes especializados + 4 rondas revision Codex. Commit 48210ea. Migracion 056 pendiente aplicar en DB.** |
+| Orquestador refresh post-sync | 2026-03-20 | Se agrego suite `backend/tests/test_main_orchestrator.py` y se reordeno `backend/main.py` a 2 fases: sync de todos los tenants primero, refresh unico de vistas materializadas despues, y recien ahi atribucion + verticales + push. Fix permanente para que `/metricas` y `client_rankings` muestren ventas del mismo dia en vez de la foto del dia anterior |
 
 ---
 
