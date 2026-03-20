@@ -38,7 +38,7 @@ export default function LoginPage() {
       <div className="w-full max-w-sm animate-fade-in-up">
         <div className="text-center mb-8">
           <BrandLockup variant="login" />
-          <p className="text-white/50 mt-1">Ingresá a tu cuenta</p>
+          <p className="text-white/40 mt-4 text-sm">Ingresá a tu cuenta</p>
         </div>
 
         <form onSubmit={handleLogin} className="glass-dark p-6 space-y-4">

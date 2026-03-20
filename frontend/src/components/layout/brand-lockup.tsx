@@ -5,41 +5,40 @@ type BrandLockupProps = {
 };
 
 export function BrandLockup({ variant = "header" }: BrandLockupProps) {
-  const isLogin = variant === "login";
-
-  return (
-    <div
-      className={`flex items-center ${isLogin ? "justify-center gap-4" : "gap-3"}`}
-    >
-      <div
-        className={`flex items-center justify-center overflow-hidden rounded-2xl border border-[rgba(129,181,161,0.22)] bg-[linear-gradient(180deg,rgba(129,181,161,0.18),rgba(129,181,161,0.08))] shadow-[0_10px_30px_rgba(0,0,0,0.18)] ${
-          isLogin ? "h-14 w-14" : "h-10 w-10"
-        }`}
-      >
+  if (variant === "login") {
+    return (
+      <div className="flex flex-col items-center gap-3">
         <Image
           src="/favicon.ico"
           alt="Logo de PymePilot"
-          width={isLogin ? 36 : 24}
-          height={isLogin ? 36 : 24}
+          width={44}
+          height={44}
           unoptimized
-          className="h-auto w-auto"
         />
-      </div>
-
-      <div className={isLogin ? "text-left" : "text-left leading-none"}>
-        <p
-          className={`font-bold tracking-[-0.04em] text-[#81b5a1] ${
-            isLogin ? "text-[2rem] sm:text-[2.3rem]" : "text-lg"
-          }`}
-        >
-          PymePilot
-        </p>
-        {isLogin && (
-          <p className="mt-1 text-sm uppercase tracking-[0.22em] text-white/38">
+        <div className="text-center">
+          <h1 className="text-[1.75rem] font-bold tracking-[-0.02em] text-[#81b5a1]">
+            PymePilot
+          </h1>
+          <p className="mt-0.5 text-xs uppercase tracking-[0.18em] text-white/40">
             Seguimiento inteligente
           </p>
-        )}
+        </div>
       </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      <Image
+        src="/favicon.ico"
+        alt="Logo de PymePilot"
+        width={22}
+        height={22}
+        unoptimized
+      />
+      <span className="text-base font-semibold tracking-[-0.01em] text-[#81b5a1]">
+        PymePilot
+      </span>
     </div>
   );
 }

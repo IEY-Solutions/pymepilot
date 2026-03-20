@@ -51,6 +51,8 @@ Sistema funciona para IEY sin intervencion manual.
 | Auditoria Pre-MVP | 2026-03-11 | 3C+15H+4M corregidos, reconexion Contabilium |
 | Hotfix Contabilium | 2026-03-07/08 | 14 de 15 fixes, env_guard, cron_wrapper |
 | Branding UI | 2026-03-19 | Favicon PymePilot productivo + logo integrado en login y header |
+| Cuentas Clave | 2026-03-19 | Key Account Management: 3 tablas + 3 RPCs, grilla con semaforo, detalle 7 bloques, notas con acciones, alertas, nudge seguimiento |
+| Metodologia libre Codex | 2026-03-20 | Config global ajustada para sesiones nuevas con `approval_policy=never` y `sandbox_mode=danger-full-access` (Full Access por defecto), manteniendo denylist global en `~/.codex/rules/default.rules` con 41 bloqueos de alto riesgo para Docker/SO/PostgreSQL/Git/Crons/secrets. Override PymePilot alineado con worktrees proactivos. Hotfix Linux sandbox en este VPS: `features.use_linux_sandbox_bwrap=false` + `features.use_legacy_landlock=true` para evitar el fallo `bwrap: loopback: Failed RTM_NEWADDR: Operation not permitted` y restaurar ejecucion normal |
 
 ---
 

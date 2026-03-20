@@ -1,7 +1,10 @@
 # Codex Configuration for PymePilot
 
-model = "o4-mini"
-approval_mode = "suggest"
+model = "gpt-5.4"
+model_reasoning_effort = "high"
+
+# Approval and sandbox defaults are enforced globally in ~/.codex/config.toml.
+# Keep project config focused on model choice and MCP servers.
 
 [mcp_servers.context7]
 enabled = true
@@ -9,3 +12,7 @@ command = "npx"
 args = ["-y", "@upstash/context7-mcp"]
 startup_timeout_sec = 30
 tool_timeout_sec = 60
+
+[mcp_servers.notion]
+  url = "https://mcp.notion.com/mcp"
+  enabled = true
