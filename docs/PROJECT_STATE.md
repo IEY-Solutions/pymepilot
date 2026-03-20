@@ -3,7 +3,7 @@
 > **Archivo compartido entre Claude Code y Codex.**
 > Ambas IAs deben leer este archivo al iniciar una sesion y actualizarlo
 > al finalizar si hubo cambios relevantes en el estado del proyecto.
-> Ultima actualizacion: 2026-03-18
+> Ultima actualizacion: 2026-03-20
 
 ---
 
@@ -53,6 +53,8 @@ Sistema funciona para IEY sin intervencion manual.
 | Branding UI | 2026-03-19 | Favicon PymePilot productivo + logo integrado en login y header |
 | Cuentas Clave | 2026-03-19 | Key Account Management: 3 tablas + 3 RPCs, grilla con semaforo, detalle 7 bloques, notas con acciones, alertas, nudge seguimiento |
 | Metodologia libre Codex | 2026-03-20 | Config global ajustada para sesiones nuevas con `approval_policy=never` y `sandbox_mode=danger-full-access` (Full Access por defecto), manteniendo denylist global en `~/.codex/rules/default.rules` con 41 bloqueos de alto riesgo para Docker/SO/PostgreSQL/Git/Crons/secrets. Override PymePilot alineado con worktrees proactivos. Hotfix Linux sandbox en este VPS: `features.use_linux_sandbox_bwrap=false` + `features.use_legacy_landlock=true` para evitar el fallo `bwrap: loopback: Failed RTM_NEWADDR: Operation not permitted` y restaurar ejecucion normal |
+| Guia Onboarding | 2026-03-19 | /guia con Remotion Player embebido, 7 composiciones con wrappers visuales + cursor + highlights + text overlay, datos mock "Distribuidora Demo", IntersectionObserver autoplay, selector de modulos escalable |
+| **Auditoria Post-MVP** | **2026-03-20** | **1C + 5H + 12M + 8L corregidos. 5 agentes especializados + 4 rondas revision Codex. Commit 48210ea. Migracion 056 pendiente aplicar en DB.** |
 
 ---
 
@@ -105,10 +107,17 @@ Reactivacion pendiente (ticket Contabilium).
 ### MEDIUMs diferidos (no bloquean)
 - Customer duplicada en contactar (cleanup menor)
 - `any` residual en Recharts payload (limitacion libreria)
-- Import fuera de orden en export-pdf.tsx (cosmetico)
-- Rate delay ausente en path connector_override
-- formatMonth duplicada en 5 archivos
 - retryCount sin limite maximo en client-detail.tsx
+- (Los items "Rate delay ausente", "formatMonth duplicada", "Import export-pdf" fueron resueltos en auditoria 2026-03-20)
+
+### Accion pendiente — CRITICA
+- **Aplicar migración 056 en DB de producción:**
+  ```bash
+  docker cp database/migrations/056_audit_security_fixes.sql orion-menteax_postgres:/tmp/
+  docker exec orion-menteax_postgres psql -U postgres -d orion_db -f /tmp/056_audit_security_fixes.sql
+  ```
+  Esta migración corrige el CRITICAL C-01 (tenant isolation en KPI RPCs).
+  Sin ella, el código está en main pero la DB sigue vulnerable.
 
 ---
 
