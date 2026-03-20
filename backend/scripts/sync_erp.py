@@ -49,6 +49,7 @@ from backend.engine.core.env_guard import validate_env, DB_VARS, ERP_VARS
 validate_env(DB_VARS + ERP_VARS)
 
 from backend.engine.connectors.sync import SyncEngine
+from backend.engine.db.connection import close_pool
 from backend.engine.core.logger import get_logger, sanitize_text
 
 logger = get_logger(__name__)
@@ -144,6 +145,9 @@ def main() -> None:
     except Exception as e:
         logger.error(f"Sync fallido: {sanitize_text(str(e))}")
         sys.exit(1)
+    finally:
+        # M-05: Cerrar el pool de conexiones al terminar (igual que process_uploads.py)
+        close_pool()
 
 
 if __name__ == '__main__':

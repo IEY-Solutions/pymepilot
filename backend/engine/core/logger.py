@@ -43,6 +43,9 @@ class SanitizingFormatter(logging.Formatter):
         "ERP_ENCRYPTION_KEY", "erp_encryption_key",
         "DATABASE_PASSWORD", "database_password",
         "ANTHROPIC_API_KEY", "anthropic_api_key",
+        # Supabase (M-03: agregados en auditoria post-MVP)
+        "SUPABASE_SERVICE_ROLE_KEY", "supabase_service_role_key",
+        "SUPABASE_URL", "supabase_url",
     ]
 
     # Regex pre-compilada para detectar patron "keyword=valor" o "keyword: valor"

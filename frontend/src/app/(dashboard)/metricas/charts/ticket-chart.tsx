@@ -12,14 +12,9 @@ import {
 import type { TooltipContentProps } from "recharts";
 import type { ValueType, NameType } from "recharts/types/component/DefaultTooltipContent";
 import type { TicketRow } from "../metricas-content";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, formatMonthShort } from "@/lib/format";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { TOOLTIPS } from "@/lib/tooltips";
-
-function formatMonth(dateStr: string): string {
-  const d = new Date(dateStr + "T12:00:00");
-  return d.toLocaleDateString("es-AR", { month: "short" }).replace(".", "");
-}
 
 function CustomTooltip({ active, payload, label }: TooltipContentProps<ValueType, NameType>) {
   if (!active || !payload?.length) return null;
@@ -54,7 +49,7 @@ export function TicketChart({ data }: { data: TicketRow[] }) {
   }
 
   const chartData = data.map((d) => ({
-    month: formatMonth(d.month),
+    month: formatMonthShort(d.month),
     Recurrente: Number(d.avg_ticket_recurring) || 0,
     Nuevo: Number(d.avg_ticket_new) || 0,
   }));

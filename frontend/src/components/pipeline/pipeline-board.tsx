@@ -292,26 +292,6 @@ export function PipelineBoard({ initialCards }: Props) {
     [modalCard, apiAction]
   );
 
-  // Borrar nota del timeline
-  const handleDeleteNote = useCallback(
-    async (noteId: string) => {
-      try {
-        const res = await fetch("/api/pipeline/notes", {
-          method: "DELETE",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ note_id: noteId }),
-        });
-        if (res.ok) {
-          // Actualizar las notas del modal sin cerrarlo
-          setModalNotes((prev) => prev.filter((n) => n.id !== noteId));
-        }
-      } catch (err) {
-        // Error silenciado en client-side
-      }
-    },
-    []
-  );
-
   // Descartar card vencida
   const handleCardDiscard = useCallback(
     async (card: PipelineCard) => {
@@ -418,7 +398,6 @@ export function PipelineBoard({ initialCards }: Props) {
           onFollowupSubmit={handleFollowupSubmit}
           onAddNote={handleAddNote}
           onAdvance={handleAdvance}
-          onDeleteNote={handleDeleteNote}
           onClose={closeModal}
         />
       )}

@@ -1,6 +1,6 @@
 "use client";
 
-import { Phone, Mail, Clock, AlertTriangle, Bell, Trash2 } from "lucide-react";
+import { Phone, Mail, Clock, AlertTriangle, Bell } from "lucide-react";
 import type { KeyAccount } from "@/lib/key-accounts/types";
 import { HEALTH_COLORS, NOTE_TYPE_CONFIG } from "@/lib/key-accounts/types";
 import { formatCurrency } from "@/lib/format";
@@ -8,7 +8,6 @@ import { formatCurrency } from "@/lib/format";
 interface Props {
   account: KeyAccount;
   onClick: () => void;
-  onDelete: () => void;
 }
 
 function timeAgo(dateStr: string | null): string {
@@ -21,7 +20,7 @@ function timeAgo(dateStr: string | null): string {
   return `Hace ${diff} dias`;
 }
 
-export function KeyAccountCard({ account, onClick, onDelete }: Props) {
+export function KeyAccountCard({ account, onClick }: Props) {
   const health = HEALTH_COLORS[account.health_score];
   const effectiveHealth = account.health_override
     ? HEALTH_COLORS[account.health_override]
@@ -52,17 +51,6 @@ export function KeyAccountCard({ account, onClick, onDelete }: Props) {
             Manual
           </span>
         )}
-        <button
-          className="p-1 rounded text-white/20 hover:text-red-400 hover:bg-red-500/10 transition-colors"
-          onClick={(e) => {
-            e.stopPropagation();
-            onDelete();
-          }}
-          title="Eliminar cuenta clave"
-          aria-label="Eliminar cuenta clave"
-        >
-          <Trash2 className="h-3.5 w-3.5" />
-        </button>
       </div>
 
       {/* Contadores */}

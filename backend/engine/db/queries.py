@@ -26,8 +26,12 @@ filtro explicito sigue protegiendo.
 import json
 from datetime import date
 from decimal import Decimal
+from typing import TYPE_CHECKING
 
 from psycopg.rows import dict_row
+
+if TYPE_CHECKING:
+    import psycopg  # noqa: F401 — solo para type hints, sin overhead en runtime
 
 from backend.engine.core.logger import get_logger
 

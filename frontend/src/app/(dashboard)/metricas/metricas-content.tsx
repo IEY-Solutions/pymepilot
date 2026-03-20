@@ -579,14 +579,13 @@ function CompareTab({
   }, [compareType, compareRange, revenue, churn, ticket, value, sales]);
 
   // Helpers para promediar/sumar arrays
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const avgField = (rows: any[], field: string) => {
+  // M-12: Tipificados con generics <T extends object> en vez de any[]
+  const avgField = <T extends object>(rows: T[], field: keyof T): number => {
     if (rows.length === 0) return 0;
-    return rows.reduce((sum: number, r: Record<string, unknown>) => sum + Number(r[field] ?? 0), 0) / rows.length;
+    return rows.reduce((sum: number, r) => sum + Number(r[field] ?? 0), 0) / rows.length;
   };
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const sumField = (rows: any[], field: string) => {
-    return rows.reduce((sum: number, r: Record<string, unknown>) => sum + Number(r[field] ?? 0), 0);
+  const sumField = <T extends object>(rows: T[], field: keyof T): number => {
+    return rows.reduce((sum: number, r) => sum + Number(r[field] ?? 0), 0);
   };
 
   // KPIs comparativos

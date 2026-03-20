@@ -27,6 +27,14 @@ export async function GET(): Promise<Response> {
     );
   }
 
+  const tenantId = user.app_metadata?.tenant_id as string | undefined;
+  if (!tenantId) {
+    return Response.json(
+      { error: "tenant_id no encontrado en el perfil" } satisfies KeyAccountsErrorResponse,
+      { status: 400 }
+    );
+  }
+
   // 1. Fetch key_accounts activas con join a customers
   const { data: accounts, error } = await supabase
     .from("key_accounts")
@@ -89,33 +97,26 @@ export async function GET(): Promise<Response> {
     alertsByAccount.set(a.key_account_id, existing);
   }
 
-  // 5. Recalcular health_score para cuentas sin override
-  const customerIdsToRecalc = accounts
-    .filter((a) => !a.health_override)
-    .map((a) => a.customer_id);
+  // 5. Recalcular health_score en batch (un solo roundtrip via RPC)
+  // La funcion recalculate_key_account_health_scores actualiza en la DB
+  // y retorna los nuevos scores para que podamos ensamblar la respuesta.
+  const healthUpdateMap = new Map<string, HealthScore>();
 
-  const healthUpdates = new Map<string, HealthScore>();
+  // La funcion usa get_current_tenant_id() internamente — no pasamos tenant_id
+  const { data: batchResults } = await supabase.rpc(
+    "recalculate_key_account_health_scores"
+  );
 
-  for (const customerId of customerIdsToRecalc) {
-    const { data: healthResult } = await supabase.rpc("get_key_account_health_score", {
-      p_customer_id: customerId,
-    });
-    if (healthResult) {
-      healthUpdates.set(customerId, healthResult as HealthScore);
+  if (batchResults && Array.isArray(batchResults)) {
+    for (const row of batchResults) {
+      healthUpdateMap.set(row.account_id, row.new_health_score as HealthScore);
     }
   }
 
-  // Batch update health scores que cambiaron
+  // Aplicar los health scores actualizados a los objetos en memoria
   for (const account of accounts) {
-    if (!account.health_override && healthUpdates.has(account.customer_id)) {
-      const newHealth = healthUpdates.get(account.customer_id)!;
-      if (newHealth !== account.health_score) {
-        await supabase
-          .from("key_accounts")
-          .update({ health_score: newHealth })
-          .eq("id", account.id);
-        account.health_score = newHealth;
-      }
+    if (!account.health_override && healthUpdateMap.has(account.id)) {
+      account.health_score = healthUpdateMap.get(account.id)!;
     }
   }
 
@@ -181,8 +182,6 @@ export async function POST(request: Request): Promise<Response> {
       return handleAdd(supabase, tenantId, user.id, body);
     case "add_new":
       return handleAddNew(supabase, tenantId, user.id, body);
-    case "delete":
-      return handleDelete(supabase, body);
     case "archive":
       return handleArchive(supabase, body);
     case "update_health_override":
@@ -450,39 +449,5 @@ async function handleAddNew(
   } satisfies KeyAccountsActionResponse);
 }
 
-/** Eliminar una cuenta clave (y sus notas y alertas) */
-async function handleDelete(
-  supabase: SupabaseClient,
-  body: Record<string, unknown>
-): Promise<Response> {
-  const accountId = body.account_id as string;
-
-  if (!accountId) {
-    return Response.json(
-      { error: "account_id es requerido" } satisfies KeyAccountsErrorResponse,
-      { status: 400 }
-    );
-  }
-
-  // Borrar alertas y notas primero (cascade deberia hacerlo, pero por seguridad)
-  await supabase.from("key_account_alerts").delete().eq("key_account_id", accountId);
-  await supabase.from("key_account_notes").delete().eq("key_account_id", accountId);
-
-  const { error } = await supabase
-    .from("key_accounts")
-    .delete()
-    .eq("id", accountId);
-
-  if (error) {
-    console.error("Error deleting key account:", error);
-    return Response.json(
-      { error: "Error al eliminar cuenta clave" } satisfies KeyAccountsErrorResponse,
-      { status: 500 }
-    );
-  }
-
-  return Response.json({
-    success: true,
-    message: "Cuenta clave eliminada",
-  } satisfies KeyAccountsActionResponse);
-}
+// Nota: handleDelete eliminado (H-01 — el boton de eliminar fue removido del UI).
+// Las cuentas clave se archivan via handleArchive, no se eliminan.

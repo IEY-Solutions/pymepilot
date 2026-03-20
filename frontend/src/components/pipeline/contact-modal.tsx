@@ -32,7 +32,6 @@ interface Props {
   onFollowupSubmit: (result: ContactResult, noteText: string) => Promise<void>;
   onAddNote: (noteText: string) => Promise<void>;
   onAdvance: (toColumn: ColumnName, noteText: string) => Promise<void>;
-  onDeleteNote: (noteId: string) => Promise<void>;
   onClose: () => void;
 }
 
@@ -59,11 +58,9 @@ const RESULT_LABELS: Record<string, string> = {
 function Timeline({
   notes,
   card,
-  onDeleteNote,
 }: {
   notes: ContactNote[];
   card: PipelineCard;
-  onDeleteNote: (noteId: string) => void;
 }) {
   // Construir eventos: notas + creacion de la card
   const events: { id: string | null; date: string; label: string; note: string | null; type: "note" | "created" }[] = [];
@@ -112,15 +109,7 @@ function Timeline({
             <div className="flex items-center gap-2">
               <span className="text-xs font-medium text-white/80">{event.label}</span>
               <span className="text-[10px] text-white/40">{formatRelativeDate(event.date)}</span>
-              {event.type === "note" && event.id && (
-                <button
-                  onClick={() => onDeleteNote(event.id!)}
-                  className="opacity-0 group-hover/event:opacity-100 text-white/30 hover:text-red-400 transition-all ml-auto"
-                  title="Borrar nota"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              )}
+              {/* Borrado de notas individuales deshabilitado: contact_notes es append-only (migration 056) */}
             </div>
             {event.note && (
               <p className="text-xs text-white/50 mt-0.5 italic">{event.note}</p>
@@ -553,7 +542,6 @@ export function ContactModal({
   onFollowupSubmit,
   onAddNote,
   onAdvance,
-  onDeleteNote,
   onClose,
 }: Props) {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -652,7 +640,7 @@ export function ContactModal({
           {allNotes.length > 0 && (
             <div className="px-4 py-3">
               <p className="text-xs font-medium text-white/80 uppercase tracking-wide mb-2">Actividad</p>
-              <Timeline notes={allNotes} card={card} onDeleteNote={onDeleteNote} />
+              <Timeline notes={allNotes} card={card} />
             </div>
           )}
         </div>

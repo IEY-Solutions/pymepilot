@@ -13,13 +13,9 @@ import {
 import type { TooltipContentProps } from "recharts";
 import type { ValueType, NameType } from "recharts/types/component/DefaultTooltipContent";
 import type { ChurnRow } from "../metricas-content";
+import { formatMonthShort } from "@/lib/format";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { TOOLTIPS } from "@/lib/tooltips";
-
-function formatMonth(dateStr: string): string {
-  const d = new Date(dateStr + "T12:00:00");
-  return d.toLocaleDateString("es-AR", { month: "short" }).replace(".", "");
-}
 
 function CustomTooltip({ active, payload, label }: TooltipContentProps<ValueType, NameType>) {
   if (!active || !payload?.length) return null;
@@ -50,7 +46,7 @@ export function ChurnChart({ data }: { data: ChurnRow[] }) {
   }
 
   const chartData = data.map((d) => ({
-    month: formatMonth(d.month),
+    month: formatMonthShort(d.month),
     churn: Number(d.churn_rate),
     churned: Number(d.churned),
     active_prev: Number(d.active_prev),

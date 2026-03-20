@@ -39,6 +39,12 @@ FLUJO DEL TEMPLATE METHOD (run):
 from abc import ABC, abstractmethod
 from datetime import date
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+# L-08: psycopg importado solo para type hints, sin overhead en runtime.
+# Patron TYPE_CHECKING: el bloque if solo se evalua por mypy/pyright, nunca en produccion.
+if TYPE_CHECKING:
+    import psycopg
 
 from backend.engine.claude.client import ClaudeClient, DailyLimitExceeded
 from backend.engine.core.logger import get_logger, sanitize_text
@@ -401,7 +407,7 @@ class VerticalBase(ABC):
     # ================================================================
 
     @abstractmethod
-    def get_candidates(self, conn, tenant_id: str) -> list[dict]:
+    def get_candidates(self, conn: "psycopg.Connection", tenant_id: str) -> list[dict]:
         """Retorna lista de candidatos para esta vertical.
 
         Cada vertical busca candidatos de forma diferente:
@@ -412,7 +418,7 @@ class VerticalBase(ABC):
         ...
 
     @abstractmethod
-    def get_context(self, conn, tenant_id: str, candidate: dict) -> dict:
+    def get_context(self, conn: "psycopg.Connection", tenant_id: str, candidate: dict) -> dict:
         """Obtiene datos adicionales para un candidato especifico.
 
         El contexto es la informacion extra que necesita el prompt:

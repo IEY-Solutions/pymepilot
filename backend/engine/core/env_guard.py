@@ -36,6 +36,8 @@ logger = get_logger(__name__)
 DB_VARS = ["DATABASE_HOST", "DATABASE_NAME", "DATABASE_USER", "DATABASE_PASSWORD"]
 SUPABASE_VARS = ["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"]
 ERP_VARS = ["ERP_ENCRYPTION_KEY"]
+# L-06: Grupo para el motor de Claude (agregado en auditoria post-MVP)
+CLAUDE_VARS = ["ANTHROPIC_API_KEY"]
 
 
 def validate_env(required_vars: list[str]) -> None:

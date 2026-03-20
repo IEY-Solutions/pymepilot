@@ -6,6 +6,7 @@ import type {
   ValueRow,
   RankingRow,
 } from "../metricas-content";
+import { formatMonthLong } from "@/lib/format";
 
 interface ExportData {
   revenue: RevenueRow[];
@@ -13,11 +14,6 @@ interface ExportData {
   ticket: TicketRow[];
   value: ValueRow[];
   rankings: RankingRow[];
-}
-
-function formatMonth(dateStr: string): string {
-  const d = new Date(dateStr + "T12:00:00");
-  return d.toLocaleDateString("es-AR", { month: "long", year: "numeric" });
 }
 
 export function exportToExcel(data: ExportData) {
@@ -79,7 +75,7 @@ export function exportToExcel(data: ExportData) {
 
   // Hoja 2: Facturacion Mensual
   const factRows = data.revenue.map((r) => ({
-    Mes: formatMonth(r.month),
+    Mes: formatMonthLong(r.month),
     Total: Number(r.total_revenue),
     Recurrente: Number(r.recurring_revenue),
     Nueva: Number(r.new_revenue),
@@ -99,7 +95,7 @@ export function exportToExcel(data: ExportData) {
   const metricsRows = data.churn.map((c, i) => {
     const t = data.ticket[i];
     return {
-      Mes: formatMonth(c.month),
+      Mes: formatMonthLong(c.month),
       "Activos mes ant.": c.active_prev,
       Churned: c.churned,
       "Churn %": Number(c.churn_rate),

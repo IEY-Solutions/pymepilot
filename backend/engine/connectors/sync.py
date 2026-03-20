@@ -217,11 +217,19 @@ class SyncEngine:
                         conn.commit()
                     return
 
-                customers_data, c_truncated = connector.fetch_customers(limit=limit)
+                # M-04: Pasar since_date a fetch_customers y fetch_products
+                # (igual que en el path normal). ExcelConnector ignora since_date
+                # silenciosamente (R24-L-05), pero lo recibe para consistencia.
+                customers_data, c_truncated = connector.fetch_customers(limit=limit, since_date=since_date)
                 logger.info(f"Clientes obtenidos: {len(customers_data)}")
 
-                products_data, p_truncated = connector.fetch_products(limit=limit)
+                # M-04: Rate delay entre fetches (igual que en path normal)
+                time.sleep(SYNC_RATE_LIMIT_DELAY)
+
+                products_data, p_truncated = connector.fetch_products(limit=limit, since_date=since_date)
                 logger.info(f"Productos obtenidos: {len(products_data)}")
+
+                time.sleep(SYNC_RATE_LIMIT_DELAY)
 
                 orders_data, o_truncated = connector.fetch_orders(since_date, limit=limit)
                 logger.info(f"Ordenes obtenidas: {len(orders_data)}")

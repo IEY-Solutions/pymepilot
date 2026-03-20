@@ -128,6 +128,14 @@ async function handleCreateNote(
     );
   }
 
+  // H-05: Validar longitud maxima para prevenir abuso
+  if (typeof content !== "string" || content.length > 2000) {
+    return Response.json(
+      { error: "El contenido no puede superar los 2000 caracteres" } satisfies KeyAccountsErrorResponse,
+      { status: 400 }
+    );
+  }
+
   const validTypes: NoteType[] = ["meeting", "call", "promise", "observation"];
   if (!validTypes.includes(noteType)) {
     return Response.json(

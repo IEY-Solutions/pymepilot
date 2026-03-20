@@ -206,7 +206,7 @@ class ExcelConnector(ERPConnector):
             mapped.append(new_record)
         return mapped
 
-    def fetch_customers(self, limit: int | None = None, client_ids: set[str] | None = None, since_date=None) -> tuple[list[dict], bool]:
+    def fetch_customers(self, limit: int | None = None, client_ids: set[str] | None = None, since_date: date | None = None) -> tuple[list[dict], bool]:
         """Lee hoja 'Clientes' y mapea campos al formato SyncEngine."""
         records = self._read_sheet("Clientes")
         records = self._apply_field_map(records, _FIELD_MAP_CUSTOMERS)
@@ -216,7 +216,7 @@ class ExcelConnector(ERPConnector):
         logger.info(f"fetch_customers(): {len(records)} clientes validos de Excel")
         return records, False
 
-    def fetch_products(self, limit: int | None = None, since_date=None) -> tuple[list[dict], bool]:
+    def fetch_products(self, limit: int | None = None, since_date: date | None = None) -> tuple[list[dict], bool]:
         """Lee hoja 'Productos' y mapea campos al formato SyncEngine."""
         records = self._read_sheet("Productos")
         records = self._apply_field_map(records, _FIELD_MAP_PRODUCTS)

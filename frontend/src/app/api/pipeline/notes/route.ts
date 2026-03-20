@@ -1,39 +1,14 @@
 import { createClient } from "@/lib/supabase/server";
 
-// DELETE /api/pipeline/notes — Borrar una nota por ID
-export async function DELETE(request: Request): Promise<Response> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return Response.json({ error: "No autenticado" }, { status: 401 });
-  }
-
-  let body: { note_id?: string };
-  try {
-    body = await request.json();
-  } catch {
-    return Response.json({ error: "JSON invalido" }, { status: 400 });
-  }
-
-  const noteId = body.note_id;
-  if (!noteId) {
-    return Response.json({ error: "note_id es requerido" }, { status: 400 });
-  }
-
-  const { error } = await supabase
-    .from("contact_notes")
-    .delete()
-    .eq("id", noteId);
-
-  if (error) {
-    console.error("Error deleting note:", error);
-    return Response.json({ error: "Error al borrar la nota" }, { status: 500 });
-  }
-
-  return Response.json({ success: true });
+// DELETE /api/pipeline/notes — DESHABILITADO
+// contact_notes es append-only por diseño (migration 056 revocó GRANT DELETE).
+// Las notas se eliminan únicamente via ON DELETE CASCADE cuando se descarta
+// la pipeline_card padre. No existe borrado individual de notas.
+export async function DELETE(): Promise<Response> {
+  return Response.json(
+    { error: "Las notas del pipeline son append-only y no pueden borrarse individualmente." },
+    { status: 405 }
+  );
 }
 
 // GET /api/pipeline/notes?card_id=xxx — Obtener todas las notas de una card

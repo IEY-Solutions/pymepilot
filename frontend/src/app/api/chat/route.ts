@@ -154,10 +154,12 @@ export async function POST(request: Request): Promise<Response> {
   const todayStr = new Date().toISOString().split("T")[0];
   const DAILY_LIMIT = parseInt(process.env.CHAT_DAILY_LIMIT || "20", 10);
 
+  // L-01: Agregar tenant_id explicito ademas del RLS para defense-in-depth
   const { count } = await supabase
     .from("chat_usage")
     .select("id", { count: "exact", head: true })
-    .eq("usage_date", todayStr);
+    .eq("usage_date", todayStr)
+    .eq("tenant_id", tenantId);
 
   const questionsToday = count ?? 0;
 
@@ -172,7 +174,14 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   // ---- 4. Preparar mensajes para Claude ----
-  const tenantName = user.user_metadata?.full_name ?? "PymePilot";
+  // L-02: Obtener nombre real del tenant desde la tabla tenants (no user_metadata
+  // que contiene el nombre del usuario individual, no del negocio)
+  const { data: tenantData } = await supabase
+    .from("tenants")
+    .select("name")
+    .eq("id", tenantId)
+    .single();
+  const tenantName = tenantData?.name ?? "PymePilot";
   const systemPrompt = buildSystemPrompt(tenantName);
 
   // Construir historial: solo mensajes de texto (no tool_use internos)
@@ -316,10 +325,14 @@ export async function POST(request: Request): Promise<Response> {
       },
     } satisfies ChatResponse);
   } catch (error) {
-    console.error("Error en chat API:", error);
-
-    // Manejar errores especificos de Anthropic
+    // M-02: Loguear solo info no sensible (sin el objeto de error completo
+    // que puede incluir request headers, API keys en contexto, etc.)
     if (error instanceof Anthropic.APIError) {
+      console.error("Error Anthropic API:", {
+        status: error.status,
+        code: (error as { code?: string }).code ?? "unknown",
+        message: error.message,
+      });
       if (error.status === 429) {
         return Response.json(
           { error: "El servicio de IA esta temporalmente sobrecargado. Intenta en unos minutos." } satisfies ChatErrorResponse,
@@ -331,6 +344,10 @@ export async function POST(request: Request): Promise<Response> {
         { status: 502 }
       );
     }
+
+    // Error generico: loguear solo el mensaje, no el stack ni el objeto completo
+    const errorMessage = error instanceof Error ? error.message : "Error desconocido";
+    console.error("Error en chat API:", errorMessage);
 
     return Response.json(
       { error: "Error interno del servidor" } satisfies ChatErrorResponse,

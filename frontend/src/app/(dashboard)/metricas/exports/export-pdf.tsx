@@ -17,7 +17,7 @@ import type {
 import type { ProductRankingRow } from "../product-ranking-table";
 import type { DemandProjectionRow } from "../demand-projection-table";
 import type { ClientDemandRow } from "../client-demand-table";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, formatMonthShortYear } from "@/lib/format";
 
 // ============================================================
 // PALETA PYMEPILOT
@@ -245,10 +245,7 @@ export interface PdfData {
 // HELPERS
 // ============================================================
 
-function formatMonth(dateStr: string): string {
-  const d = new Date(dateStr + "T12:00:00");
-  return d.toLocaleDateString("es-AR", { month: "short", year: "2-digit" });
-}
+// M-10: formatMonth centralizado en @/lib/format como formatMonthShortYear
 
 function formatDate(dateStr: string | null): string {
   if (!dateStr) return "—";
@@ -387,7 +384,7 @@ function ReportDocument({ data }: { data: PdfData }) {
           </View>
           {data.revenue.map((r, i) => (
             <View key={r.month} style={[s.tableRow, i % 2 === 1 ? s.tableRowAlt : {}]}>
-              <Text style={[s.cellText, { width: "18%" }]}>{formatMonth(r.month)}</Text>
+              <Text style={[s.cellText, { width: "18%" }]}>{formatMonthShortYear(r.month)}</Text>
               <Text style={[s.cellTextBold, { width: "22%" }]}>
                 {formatCurrency(Number(r.total_revenue))}
               </Text>
@@ -418,7 +415,7 @@ function ReportDocument({ data }: { data: PdfData }) {
             const t = data.ticket[i];
             return (
               <View key={c.month} style={[s.tableRow, i % 2 === 1 ? s.tableRowAlt : {}]}>
-                <Text style={[s.cellText, { width: "16%" }]}>{formatMonth(c.month)}</Text>
+                <Text style={[s.cellText, { width: "16%" }]}>{formatMonthShortYear(c.month)}</Text>
                 <Text style={[s.cellTextRight, { width: "14%" }]}>{c.active_prev}</Text>
                 <Text style={[s.cellTextRight, { width: "14%" }]}>{c.churned}</Text>
                 <Text style={[s.cellTextRight, { width: "14%" }]}>

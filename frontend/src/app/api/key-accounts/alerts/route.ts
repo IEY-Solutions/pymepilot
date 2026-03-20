@@ -225,6 +225,20 @@ async function handleCreateManual(
     );
   }
 
+  // H-05: Validar longitud maxima para prevenir abuso
+  if (typeof title !== "string" || title.length > 200) {
+    return Response.json(
+      { error: "El titulo no puede superar los 200 caracteres" } satisfies KeyAccountsErrorResponse,
+      { status: 400 }
+    );
+  }
+  if (description !== null && typeof description === "string" && description.length > 1000) {
+    return Response.json(
+      { error: "La descripcion no puede superar los 1000 caracteres" } satisfies KeyAccountsErrorResponse,
+      { status: 400 }
+    );
+  }
+
   const { error } = await supabase
     .from("key_account_alerts")
     .insert({

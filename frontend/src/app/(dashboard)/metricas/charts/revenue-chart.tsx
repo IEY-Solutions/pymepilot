@@ -12,14 +12,9 @@ import {
 import type { TooltipContentProps } from "recharts";
 import type { ValueType, NameType } from "recharts/types/component/DefaultTooltipContent";
 import type { RevenueRow } from "../metricas-content";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, formatMonthShort } from "@/lib/format";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { TOOLTIPS } from "@/lib/tooltips";
-
-function formatMonth(dateStr: string): string {
-  const d = new Date(dateStr + "T12:00:00");
-  return d.toLocaleDateString("es-AR", { month: "short" }).replace(".", "");
-}
 
 function CustomTooltip({ active, payload, label }: TooltipContentProps<ValueType, NameType>) {
   if (!active || !payload?.length) return null;
@@ -54,7 +49,7 @@ export function RevenueChart({ data }: { data: RevenueRow[] }) {
   }
 
   const chartData = data.map((d) => ({
-    month: formatMonth(d.month),
+    month: formatMonthShort(d.month),
     Total: Number(d.total_revenue),
     Recurrente: Number(d.recurring_revenue),
     Nueva: Number(d.new_revenue),

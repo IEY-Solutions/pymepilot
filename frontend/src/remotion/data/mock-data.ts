@@ -137,7 +137,8 @@ export const mockDataCounts = {
 
 export const mockChatMessages = [
   { role: "user" as const, content: "Quien es mi mejor cliente?" },
-  { role: "assistant" as const, content: "Tu mejor cliente es **Electronica Sur** con $845,000 en compras totales. Compra en promedio cada 18 dias y su ultimo pedido fue hace 4 dias. Es un cliente muy activo — te recomiendo mantenerlo como cuenta clave." },
+  // L-04: Sin markdown (**texto**) para coincidir con el comportamiento real del chatbot
+  { role: "assistant" as const, content: "Tu mejor cliente es Electronica Sur con $845,000 en compras totales. Compra en promedio cada 18 dias y su ultimo pedido fue hace 4 dias. Es un cliente muy activo, te recomiendo mantenerlo como cuenta clave." },
   { role: "user" as const, content: "Que producto se vende mas?" },
-  { role: "assistant" as const, content: "El producto mas vendido es el **Protector Pantalla 9H** con 300 unidades en stock y alta rotacion. Le siguen los **Cables USB-C 2m** (200 unidades) y las **Fundas Transparentes** (180 unidades). Los tres son productos de entrada que generan recompra frecuente." },
+  { role: "assistant" as const, content: "El producto mas vendido es el Protector Pantalla 9H con 300 unidades en stock y alta rotacion. Le siguen los Cables USB-C 2m con 200 unidades y las Fundas Transparentes con 180 unidades. Los tres son productos de entrada que generan recompra frecuente." },
 ];

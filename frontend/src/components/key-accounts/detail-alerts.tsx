@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Bell, CheckCircle2, X } from "lucide-react";
 import type { KeyAccountAlert } from "@/lib/key-accounts/types";
 
@@ -9,22 +10,44 @@ interface Props {
 }
 
 export function DetailAlerts({ alerts, onAction }: Props) {
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
   const handleResolve = async (alertId: string) => {
-    await fetch("/api/key-accounts/alerts", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "resolve", alert_id: alertId }),
-    });
-    onAction();
+    try {
+      const res = await fetch("/api/key-accounts/alerts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "resolve", alert_id: alertId }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setErrorMsg(data.error ?? "Error al resolver la alerta");
+        return;
+      }
+      setErrorMsg(null);
+      onAction();
+    } catch {
+      setErrorMsg("Error de conexion al resolver la alerta");
+    }
   };
 
   const handleDismiss = async (alertId: string) => {
-    await fetch("/api/key-accounts/alerts", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "dismiss", alert_id: alertId }),
-    });
-    onAction();
+    try {
+      const res = await fetch("/api/key-accounts/alerts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "dismiss", alert_id: alertId }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setErrorMsg(data.error ?? "Error al descartar la alerta");
+        return;
+      }
+      setErrorMsg(null);
+      onAction();
+    } catch {
+      setErrorMsg("Error de conexion al descartar la alerta");
+    }
   };
 
   return (
@@ -33,6 +56,10 @@ export function DetailAlerts({ alerts, onAction }: Props) {
         <Bell className="h-3.5 w-3.5" />
         Alertas activas
       </h3>
+
+      {errorMsg && (
+        <p className="text-xs text-red-400 bg-red-500/10 rounded px-2 py-1">{errorMsg}</p>
+      )}
 
       {alerts.length === 0 ? (
         <p className="text-xs text-white/30">Sin alertas activas</p>

@@ -34,7 +34,12 @@ export function KeyAccountsGrid({ initialAccounts }: Props) {
     }
   }, []);
 
-  // Refresh al montar para obtener datos enriquecidos (alertas, notas, health recalculado)
+  // L-05: El fetch en mount es necesario aunque page.tsx pase initialAccounts via SSR.
+  // Razon: initialAccounts tiene el health_score almacenado en DB, pero NO el recalculado.
+  // La RPC recalculate_key_account_health_scores corre en el GET /api/key-accounts y
+  // actualiza los semaforos segun el estado actual (compras, alertas, facturacion).
+  // Sin este fetch, los semaforos muestran el valor del dia anterior hasta que el usuario
+  // hace click en "Actualizar". El SSR solo sirve para el first paint sin semaforos.
   useEffect(() => {
     refreshAccounts();
   }, [refreshAccounts]);
@@ -114,15 +119,6 @@ export function KeyAccountsGrid({ initialAccounts }: Props) {
               key={account.id}
               account={account}
               onClick={() => setSelectedAccountId(account.id)}
-              onDelete={async () => {
-                if (!confirm(`¿Eliminar "${account.customer.name}" de cuentas clave?`)) return;
-                const res = await fetch("/api/key-accounts", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ action: "delete", account_id: account.id }),
-                });
-                if (res.ok) refreshAccounts();
-              }}
             />
           ))}
         </div>
