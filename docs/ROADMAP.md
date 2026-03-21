@@ -355,16 +355,35 @@ Monitoreo con Grafana, deuda tecnica de seguridad y calidad resuelta, documentac
 
 ## Post-MVP: Proximos Pasos
 
-### Corto plazo (cuando se consiga SIM chip)
-- Fase 6 Parte 2: notificacion diaria via WA Cloud API
+El norte estrategico es escalar progresivamente de mayoristas a minoristas y servicios, construyendo los 4 Pilares del sistema de forma secuencial.
 
-### Mediano plazo (con segundo tenant)
-- Conector Xubio
-- Mejoras de UX basadas en feedback de uso real
-- Alerta Grafana con notificacion (email o Telegram)
+### Pilar 2 — Webhooks + Analisis Reactivo (Mes 1-2)
+- Webhook receiver HTTPS que captura respuestas de WhatsApp en tiempo real
+- Claude AI analiza cada respuesta: intencion, emocion, objeciones, contexto
+- Pipeline actualizado automaticamente segun la respuesta
+- Nota de seguimiento personalizada para el vendedor
+- Prerequisito: App Meta en modo Live + permiso `whatsapp_business_messaging`
 
-### Largo plazo
-- Conectores adicionales (Alegra, Colppy, sistemas propios)
-- API publica para integraciones
-- Mobile app nativa (si hay demanda)
-- ML para mejorar scores de confianza con datos historicos de atribucion
+### Pilar 3 — Arquitectura Multi-Agente (Mes 3-4)
+- **Agente Analista** (primero, solo lectura): extrae intencion/emocion/objeciones, agenda siguiente contacto, mueve el lead en el pipeline
+- **Agente Respondedor** (despues, supervisado): responde mensajes simples de forma autonoma, maneja objeciones frecuentes, escala al humano cuando es necesario
+- Los dos agentes corren en paralelo: uno habla, el otro analiza y agenda
+
+### Pilar 4 — Embedded Signup (Mes 3+, con 3 pilotos pagando)
+- Cliente conecta su propio WhatsApp Business desde el dashboard en menos de 2 minutos
+- Sin ayuda de Pato — modelo SaaS real (hoy: modelo agencia, ~1-2hs por cliente)
+- Prerequisito: 3 clientes pilotos pagando antes de construirlo
+
+### Escalera de mercado
+```
+HOY:       Distribuidoras mayoristas Argentina (~8.000 empresas)
+MES 6-12:  + B2B similares (ferreterias, alimentos, ~25.000 empresas)
+ANO 2:     Minorista Tipo A (servicios con turnos, ~80.000 comercios)
+ANO 3+:    Minorista Tipo B/C + LATAM (~400.000+ comercios)
+```
+
+### Operativo pendiente
+- SIM chip para activar WhatsApp Business API directa (desbloquea Pilar 1 completo)
+- Primer cliente externo onboardeado (objetivo mes 1-2)
+- Reactivacion crons con cron_wrapper.py (pendiente ticket Contabilium)
+- Conectores adicionales: Xubio, Alegra, Colppy (bajo demanda de nuevos tenants)

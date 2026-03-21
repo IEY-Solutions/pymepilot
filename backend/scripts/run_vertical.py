@@ -53,7 +53,7 @@ validate_env(DB_VARS)
 
 from backend.engine.core.logger import get_logger
 from backend.engine.db.connection import close_pool
-from backend.engine.verticales import VERTICAL_REGISTRY
+from backend.engine.seguimiento import VERTICAL_REGISTRY
 
 logger = get_logger(__name__)
 

@@ -7,7 +7,9 @@
 
 ## 1. Vision General
 
-PymePilot es un sistema de BI para distribuidores mayoristas B2B en Argentina. Analiza datos del ERP para decir A QUIEN contactar, CUANDO, y QUE ofrecer.
+PymePilot es un sistema de seguimiento pre y post venta + fidelizacion inteligente. Ocupa el espacio vacio entre el cierre de una venta y la proxima compra. Canal principal: WhatsApp Business API + Claude AI. Escala de mayoristas a minoristas progresivamente.
+
+**En una linea:** PYMEPILOT convierte cada venta en el inicio de una relacion, no en el fin de una transaccion.
 
 ```
                         FUENTES DE DATOS
@@ -40,9 +42,31 @@ PymePilot es un sistema de BI para distribuidores mayoristas B2B en Argentina. A
            │
            ▼
      predictions
-     (mensajes para
-      el vendedor)
+     (mensajes personalizados)
+           │
+           ▼
+  ┌────────────────┐
+  │  WHATSAPP      │
+  │  Business API  │  ← Canal principal de comunicacion
+  │  (Pilar 1 ✅)  │
+  └────────┬───────┘
+           │ respuestas
+           ▼
+  ┌────────────────┐
+  │  WEBHOOKS +    │
+  │  MULTI-AGENTE  │  ← Pilar 2 y 3 (en construccion)
+  │  Claude AI     │
+  └────────────────┘
 ```
+
+### 4 Pilares del producto (roadmap arquitectonico)
+
+| Pilar | Estado | Funcion |
+|-------|--------|---------|
+| 1 — Orquestador Proactivo | En produccion | Detecta inactivos, genera mensajes Claude AI, envia por WhatsApp |
+| 2 — Webhooks + Analisis Reactivo | En desarrollo | Recibe respuestas en tiempo real, Claude analiza intencion/emocion |
+| 3 — Multi-Agente | Fase siguiente | Agente Respondedor (conversacional) + Agente Analista (estrategico) en paralelo |
+| 4 — Embedded Signup | Mes 3+ | Cliente conecta su propio WhatsApp Business desde el dashboard sin ayuda |
 
 ---
 

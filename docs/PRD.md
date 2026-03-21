@@ -12,21 +12,35 @@
 
 ### El problema
 
-Los distribuidores mayoristas B2B en Argentina dependen de sus equipos comerciales para mantener y hacer crecer su base de clientes. Pero estos equipos trabajan "a ciegas":
+El mercado tiene mil herramientas para adquirir y cerrar clientes. Nadie construyo el tapon.
 
-- **No saben a quien contactar** — No tienen forma sistematica de saber que cliente necesita reponer stock
-- **No saben cuando contactar** — Llegan tarde (cuando el cliente ya compro a la competencia) o demasiado temprano (cuando todavia tiene stock)
-- **No saben que ofrecer** — Ofrecen lo mismo a todos, sin personalizar segun historial
+La principal fuga de cualquier comercio es la misma: **el negocio vende, el cliente se va, no hay mas registro de esa persona.** Nadie esta dedicado 100% a la fidelizacion post-venta inteligente.
 
-El resultado: clientes que se pierden, oportunidades de venta que se escapan, y equipos comerciales que dependen de la intuicion en vez de datos.
+| Etapa | Herramientas existentes | Estado |
+|-------|------------------------|--------|
+| Adquisicion | Meta Ads, Google Ads, funnels | Saturado |
+| Cierre de venta | CRMs, chatbots, cotizadores | Saturado |
+| Post-venta / Fidelizacion | Email marketing generico, puntos | Nadie lo resuelve bien |
+| Reactivacion inteligente | Nada | Vacio total |
 
 ### La solucion
 
-**PymePilot** es un sistema de Business Intelligence que transforma el historial de compras de un distribuidor en acciones comerciales concretas y automatizadas.
+**PymePilot** es un sistema de seguimiento pre y post venta + fidelizacion inteligente. Ocupa el unico espacio vacio del ciclo comercial: la etapa entre que se cierra una venta y la proxima compra.
 
-En vez de que el vendedor piense "a quien llamo hoy?", PymePilot le dice:
+**En una linea:** PYMEPILOT convierte cada venta en el inicio de una relacion, no en el fin de una transaccion.
 
-> "Contacta a Juan hoy. En 5 dias se le acaba el stock de fundas MagSafe (compra cada 28 dias, ultimo pedido fue hace 23 dias). Ofrecele reservar 50 unidades de funda MagSafe + 30 protectores de pantalla que nunca compro pero clientes similares si."
+**Core Engine:**
+```
+Venta ocurre
+→ Cliente registrado automaticamente
+→ Patron de comportamiento analizado
+→ Momento optimo de contacto detectado
+→ Mensaje personalizado enviado (WhatsApp)
+→ Respuesta procesada por IA
+→ Relacion mantenida viva indefinidamente
+```
+
+Canal principal: **WhatsApp Business API**. Lo que Claude AI hace — hablar a una persona especifica, en el momento exacto, sobre lo que esa persona especificamente compro — es lo que ninguna automatizacion tradicional puede replicar.
 
 ### Validacion real
 
@@ -259,12 +273,13 @@ Cada nuevo ERP solo requiere crear un nuevo conector que implemente `ERPConnecto
 
 ## 5. Lo que NO es PymePilot
 
-- **No es un CRM** — No reemplaza Salesforce ni HubSpot. Los complementa dandoles inteligencia sobre a quien contactar.
+- **No es un CRM** — No reemplaza Salesforce ni HubSpot. Los complementa dandoles inteligencia sobre a quien contactar y cuando.
 - **No es un ERP** — No gestiona facturacion, stock, logistica ni contabilidad. LEE datos del ERP, no los modifica. Solo GET, NUNCA escribe en el ERP del cliente.
-- **No es un chatbot** — No responde mensajes automaticamente. Sugiere mensajes que el vendedor revisa y envia manualmente.
-- **No envia mensajes sin aprobacion** — Todo mensaje pasa por el vendedor antes de ser enviado.
+- **No es una herramienta de adquisicion** — No genera leads ni gestiona funnels de ventas. Su lugar es despues de la primera venta.
 - **No funciona sin historial** — Necesita al menos 3 meses de datos de compras para generar predicciones confiables.
 - **No gestiona pagos ni cobros** — No procesa transacciones financieras.
+
+**Nota de roadmap:** En el estado actual (Pilar 1), los mensajes son sugeridos y el vendedor los envia manualmente. Con Pilar 3 (Multi-Agente), el sistema podra responder conversaciones de forma autonoma dentro de reglas definidas.
 
 ---
 
@@ -350,7 +365,7 @@ Cada nuevo ERP solo requiere crear un nuevo conector que implemente `ERPConnecto
 | Contabilium API | Critica | CONECTADA y operativa |
 | Anthropic Claude API | Critica | OPERATIVA, Sonnet, $5 cargados |
 | Google Drive API | Opcional | CONECTADA, Service Account |
-| WhatsApp Cloud API | Opcional | PENDIENTE (necesita SIM chip) |
+| WhatsApp Cloud API | **Core** (Pilar 1 y 2) | PENDIENTE — Pilar 1 en produccion via wa.me, API directa requiere SIM chip |
 | Supabase stack (Docker) | Infraestructura | OPERATIVO y estable |
 
 ---

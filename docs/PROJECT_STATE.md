@@ -9,11 +9,22 @@
 
 ## Que es PymePilot
 
-Sistema de BI para distribuidores mayoristas B2B en Argentina.
-Analiza datos del ERP para decir A QUIEN contactar, CUANDO, y QUE ofrecer.
+Sistema de seguimiento pre y post venta + fidelizacion inteligente via WhatsApp + Claude AI.
+Ocupa el unico espacio vacio del ciclo comercial: la etapa entre el cierre de una venta y la proxima compra.
+Escala progresivamente de mercados mayoristas a minoristas y servicios.
+
+**En una linea:** PYMEPILOT convierte cada venta en el inicio de una relacion, no en el fin de una transaccion.
 
 **Cliente activo:** IEY (Distribuidor #1 MagSafe Argentina).
 Resultados validados: facturacion recurrente 34%→74%, churn 18%→8%.
+
+**Modelo de negocio:** fee base + rev share sobre ventas recuperadas atribuibles.
+
+**Escalera de mercado:**
+- HOY: Distribuidoras mayoristas Argentina (~8.000 empresas)
+- Mes 6-12: B2B similares (ferreterias, alimentos)
+- Año 2: Minorista Tipo A (servicios con turnos)
+- Año 3+: Minorista Tipo B/C + LATAM
 
 ---
 
@@ -134,10 +145,24 @@ Reactivacion pendiente (ticket Contabilium).
 ## Arquitectura clave
 
 - **Multi-tenant:** tenant_id + RLS + FORCE RLS (NO schema-per-tenant)
-- **4 Verticales:** V1 Activacion, V2 Reposicion (MVP), V3 Cross-Sell, V4 Recuperacion
-- **Flujo datos:** ERP → PostgreSQL → Motor Python (5 AM) → predictions → Dashboard
+- **Canal principal:** WhatsApp Business API directa (no Kommo)
+- **Flujo datos:** ERP → PostgreSQL → Motor Python (5 AM) → predictions → WhatsApp → Dashboard
 - **DB user:** pymepilot_app (nosuperuser)
 - **Tenant IEY:** `b815e5d6-2ef0-4d27-999b-8a7642b71183`
+
+### 4 Pilares del producto
+
+| Pilar | Descripcion | Estado |
+|-------|-------------|--------|
+| 1 — Orquestador Proactivo | Corre 5am, detecta inactivos, genera mensajes Claude AI, envia por WhatsApp | En produccion |
+| 2 — Webhooks + Analisis Reactivo | Recibe respuestas en tiempo real, Claude analiza intencion/emocion/objeciones | En desarrollo |
+| 3 — Multi-Agente | Agente Respondedor (conversacional) + Agente Analista (estrategico) en paralelo | Fase siguiente |
+| 4 — Embedded Signup | Cliente conecta su propio WhatsApp Business desde el dashboard sin ayuda | Mes 3+ |
+
+### Verticales tecnicas (codigo)
+
+V1 Activacion + V2 Reposicion + V3 Cross-Sell + V4 Recuperacion.
+Estos son los nombres tecnicos en el codigo. El marco de negocio actual los agrupa como "features de fidelizacion" (F1-F5).
 
 ---
 

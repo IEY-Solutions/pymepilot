@@ -77,7 +77,7 @@ from backend.engine.db.queries import (
     update_prediction_attribution,
 )
 from backend.engine.push.sender import send_push_to_tenant
-from backend.engine.verticales import VERTICAL_REGISTRY
+from backend.engine.seguimiento import VERTICAL_REGISTRY
 
 logger = get_logger(__name__)
 
