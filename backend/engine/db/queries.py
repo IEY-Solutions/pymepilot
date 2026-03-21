@@ -603,8 +603,8 @@ def update_prediction_attribution(
             UPDATE predictions SET
                 status = 'completed',
                 metadata = metadata || jsonb_build_object(
-                    'attribution_order_id', %(order_id)s,
-                    'attribution_amount', %(order_amount)s,
+                    'attribution_order_id', %(order_id)s::text,
+                    'attribution_amount', %(order_amount)s::numeric,
                     'attribution_date', CURRENT_DATE::text,
                     'attributed_automatically', true
                 )

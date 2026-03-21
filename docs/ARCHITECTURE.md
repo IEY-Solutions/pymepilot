@@ -1,7 +1,7 @@
 # PymePilot - Arquitectura del Sistema
 
-**Version:** 1.0
-**Fecha:** 2026-03-04
+**Version:** 1.1
+**Fecha:** 2026-03-21
 
 ---
 
@@ -35,7 +35,7 @@ PymePilot es un sistema de seguimiento pre y post venta + fidelizacion inteligen
             │                  │                  │
   ┌─────────▼──────┐ ┌────────▼───────┐ ┌────────▼───────┐
   │  MOTOR PYTHON   │ │  DASHBOARD     │ │  GRAFANA       │
-  │  4 verticales   │ │  Next.js       │ │  Monitoring    │
+  │  seguimiento    │ │  Next.js       │ │  Monitoring    │
   │  Claude API     │ │  PostgREST     │ │  grafana_reader│
   │  cron 5AM       │ │  GoTrue Auth   │ │  4 VIEWs       │
   └────────┬────────┘ └────────────────┘ └────────────────┘
@@ -99,7 +99,7 @@ PymePilot es un sistema de seguimiento pre y post venta + fidelizacion inteligen
 pymepilot/
 ├── backend/
 │   ├── engine/
-│   │   ├── verticales/         # V1-V4 (Template Method pattern)
+│   │   ├── seguimiento/        # Modulo 1 (V1-V4 dentro de un solo modulo)
 │   │   │   ├── __init__.py     # VERTICAL_REGISTRY centralizado
 │   │   │   ├── base.py         # VerticalBase (clase abstracta)
 │   │   │   ├── reposicion.py   # V2: prediccion de compra
@@ -122,11 +122,14 @@ pymepilot/
 │   │       └── logger.py       # SanitizingFormatter (redacta secrets)
 │   ├── config/
 │   │   ├── settings.py         # Configuracion desde .env
-│   │   └── prompts/            # Prompts por vertical (.txt)
-│   │       ├── reposicion.txt
-│   │       ├── activacion.txt
-│   │       ├── recuperacion.txt
-│   │       └── cross_sell.txt
+│   │   └── prompts/            # Prompts agrupados por modulo
+│   │       ├── seguimiento/
+│   │       │   ├── reposicion.txt
+│   │       │   ├── activacion.txt
+│   │       │   ├── recuperacion.txt
+│   │       │   └── cross_sell.txt
+│   │       ├── asesor_chat.txt
+│   │       └── smart_upload.txt
 │   ├── scripts/                # CLIs ejecutables
 │   │   ├── sync_erp.py         # Sync manual: --tenant-slug iey
 │   │   ├── run_vertical.py     # Ejecutar vertical: --vertical reposicion
@@ -138,19 +141,23 @@ pymepilot/
 │   ├── requirements.txt        # 10 dependencias Python
 │   └── venv/                   # Virtual environment
 ├── database/
-│   ├── migrations/             # 001-033 + rollbacks (66 archivos)
+│   ├── migrations/             # 001-057 + rollbacks (114 archivos)
 │   └── seed/                   # dev_data.sql (doble guard)
 ├── frontend/
 │   ├── src/app/
-│   │   ├── (auth)/login/       # Pagina de login
+│   │   ├── login/              # Pagina de login
 │   │   └── (dashboard)/        # Layout autenticado
 │   │       ├── page.tsx        # Home con KPIs
-│   │       ├── contactar/      # Lista "Contactar Hoy"
-│   │       ├── historial/      # Predicciones pasadas
+│   │       ├── pipeline/       # Pipeline CRM
+│   │       ├── cuentas-clave/  # Key Account Management
+│   │       ├── metricas/       # KPIs + charts + ranking
+│   │       ├── logros/         # Mis ventas / atribucion
 │   │       ├── datos/          # Estado sync + ERP card
-│   │       └── metricas/       # KPIs + charts + ranking
+│   │       ├── asesor/         # Asesor IA
+│   │       └── guia/           # Onboarding y ayuda visual
 │   ├── src/components/         # Componentes reutilizables
-│   ├── src/lib/                # Utilidades (supabase, format)
+│   ├── src/lib/                # Utilidades + config de producto
+│   │   └── products/           # Producto actual (Mayoristas)
 │   └── Dockerfile              # Multi-stage build
 ├── grafana/dashboards/         # JSON exportados
 │   ├── pymepilot-operaciones.json
@@ -195,10 +202,13 @@ Orquestador (main.py)
   ├── 1. Sync ERP (por cada tenant activo)
   │     └── SyncEngine.sync_all() → customers, products, orders
   │
-  ├── 2. Atribucion (run_attribution)
+  ├── 2. Refresh de vistas materializadas (una sola vez)
+  │     └── co_purchases + client_rankings
+  │
+  ├── 3. Atribucion (run_attribution)
   │     └── Marca predicciones que resultaron en compra real
   │
-  └── 3. Verticales (por cada vertical activa del tenant)
+  └── 4. Verticales (por cada vertical activa del tenant)
         │
         ├── V2 Reposicion (diario)
         │   Candidatos: clientes cuya proxima compra estimada cae en ventana 7-14 dias
@@ -230,11 +240,21 @@ Vendedor abre app.pymepilot.cloud
   │
   ├── PostgREST sirve datos → RLS filtra por tenant_id automaticamente
   │
+  ├── Producto actual:
+  │   └── `PymePilot Mayoristas`
+  │
+  ├── Navegacion:
+  │   └── `frontend/src/lib/products/` define el producto actual y su nav
+  │
   ├── Paginas:
-  │   ├── /contactar    → predictions WHERE status='pending' AND prediction_date reciente
-  │   ├── /historial    → predictions con filtros fecha/estado/vertical
-  │   ├── /datos        → sync_log + upload_jobs + estado ERP
-  │   └── /metricas     → 8 RPCs + VIEW client_rankings_secure
+  │   ├── /            → Inicio con KPIs
+  │   ├── /pipeline    → Seguimiento comercial
+  │   ├── /cuentas-clave → Key Account Management
+  │   ├── /metricas    → 8 RPCs + VIEW client_rankings_secure
+  │   ├── /logros      → Atribucion y rendimiento
+  │   ├── /datos       → sync_log + upload_jobs + estado ERP
+  │   ├── /asesor      → Chatbot IA
+  │   └── /guia        → Onboarding y ayuda visual
   │
   └── Acciones del vendedor:
       ├── Copiar mensaje → clipboard
@@ -427,7 +447,7 @@ Containers:
 
 ### 8.4 Migraciones
 
-33 migraciones + 33 rollbacks = 66 archivos SQL en `database/migrations/`. Cada migracion es idempotente y tiene su rollback correspondiente.
+57 migraciones + 57 rollbacks en `database/migrations/`. La migracion 057 agrega `segment` y `active_modules` a `tenants` para soportar activacion por modulo y evolucion futura por segmentos.
 
 ---
 

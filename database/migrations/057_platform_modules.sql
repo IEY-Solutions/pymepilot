@@ -42,14 +42,42 @@ SET
 WHERE active_modules = ARRAY['seguimiento']; -- idempotente
 
 -- 4. Constraint: segment debe ser un valor conocido
-ALTER TABLE public.tenants
-ADD CONSTRAINT IF NOT EXISTS tenants_segment_check
-CHECK (segment IN ('mayorista', 'minorista_a', 'minorista_b', 'minorista_c', 'servicios'));
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conname = 'tenants_segment_check'
+          AND conrelid = 'public.tenants'::regclass
+    ) THEN
+        ALTER TABLE public.tenants
+        ADD CONSTRAINT tenants_segment_check
+        CHECK (
+            segment IN (
+                'mayorista',
+                'minorista_a',
+                'minorista_b',
+                'minorista_c',
+                'servicios'
+            )
+        );
+    END IF;
+END $$;
 
 -- 5. Constraint: active_modules no puede estar vacío
-ALTER TABLE public.tenants
-ADD CONSTRAINT IF NOT EXISTS tenants_active_modules_not_empty
-CHECK (cardinality(active_modules) > 0);
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conname = 'tenants_active_modules_not_empty'
+          AND conrelid = 'public.tenants'::regclass
+    ) THEN
+        ALTER TABLE public.tenants
+        ADD CONSTRAINT tenants_active_modules_not_empty
+        CHECK (cardinality(active_modules) > 0);
+    END IF;
+END $$;
 
 -- 6. Notificar a PostgREST para que recargue el schema
 NOTIFY pgrst, 'reload schema';

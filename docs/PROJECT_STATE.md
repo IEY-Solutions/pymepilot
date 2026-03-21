@@ -3,7 +3,7 @@
 > **Archivo compartido entre Claude Code y Codex.**
 > Ambas IAs deben leer este archivo al iniciar una sesion y actualizarlo
 > al finalizar si hubo cambios relevantes en el estado del proyecto.
-> Ultima actualizacion: 2026-03-20
+> Ultima actualizacion: 2026-03-21
 
 ---
 
@@ -67,6 +67,8 @@ Sistema funciona para IEY sin intervencion manual.
 | Guia Onboarding | 2026-03-19 | /guia con Remotion Player embebido, 7 composiciones con wrappers visuales + cursor + highlights + text overlay, datos mock "Distribuidora Demo", IntersectionObserver autoplay, selector de modulos escalable |
 | **Auditoria Post-MVP** | **2026-03-20** | **1C + 5H + 12M + 8L corregidos. 5 agentes especializados + 4 rondas revision Codex. Commit 48210ea. Migracion 056 pendiente aplicar en DB.** |
 | Orquestador refresh post-sync | 2026-03-20 | Se agrego suite `backend/tests/test_main_orchestrator.py` y se reordeno `backend/main.py` a 2 fases: sync de todos los tenants primero, refresh unico de vistas materializadas despues, y recien ahi atribucion + verticales + push. Fix permanente para que `/metricas` y `client_rankings` muestren ventas del mismo dia en vez de la foto del dia anterior |
+| Reestructuracion multi-modulo verificada | 2026-03-21 | Renombre `backend/engine/verticales/` → `backend/engine/seguimiento/` verificado sin referencias viejas. Se corrigio bug de atribucion en `backend/engine/db/queries.py` agregando casts explicitos para `jsonb_build_object()` compatibles con psycopg 3, con test de regresion `backend/tests/test_db_queries.py`. Migracion `057_platform_modules.sql` corregida para PostgreSQL real y aplicada en produccion: `tenants.segment='mayorista'`, `tenants.active_modules={'seguimiento'}` y constraints creados OK |
+| Estructura modular minima | 2026-03-21 | Prompts del modulo `seguimiento` reorganizados en `backend/config/prompts/seguimiento/` con fallback legacy en `VerticalBase`. Navegacion del frontend extraida a `frontend/src/lib/products/` para representar `PymePilot Mayoristas` como producto actual. Documentacion nueva: `docs/modules/` y plan de evolucion por segmentos en `docs/plans/2026-03-21-estructura-modular-segmentos-design.md` |
 
 ---
 
@@ -95,7 +97,11 @@ Sistema funciona para IEY sin intervencion manual.
   2026-03-18 con probes reales para `Postgres`, `Kong/API`, `Auth`,
   `Grafana` y `App PymePilot`. Probes verificados `up` y dashboard
   principal actualizado para mostrarlos en una fila dedicada.
-
+- **Roadmap modular operativo:** vive en Notion como tarea
+  `Roadmap modular — cotizaciones y portal`
+  (`https://www.notion.so/32a63ade414e81bca4efd03c624b15a4`).
+  No esta duplicado en el repo; el repo solo conserva el documento
+  de diseño `docs/plans/2026-03-21-estructura-modular-segmentos-design.md`.
 ### Bloqueados
 - **WhatsApp Cloud API (Fase 6 Parte 2):** requiere SIM chip fisico
 - **Sync stock deposito:** requiere ticket Contabilium (pendiente respuesta)
@@ -172,10 +178,10 @@ Estos son los nombres tecnicos en el codigo. El marco de negocio actual los agru
 pymepilot/
 ├── CLAUDE.md                  # Instrucciones para IAs (fuente de verdad)
 ├── AGENTS.md → CLAUDE.md      # Symlink para Codex
-├── backend/engine/            # Motor Python (verticales, connectors, claude client)
+├── backend/engine/            # Motor Python (seguimiento, connectors, claude client)
 ├── backend/scripts/           # Scripts operativos (sync, run_vertical, etc.)
 ├── backend/config/            # Settings + prompts
-├── database/migrations/       # 001-053 + rollbacks
+├── database/migrations/       # 001-057 + rollbacks
 ├── frontend/                  # Next.js dashboard
 ├── docs/                      # PRD, ROADMAP, ARCHITECTURE, handoffs, plans
 ├── grafana/dashboards/        # 2 dashboards JSON
@@ -193,6 +199,7 @@ pymepilot/
 | `docs/PRD.md` | Product Requirements Document |
 | `docs/ROADMAP.md` | Roadmap v2 con fechas reales |
 | `docs/ARCHITECTURE.md` | Arquitectura completa |
+| `docs/modules/` | Documentacion funcional por modulo |
 | `docs/ONBOARDING.md` | Guia para nuevos tenants |
 | `docs/CONTABILIUM_API.md` | Referencia API Contabilium |
 | `docs/CLAUDE_ORIGINS.md` | Contexto historico de reglas CLAUDE.md |
@@ -203,6 +210,7 @@ pymepilot/
 
 | Archivo | Tema |
 |---------|------|
+| `docs/handoffs/2026-03-21_reestructuracion_multi_modulo.md` | Reestructuracion multi-modulo + verificacion + actualizacion minima |
 | `docs/handoffs/2026-03-19_branding_ui_handoff.md` | Branding inicial frontend + favicon + lockup login/header |
 | `docs/handoffs/2026-03-18_cambio_credenciales_login_handoff.md` | Cambio seguro de credenciales de acceso |
 | `docs/handoffs/2026-03-15_coexistencia_claude_codex.md` | Diseño coexistencia IAs |

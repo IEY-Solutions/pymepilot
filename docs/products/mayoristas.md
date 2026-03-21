@@ -40,7 +40,7 @@ Las 4 verticales del motor de predicción. Todas corren a las 5 AM vía orquesta
 | `cross_sell` | Semanal (lunes) | Top 5 por co-purchase score |
 
 **Código:** `backend/engine/seguimiento/`
-**Prompts:** `backend/config/prompts/` (reposicion.txt, activacion.txt, recuperacion.txt, cross_sell.txt)
+**Prompts:** `backend/config/prompts/seguimiento/`
 
 ---
 

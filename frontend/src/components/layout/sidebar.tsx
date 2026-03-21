@@ -2,22 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Database, BarChart3, Trophy, Bot, Columns3, Star, BookOpen } from "lucide-react";
 import { NotificationBadge } from "@/components/notifications/notification-badge";
-
-const navItems = [
-  { href: "/", label: "Inicio", icon: Home },
-  { href: "/pipeline", label: "Pipeline", icon: Columns3 },
-  { href: "/cuentas-clave", label: "Cuentas Clave", icon: Star },
-  { href: "/metricas", label: "Metricas", icon: BarChart3 },
-  { href: "/logros", label: "Mis ventas", icon: Trophy },
-  { href: "/datos", label: "Datos", icon: Database },
-  { href: "/asesor", label: "Asesor IA", icon: Bot },
-  { href: "/guia", label: "Guia", icon: BookOpen },
-];
+import { getCurrentDashboardNav } from "@/lib/products/current-product";
 
 export function Sidebar({ unreadCount = 0 }: { unreadCount?: number }) {
   const pathname = usePathname();
+  const navItems = getCurrentDashboardNav();
 
   return (
     <aside className="hidden md:flex w-14 border-r border-[rgba(129,181,161,0.1)] bg-[#1a2a2c] flex-col items-center">
@@ -40,7 +30,7 @@ export function Sidebar({ unreadCount = 0 }: { unreadCount?: number }) {
             >
               <span className="relative">
                 <item.icon className="h-5 w-5" />
-                {item.href === "/datos" && (
+                {item.showNotificationBadge && (
                   <NotificationBadge count={unreadCount} />
                 )}
               </span>

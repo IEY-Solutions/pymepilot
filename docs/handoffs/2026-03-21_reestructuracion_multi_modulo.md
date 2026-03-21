@@ -2,7 +2,7 @@
 
 **Fecha:** 2026-03-21
 **Commit:** c7800a1
-**Estado:** Completo. Listo para verificar y continuar.
+**Estado:** Verificado y ejecutado.
 
 ---
 
@@ -46,11 +46,18 @@ backend/engine/seguimiento/cross_sell.py
 **Archivo:** `database/migrations/057_platform_modules.sql`
 **Rollback:** `database/migrations/057_rollback.sql`
 
-**⚠️ PENDIENTE APLICAR EN DB DE PRODUCCIÓN:**
-```bash
-docker cp database/migrations/057_platform_modules.sql orion-menteax_postgres:/tmp/
-docker exec orion-menteax_postgres psql -U postgres -d orion_db -f /tmp/057_platform_modules.sql
-```
+**Estado real al cierre:** aplicada en DB de producción el 2026-03-21.
+
+**Detalle importante:** la versión inicial falló porque PostgreSQL no
+soporta `ADD CONSTRAINT IF NOT EXISTS`. La migración fue corregida con un
+patrón idempotente usando `pg_constraint` y luego reaplicada exitosamente.
+
+**Verificado en producción:**
+- columnas `segment` y `active_modules` existen en `public.tenants`
+- tenant activo `iey` quedó con `segment = 'mayorista'`
+- tenant activo `iey` quedó con `active_modules = {'seguimiento'}`
+- constraints `tenants_segment_check` y
+  `tenants_active_modules_not_empty` existen
 
 **Qué agrega:**
 - `segment TEXT DEFAULT 'mayorista'` — a qué mercado pertenece el tenant
@@ -68,6 +75,35 @@ sidebar dinámicamente. Solo se muestran las páginas de los módulos activos.
 | `docs/ARCHITECTURE.md` | Visión general + diagrama con WhatsApp + tabla 4 Pilares |
 | `docs/PROJECT_STATE.md` | Descripción del proyecto + escalera de mercado + 4 Pilares |
 | `docs/products/mayoristas.md` | **Nuevo.** Spec completo del producto mayorista B2B |
+
+### 4. Actualización posterior — estructura mínima implementada
+
+Después de la verificación inicial se aplicaron mejoras mínimas para que
+el proyecto quede listo para crecer por módulos sin reestructurar otra vez:
+
+- `backend/config/prompts/seguimiento/` ahora agrupa los 4 prompts del
+  módulo `seguimiento`
+- `backend/engine/seguimiento/base.py` busca primero prompts namespaced
+  por módulo y tiene fallback a la ruta legacy
+- `frontend/src/lib/products/` centraliza la configuración del producto
+  actual (`PymePilot Mayoristas`)
+- `frontend/src/components/layout/sidebar.tsx` y `bottom-nav.tsx`
+  renderizan navegación desde esa configuración, no desde arrays hardcodeados
+- `docs/modules/` documenta `seguimiento`, `cotizaciones` y `portal`
+- el mini-roadmap operativo de `cotizaciones` + `portal` quedó registrado
+  como tarea en Notion, no en el repo:
+  `Roadmap modular — cotizaciones y portal`
+  `https://www.notion.so/32a63ade414e81bca4efd03c624b15a4`
+
+### 5. Bug encontrado durante la verificación
+
+El dry-run del orquestador expuso un bug en atribución:
+
+- error: `psycopg.errors.IndeterminateDatatype`
+- causa raíz: `jsonb_build_object()` con parámetros sin cast explícito
+  bajo `psycopg 3`
+- fix aplicado en `backend/engine/db/queries.py`
+- cobertura agregada en `backend/tests/test_db_queries.py`
 
 ---
 
@@ -103,22 +139,29 @@ WHERE slug = 'iey';
 - Lógica interna de las verticales (reposicion, activacion, recuperacion, cross_sell)
 - La tabla `tenants.active_verticals` (sigue controlando qué verticales corren en el orquestador)
 - El orquestador `backend/main.py` (funciona igual, solo cambió 1 import)
-- El frontend (el sidebar dinámico se construye como parte del módulo 2, no ahora)
-- Los prompts en `backend/config/prompts/` (sin cambios, el path sigue resolviendo igual)
+- El frontend todavía NO lee `active_modules` reales desde la DB del tenant
+- No existen todavía `backend/engine/cotizaciones/` ni `backend/engine/portal/`
+- No existe todavía una capa `backend/products/` en código
 
 ---
 
-## Qué verificar
+## Qué quedó verificado
 
-1. **Migración 057 aplicada** — ver comando arriba. Sin esto, `active_modules` y `segment` no existen en la DB.
-2. **Orquestador funciona** — `python backend/main.py --dry-run --tenant-slug iey` debe correr sin errores.
-3. **Sin referencias viejas** — `grep -r "engine.verticales" backend/ --include="*.py"` debe dar vacío.
+1. **Migración 057 aplicada** — OK, con columnas y constraints presentes en producción.
+2. **Sin referencias viejas** — `grep -r "engine.verticales" backend/ --include="*.py"` dio vacío.
+3. **Orquestador/imports** — el flujo real pasó por `backend.engine.seguimiento`
+   y el bug de atribución encontrado fue corregido.
+4. **Prompts de seguimiento** — cargan desde `backend/config/prompts/seguimiento/`
+   con fallback legacy probado por test.
+5. **Frontend producto actual** — navegación extraída a `frontend/src/lib/products/`
+   representando `PymePilot Mayoristas`.
 
 ---
 
 ## Próximos pasos
 
-1. Aplicar migración 057 en DB de producción
-2. Diseñar módulo 2: Cotizaciones Automáticas (PRD en `docs/products/`)
-3. Diseñar módulo 3: Portal de Pedidos (PRD en `docs/products/`)
-4. Implementar sidebar dinámico en frontend que lea `active_modules`
+1. Diseñar módulo 2: Cotizaciones Automáticas (PRD en `docs/products/`)
+2. Crear `backend/engine/cotizaciones/`
+3. Crear prompts en `backend/config/prompts/cotizaciones/`
+4. Implementar lectura real de `active_modules` en frontend y backend
+5. Diseñar módulo 3: Portal de Pedidos

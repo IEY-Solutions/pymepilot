@@ -2,22 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Database, BarChart3, Trophy, Columns3, Bot, Star, BookOpen } from "lucide-react";
 import { NotificationBadge } from "@/components/notifications/notification-badge";
-
-const navItems = [
-  { href: "/", label: "Inicio", icon: Home },
-  { href: "/pipeline", label: "Pipeline", icon: Columns3 },
-  { href: "/cuentas-clave", label: "Cuentas", icon: Star },
-  { href: "/metricas", label: "Metricas", icon: BarChart3 },
-  { href: "/logros", label: "Mis ventas", icon: Trophy },
-  { href: "/datos", label: "Datos", icon: Database },
-  { href: "/asesor", label: "Asesor", icon: Bot },
-  { href: "/guia", label: "Guia", icon: BookOpen },
-];
+import { getCurrentDashboardNav } from "@/lib/products/current-product";
 
 export function BottomNav({ unreadCount = 0 }: { unreadCount?: number }) {
   const pathname = usePathname();
+  const navItems = getCurrentDashboardNav();
 
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 border-t border-[rgba(129,181,161,0.1)] bg-[#1a2a2c] z-50">
@@ -39,11 +29,11 @@ export function BottomNav({ unreadCount = 0 }: { unreadCount?: number }) {
             >
               <span className="relative">
                 <item.icon className={`h-5 w-5 ${isActive ? "stroke-[2.5]" : ""}`} />
-                {item.href === "/datos" && (
+                {item.showNotificationBadge && (
                   <NotificationBadge count={unreadCount} />
                 )}
               </span>
-              {item.label}
+              {item.shortLabel ?? item.label}
             </Link>
           );
         })}

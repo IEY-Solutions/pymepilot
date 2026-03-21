@@ -68,7 +68,7 @@ class VerticalBase(ABC):
 
     Subclases DEBEN implementar:
       - vertical_name (str): 'reposicion', 'activacion', etc.
-      - prompt_file (str): nombre del archivo .txt en config/prompts/
+      - prompt_file (str): nombre del archivo .txt en config/prompts/<modulo>/
       - get_candidates(): como buscar candidatos
       - get_context(): que datos extra necesita cada candidato
       - calculate_confidence(): como medir la confianza (0.0 a 1.0)
@@ -86,6 +86,7 @@ class VerticalBase(ABC):
     # --- Atributos que la subclase DEBE definir ---
     vertical_name: str
     prompt_file: str
+    prompt_namespace: str = 'seguimiento'
 
     # --- Atributos configurables (override opcional) ---
     max_tokens_response: int = 300  # Un mensaje de WhatsApp no necesita mas
@@ -353,7 +354,9 @@ class VerticalBase(ABC):
 
         El archivo usa ===SYSTEM=== y ===USER=== como separadores.
         """
-        path = _PROMPTS_DIR / self.prompt_file
+        namespaced_path = _PROMPTS_DIR / self.prompt_namespace / self.prompt_file
+        legacy_path = _PROMPTS_DIR / self.prompt_file
+        path = namespaced_path if namespaced_path.exists() else legacy_path
         content = path.read_text(encoding='utf-8')
 
         parts = content.split('===USER===')
@@ -366,7 +369,9 @@ class VerticalBase(ABC):
         self._prompt_system = parts[0].replace('===SYSTEM===', '').strip()
         self._prompt_user = parts[1].strip()
 
-        logger.debug(f"Prompt template cargado: {self.prompt_file}")
+        logger.debug(
+            f"Prompt template cargado: {self.prompt_namespace}/{self.prompt_file}"
+        )
 
     def _generate_message(self, prompt_data: dict) -> dict:
         """Rellena el template y llama a Claude.
