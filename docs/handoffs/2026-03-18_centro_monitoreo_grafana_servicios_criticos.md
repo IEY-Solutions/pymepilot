@@ -123,9 +123,9 @@ Estos cambios viven en `/opt/orion-stack/` y fueron aplicados manualmente con `s
   - modulo `http_api` con `valid_status_codes: [200, 401]`
   - modulo `tcp_connect`
 
-## Importante para Claude Code
+## Importante para Codex
 
-Si Claude Code quiere auditar el estado real, no alcanza con mirar el repo.
+Si Codex quiere auditar el estado real, no alcanza con mirar el repo.
 Tambien tiene que revisar la infraestructura viva en `/opt/orion-stack/`, porque parte del trabajo quedo aplicada manualmente en produccion/desarrollo.
 
 ## Validaciones hechas

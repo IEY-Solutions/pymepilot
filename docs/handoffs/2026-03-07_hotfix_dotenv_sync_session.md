@@ -19,7 +19,7 @@ Pato reporto que el sync de Contabilium programado para las 5 AM no se ejecuto.
 |-------------|--------|
 | ~01:54 | Ultima ejecucion exitosa del upload worker |
 | ~01:55 | Upload worker empieza a fallar: `Connection refused` a `127.0.0.1:5432` |
-| ~02:01 | Sesion de Claude Code (Fase 10 Bloque C) ejecuta `setup_vapid.py` |
+| ~02:01 | Sesion de Codex (Fase 10 Bloque C) ejecuta `setup_vapid.py` |
 | 04:30 | Drive sync falla: `SUPABASE_URL no configurada` |
 | 05:00 | Orquestador falla: `PoolTimeout` conectando a `127.0.0.1` |
 | 05:30 | Freshness check falla: mismo error |

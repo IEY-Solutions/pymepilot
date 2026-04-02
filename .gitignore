@@ -58,6 +58,6 @@ tmp/
 temp/
 *.tmp
 
-# --- Claude Code (memoria y plans son locales) ---
-.claude/agent-memory/
-.claude/plans/
+# --- Codex local context ---
+.codex/memories/
+.codex/plans/

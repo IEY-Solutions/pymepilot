@@ -166,7 +166,7 @@ pymepilot/
 └── scripts/                    # Scripts de operaciones del servidor
     ├── backup-postgresql.sh
     ├── restore-postgresql.sh
-    └── claude-safe.sh
+    └── utilidades operativas
 ```
 
 ---

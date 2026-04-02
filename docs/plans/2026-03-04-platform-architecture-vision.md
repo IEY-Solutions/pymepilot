@@ -113,7 +113,7 @@ duplicaría todo eso. Un solo login, un solo dashboard, una sola factura.
 │
 ├── grafana/dashboards/                 ← monitoreo compartido
 ├── docs/                               ← documentación compartida
-└── CLAUDE.md                           ← reglas compartidas
+└── AGENTS.md                           ← reglas compartidas
 ```
 
 ---

@@ -41,7 +41,7 @@ el segundo distribuidor.
 | Script de onboarding | No hay create-tenant.sh ni automatizacion |
 | Crear usuario admin | Manual (Supabase Auth + user_profiles INSERT) |
 | Pagina config ERP | /datos muestra estado, no permite configurar |
-| Test aislamiento | 0 tests. Guias en .claude/commands/ pero sin implementar |
+| Test aislamiento | 0 tests. Guias en .agents/skills/ pero sin implementar |
 | Documentacion onboarding | No existe |
 | MEDIUMs pre multi-usuario | 3 pendientes (sanitize, metadata, dedup) |
 
@@ -88,11 +88,11 @@ CREATE TABLE tenants (
 
 ## Recursos disponibles
 
-- `.claude/skills/database/multi-tenant-rls.md` — RLS patterns
-- `.claude/skills/database/tenant-isolation-testing.md` — Test suite guide
-- `.claude/skills/database/rls-testing.md` — RLS testing patterns
-- `.claude/skills/security/security-audit-checklist.md` — Checklist pre-deploy
-- `.claude/skills/integrations/data-transformation.md` — Schema mapping
+- `.agents/skills/database/multi-tenant-rls.md` — RLS patterns
+- `.agents/skills/database/tenant-isolation-testing.md` — Test suite guide
+- `.agents/skills/database/rls-testing.md` — RLS testing patterns
+- `.agents/skills/security/security-audit-checklist.md` — Checklist pre-deploy
+- `.agents/skills/integrations/data-transformation.md` — Schema mapping
 - `backend/scripts/setup_credentials.py` — Referencia para encriptar creds
 - `backend/engine/connectors/` — Conectores existentes (base, contabilium, excel, smart)
 

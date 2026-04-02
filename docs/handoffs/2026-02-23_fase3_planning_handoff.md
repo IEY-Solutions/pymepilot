@@ -31,9 +31,9 @@ Estructura: 3 sub-fases, 7 sesiones.
 
 ## Pendiente ANTES de empezar implementación
 
-- **Instalar MCP Context7** — se empezó pero no se completó. Context7 da docs actualizadas de Next.js, Supabase, etc. dentro de Claude Code.
+- **Instalar MCP Context7** — se empezó pero no se completó. Context7 da docs actualizadas de Next.js, Supabase, etc. dentro de Codex.
   - Se necesita verificar que `npx` / Node.js están instalados en el VPS
-  - Configurar en `.claude/settings.json` o `.claude/settings.local.json`
+  - Configurar en `.codex/config.toml` o `.codex/config.toml`
 
 ## Orden de implementación
 
@@ -59,7 +59,7 @@ Estructura: 3 sub-fases, 7 sesiones.
 ```
 Continuamos con la Fase 3 del dashboard MVP de PymePilot.
 Lee el handoff en docs/handoffs/2026-02-23_fase3_planning_handoff.md
-y el CLAUDE.md completo antes de empezar.
+y el AGENTS.md completo antes de empezar.
 
 Pendientes en orden:
 1. Instalar MCP Context7 (quedó pendiente)

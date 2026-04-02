@@ -17,7 +17,7 @@
    - Tiempo: lo que haga falta, hacerlo bien
    - Enfoque elegido: A — Grafana directo a PostgreSQL (no Prometheus instrumentation)
 4. **Design aprobado** seccion por seccion (6 secciones)
-5. **Design doc commiteado** con protocolos de CLAUDE.md embebidos
+5. **Design doc commiteado** con protocolos de AGENTS.md embebidos
 
 ## Descubrimientos importantes
 

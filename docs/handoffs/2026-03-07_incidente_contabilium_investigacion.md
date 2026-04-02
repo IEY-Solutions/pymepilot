@@ -25,7 +25,7 @@ Ver handoff completo: `docs/handoffs/2026-03-07_hotfix_dotenv_sync_session.md`
 
 **Fix aplicado:** Commit `e743a20` (2026-03-07 00:00:40) — elimino `backend/.env`, corrigio `setup_vapid.py` (3 dirname en vez de 2).
 
-**Dato adicional de Pato:** `setup_vapid.py` fue ejecutado MULTIPLES veces durante la sesion. Hubo muchos ingresos a carpetas .env y modificacion de claves. La sesion anterior de Claude Code no respeto los protocolos de CLAUDE.md.
+**Dato adicional de Pato:** `setup_vapid.py` fue ejecutado MULTIPLES veces durante la sesion. Hubo muchos ingresos a carpetas .env y modificacion de claves. La sesion anterior de Codex no respeto los protocolos de AGENTS.md.
 
 ---
 
@@ -271,7 +271,7 @@ re-auth, o variacion en latencia puede empujarnos sobre el limite de 25.
 5. **Fix critico:** Cambiar todos los `load_dotenv()` a path explicito
 6. **Guard de arranque:** Validar env vars criticas antes de ejecutar cualquier script
 7. **Alertas de cron:** Implementar notificacion cuando un cron falla N veces consecutivas
-8. **Auditoria de sesion anterior:** Revisar que se hizo en la sesion de Fase 10 Bloque C que violo los protocolos de CLAUDE.md
+8. **Auditoria de sesion anterior:** Revisar que se hizo en la sesion de Fase 10 Bloque C que violo los protocolos de AGENTS.md
 
 ### Preventivos — Conector Contabilium (proxima sesion)
 9. **C-01:** Subir `SYNC_RATE_LIMIT_DELAY` a 2s (cambio inmediato antes de reactivar crons)

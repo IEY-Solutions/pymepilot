@@ -1,9 +1,9 @@
 # PymePilot — Estado del Proyecto
 
-> **Archivo compartido entre Claude Code y Codex.**
-> Ambas IAs deben leer este archivo al iniciar una sesion y actualizarlo
-> al finalizar si hubo cambios relevantes en el estado del proyecto.
-> Ultima actualizacion: 2026-03-21
+> **Archivo compartido entre sesiones de Codex.**
+> Leer este archivo al iniciar una sesion y actualizarlo al finalizar si
+> hubo cambios relevantes en el estado del proyecto.
+> Ultima actualizacion: 2026-04-02
 
 ---
 
@@ -16,9 +16,15 @@ Escala progresivamente de mercados mayoristas a minoristas y servicios.
 **En una linea:** PYMEPILOT convierte cada venta en el inicio de una relacion, no en el fin de una transaccion.
 
 **Cliente activo:** IEY (Distribuidor #1 MagSafe Argentina).
+IEY es el tenant de validacion activo, no la plantilla del producto. Toda logica compartida de PymePilot debe seguir siendo reusable, configurable por tenant y lista para escalar a multiples clientes.
 Resultados validados: facturacion recurrente 34%→74%, churn 18%→8%.
 
 **Modelo de negocio:** fee base + rev share sobre ventas recuperadas atribuibles.
+
+**Pack de reconstruccion:** `docs/reconstruction/README.md`
+si vas a rehacer el sistema en otro repo. Ese pack concentra el mapa del
+sistema, contratos tecnicos, modulos, operacion, base de datos y decisiones
+que no conviene perder.
 
 **Escalera de mercado:**
 - HOY: Distribuidoras mayoristas Argentina (~8.000 empresas)
@@ -64,6 +70,9 @@ Sistema funciona para IEY sin intervencion manual.
 | Branding UI | 2026-03-19 | Favicon PymePilot productivo + logo integrado en login y header |
 | Cuentas Clave | 2026-03-19 | Key Account Management: 3 tablas + 3 RPCs, grilla con semaforo, detalle 7 bloques, notas con acciones, alertas, nudge seguimiento |
 | Metodologia libre Codex | 2026-03-20 | Config global ajustada para sesiones nuevas con `approval_policy=never` y `sandbox_mode=danger-full-access` (Full Access por defecto), manteniendo denylist global en `~/.codex/rules/default.rules` con 41 bloqueos de alto riesgo para Docker/SO/PostgreSQL/Git/Crons/secrets. Override PymePilot alineado con worktrees proactivos. Hotfix Linux sandbox en este VPS: `features.use_linux_sandbox_bwrap=false` + `features.use_legacy_landlock=true` para evitar el fallo `bwrap: loopback: Failed RTM_NEWADDR: Operation not permitted` y restaurar ejecucion normal |
+| Manuales operativos Codex | 2026-04-02 | Reescritura elite de `C:\\Users\\Admin\\.codex\\AGENTS.md` y `AGENTS.md` del repo como fuente activa de instrucciones. `CLAUDE.md` queda como nota historica de compatibilidad y sus prioridades operativas utiles fueron fusionadas en ambos manuales |
+| Linear MCP first | 2026-04-02 | `AGENTS.md` global y del repo reforzados para que Codex use Linear por MCP como sistema operativo real: buscar y reutilizar issues/proyectos, crear artifacts automaticamente cuando no existan, dejar bundles documentales fijos, leer el `PYM-*` o proyecto antes de trabajar y mantener comentarios o status updates mientras avanza |
+| Anti-overfitting multi-cliente | 2026-04-02 | `AGENTS.md` global, `AGENTS.md` del repo y resources activos de Linear reforzados para prohibir logica acoplada a IEY. IEY queda como tenant de validacion, no como plantilla del producto; cualquier necesidad especifica de cliente debe aislarse en configuracion, mappings, prompts parametrizados o adapters por tenant |
 | Guia Onboarding | 2026-03-19 | /guia con Remotion Player embebido, 7 composiciones con wrappers visuales + cursor + highlights + text overlay, datos mock "Distribuidora Demo", IntersectionObserver autoplay, selector de modulos escalable |
 | **Auditoria Post-MVP** | **2026-03-20** | **1C + 5H + 12M + 8L corregidos. 5 agentes especializados + 4 rondas revision Codex. Commit 48210ea. Migracion 056 pendiente aplicar en DB.** |
 | Orquestador refresh post-sync | 2026-03-20 | Se agrego suite `backend/tests/test_main_orchestrator.py` y se reordeno `backend/main.py` a 2 fases: sync de todos los tenants primero, refresh unico de vistas materializadas despues, y recien ahi atribucion + verticales + push. Fix permanente para que `/metricas` y `client_rankings` muestren ventas del mismo dia en vez de la foto del dia anterior |
@@ -176,8 +185,7 @@ Estos son los nombres tecnicos en el codigo. El marco de negocio actual los agru
 
 ```
 pymepilot/
-├── CLAUDE.md                  # Instrucciones para IAs (fuente de verdad)
-├── AGENTS.md → CLAUDE.md      # Symlink para Codex
+├── AGENTS.md                  # Instrucciones para IAs (fuente de verdad)
 ├── backend/engine/            # Motor Python (seguimiento, connectors, claude client)
 ├── backend/scripts/           # Scripts operativos (sync, run_vertical, etc.)
 ├── backend/config/            # Settings + prompts
@@ -185,7 +193,6 @@ pymepilot/
 ├── frontend/                  # Next.js dashboard
 ├── docs/                      # PRD, ROADMAP, ARCHITECTURE, handoffs, plans
 ├── grafana/dashboards/        # 2 dashboards JSON
-├── .claude/                   # Skills y agentes Claude Code
 ├── .agents/                   # Skills Codex
 └── .codex/                    # Config Codex
 ```
@@ -202,7 +209,6 @@ pymepilot/
 | `docs/modules/` | Documentacion funcional por modulo |
 | `docs/ONBOARDING.md` | Guia para nuevos tenants |
 | `docs/CONTABILIUM_API.md` | Referencia API Contabilium |
-| `docs/CLAUDE_ORIGINS.md` | Contexto historico de reglas CLAUDE.md |
 
 ---
 
@@ -213,7 +219,6 @@ pymepilot/
 | `docs/handoffs/2026-03-21_reestructuracion_multi_modulo.md` | Reestructuracion multi-modulo + verificacion + actualizacion minima |
 | `docs/handoffs/2026-03-19_branding_ui_handoff.md` | Branding inicial frontend + favicon + lockup login/header |
 | `docs/handoffs/2026-03-18_cambio_credenciales_login_handoff.md` | Cambio seguro de credenciales de acceso |
-| `docs/handoffs/2026-03-15_coexistencia_claude_codex.md` | Diseño coexistencia IAs |
 | `docs/handoffs/2026-03-11_auditoria_pre_mvp_sesion2.md` | Auditoria pre-MVP paso 2 |
 | `docs/handoffs/2026-03-10_dashboard_metricas_mejoras.md` | Mejoras dashboard metricas |
 | `docs/handoffs/2026-03-10_pipeline_crm_sesion4.md` | Pipeline CRM sesion 4 |
@@ -229,4 +234,4 @@ pymepilot/
 - **Regla de las Dos Opciones:** Ante cualquier decision, presentar al menos 2 opciones con pros/contras.
 - **Context7 MCP:** Consultar documentacion actualizada antes de escribir codigo con librerias externas.
 - **Vistas materializadas:** Si se hace sync sin orquestador, recordar `SELECT public.refresh_materialized_views()`.
-- Leer `CLAUDE.md` completo para todas las reglas operativas.
+- Leer `AGENTS.md` completo para todas las reglas operativas.

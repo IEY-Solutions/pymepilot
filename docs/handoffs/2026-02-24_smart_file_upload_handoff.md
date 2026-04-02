@@ -61,7 +61,7 @@ Implementar el plan en `docs/plans/2026-02-24-smart-file-upload-plan.md`.
 
 ## Archivos clave del proyecto (contexto)
 
-- `CLAUDE.md` — reglas de seguridad y protocolos obligatorios
+- `AGENTS.md` — reglas de seguridad y protocolos obligatorios
 - `docs/ROADMAP.md` — roadmap general del proyecto
 - `docs/PRD.md` — product requirements document
 - Fase 0-3 completadas, esta es funcionalidad nueva post-Fase 3

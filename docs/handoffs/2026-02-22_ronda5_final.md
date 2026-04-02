@@ -1,7 +1,7 @@
 # Handoff: Sesion 2026-02-22 — Ronda 5 + GATE final + ExitPlanMode
 
 **Fecha:** 2026-02-22
-**Plan:** `~/.claude/plans/gentle-riding-dijkstra.md` (~1720 lineas)
+**Plan:** `~/.codex/plans/gentle-riding-dijkstra.md` (~1720 lineas)
 
 ---
 
@@ -72,7 +72,7 @@
 ## Proximos pasos
 
 1. **Abrir sesion de IMPLEMENTACION** (separada de auditoria)
-2. **Implementar** pasos 1-12 del plan (Claude Code)
+2. **Implementar** pasos 1-12 del plan (Codex)
 3. **Pato ejecuta** paso 12.5 (cambiar password pymepilot_app)
 4. **Pato ejecuta** pasos 13-17 (credenciales, sync)
 
@@ -94,5 +94,5 @@ Todo lo de sesiones anteriores +
 
 ```
 docs/handoffs/2026-02-22_ronda5_final.md     (NUEVO — este archivo)
-~/.claude/plans/gentle-riding-dijkstra.md     (MODIFICADO — 10 correcciones R4+R5)
+~/.codex/plans/gentle-riding-dijkstra.md     (MODIFICADO — 10 correcciones R4+R5)
 ```

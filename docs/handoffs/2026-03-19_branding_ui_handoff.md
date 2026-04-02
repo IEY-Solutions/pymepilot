@@ -4,7 +4,7 @@
 
 Objetivo: aplicar branding basico de PymePilot en la app publicada para que la
 marca deje de verse "default" y quede lista para una iteracion visual mejor
-con Claude Code.
+con Codex.
 
 Se implemento y publico:
 
@@ -67,7 +67,7 @@ El health check de `frontend/deploy.sh` dio falso negativo otra vez, pero los
 logs mostraron `Ready` y la verificacion HTTP manual confirmo que la app
 servida estaba bien.
 
-## Recomendaciones para Claude Code (mejoras frontend)
+## Recomendaciones para Codex (mejoras frontend)
 
 1. Reemplazar el uso de `favicon.ico` por un logo real en `SVG` o `PNG`.
    - Ideal: `frontend/public/logo-pymepilot.svg`
@@ -112,7 +112,7 @@ Base actual revisada antes del commit: `5ec2e8a`
 
 Habia cambios previos NO relacionados que no se deben mezclar ni revertir:
 
-- `.claude/settings.local.json`
+- `.codex/config.toml`
 - `.codex/config.toml`
 - `docs/AUDIT-PRE-PRODUCTION-20260314.md`
 - `starter-kit.tar.gz`
@@ -120,7 +120,7 @@ Habia cambios previos NO relacionados que no se deben mezclar ni revertir:
 
 El commit de esta sesion debe incluir solo branding UI + handoff.
 
-## Prompt sugerido para Claude Code
+## Prompt sugerido para Codex
 
 ```text
 Lee primero AGENTS.md y docs/PROJECT_STATE.md completos. Despues lee

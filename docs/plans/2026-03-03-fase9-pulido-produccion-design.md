@@ -25,7 +25,7 @@ actualizada.
 
 ## Protocolos de seguridad y desarrollo aplicables
 
-> Extraidos de CLAUDE.md. Se aplican a TODA implementacion de esta fase.
+> Extraidos de AGENTS.md. Se aplican a TODA implementacion de esta fase.
 > NO se evalua si aplican — se ejecutan (Regla Madre 1).
 
 ### Protocolo post-modificacion de codigo (OBLIGATORIO)

@@ -22,10 +22,10 @@ Auditoría final pre-Fase 2 comparando contra Ronda 6:
 **Resultado: 0 CRITICAL, 0 HIGH. Listo para Fase 2.**
 
 Reportes guardados en:
-- `.claude/agent-memory/security-guardian/audit-round7-final-fase1.md`
-- `.claude/agent-memory/python-engine/audit-code-fase1-r7.md`
-- `.claude/agent-memory/db-architect/audit-ronda7-final.md`
-- `.claude/agent-memory/api-integrations/audit-code-fase1.md`
+- `.codex/memories/security-guardian/audit-round7-final-fase1.md`
+- `.codex/memories/python-engine/audit-code-fase1-r7.md`
+- `.codex/memories/db-architect/audit-ronda7-final.md`
+- `.codex/memories/api-integrations/audit-code-fase1.md`
 
 ### 2. Diseño de Fase 2 con Pato
 
@@ -43,7 +43,7 @@ Sesión de diseño colaborativa donde se definió:
 
 - **Fase 1:** 90% (pendiente: sync Contabilium, Cloudflare blocker)
 - **Fase 2:** PLAN APROBADO, pre-implementación
-- **Plan detallado:** `~/.claude/plans/shiny-prancing-hedgehog.md`
+- **Plan detallado:** `~/.codex/plans/shiny-prancing-hedgehog.md`
 - **Plan resumen:** `docs/FASE2_PLAN.md`
 
 ---
@@ -96,7 +96,7 @@ Sesión de diseño colaborativa donde se definió:
 ```
 LEER PRIMERO:
   docs/FASE2_PLAN.md                     — Plan resumen aprobado
-  ~/.claude/plans/shiny-prancing-hedgehog.md — Plan detallado completo
+  ~/.codex/plans/shiny-prancing-hedgehog.md — Plan detallado completo
 
 REUTILIZAR (no modificar):
   backend/engine/db/connection.py        — get_db_connection(), get_tenant_id_by_slug()

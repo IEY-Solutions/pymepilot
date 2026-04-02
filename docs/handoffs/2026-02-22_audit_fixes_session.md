@@ -15,10 +15,10 @@ se perdio por compactacion de contexto. Se re-ejecutaron 4 agentes:
 
 | Agente | Hallazgos | Reporte |
 |--------|-----------|---------|
-| Security Guardian | 0C, 2H, 5M, 4L, 2I | `.claude/agent-memory/security-guardian/audit-round6-code-fase1.md` |
-| Python Engine | 0C, 4H, 12M, 8L, 6I | `.claude/agent-memory/python-engine/audit-code-fase1.md` |
-| DB Architect | 0C, 2H, 5M, 6L, 6I | `.claude/agent-memory/db-architect/audit-code-fase1.md` |
-| API Integrations | 0C, 0H, 3M, 4L, 8I | `.claude/agent-memory/api-integrations/audit-code-fase1.md` |
+| Security Guardian | 0C, 2H, 5M, 4L, 2I | `.codex/memories/security-guardian/audit-round6-code-fase1.md` |
+| Python Engine | 0C, 4H, 12M, 8L, 6I | `.codex/memories/python-engine/audit-code-fase1.md` |
+| DB Architect | 0C, 2H, 5M, 6L, 6I | `.codex/memories/db-architect/audit-code-fase1.md` |
+| API Integrations | 0C, 0H, 3M, 4L, 8I | `.codex/memories/api-integrations/audit-code-fase1.md` |
 
 **Veredicto unanime: APROBADO CON CONDICIONES (0 CRITICAL)**
 

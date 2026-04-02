@@ -286,4 +286,4 @@ Cada prediction-card muestra un badge con:
 - Prompts no incluyen datos sensibles (no API keys, no credenciales)
 - Metadata no contiene PII adicional a lo que ya esta en customers
 - Exclusion V2-V4 evita spam al mismo cliente
-- Sin escritura al ERP (solo lectura, regla #1 de CLAUDE.md)
+- Sin escritura al ERP (solo lectura, regla #1 de AGENTS.md)

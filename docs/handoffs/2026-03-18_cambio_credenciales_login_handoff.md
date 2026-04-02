@@ -118,7 +118,7 @@ Base actual revisada: commit `b3e7cfc`.
 
 Habia cambios previos NO relacionados que no se tocaron ni se deben revertir:
 
-- `.claude/settings.local.json`
+- `.codex/config.toml`
 - `.codex/config.toml`
 - `docs/AUDIT-PRE-PRODUCTION-20260314.md`
 - `starter-kit.tar.gz`

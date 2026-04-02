@@ -1,6 +1,6 @@
 # Prompt de inicio — Fase 3: Dashboard MVP
 
-Copiar y pegar esto al iniciar una nueva sesion de Claude Code:
+Copiar y pegar esto al iniciar una nueva sesion de Codex:
 
 ---
 
@@ -20,7 +20,7 @@ Arrancamos la **Fase 3: Dashboard MVP**. Necesito un dashboard web donde el vend
 
 **Antes de escribir codigo**, lee estos archivos para entender el contexto completo:
 
-1. `CLAUDE.md` — Reglas de seguridad y protocolos (OBLIGATORIO)
+1. `AGENTS.md` — Reglas de seguridad y protocolos (OBLIGATORIO)
 2. `docs/ROADMAP.md` — Seccion "Fase 3: Dashboard MVP" (tareas 3.1 a 3.8)
 3. `docs/handoffs/2026-02-22_fase2_audit_session.md` — Handoff mas reciente
 4. `docs/PRD.md` — Requisitos de producto
@@ -51,7 +51,7 @@ Arrancamos la **Fase 3: Dashboard MVP**. Necesito un dashboard web donde el vend
 - **Mobile-first**: disenar para celular primero, despues desktop
 - **Seguridad multi-tenant**: el JWT debe incluir tenant_id, las API routes deben filtrar por tenant
 - **Solo lectura del backend Python**: el dashboard lee la DB, no ejecuta el motor
-- Seguir TODOS los protocolos de CLAUDE.md (modo educativo, post-modificacion, etc.)
+- Seguir TODOS los protocolos de AGENTS.md (modo educativo, post-modificacion, etc.)
 
 ## Como empezar
 

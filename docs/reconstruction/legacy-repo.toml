@@ -1,0 +1,9 @@
+[legacy]
+name = "pymepilot"
+root = "../pymepilot"
+mode = "read-only"
+branch = "main"
+
+[notes]
+purpose = "Use the legacy checkout as the functional reference while rebuilding the new repo."
+guidance = "If the legacy checkout lives elsewhere, update root before starting migration work."

@@ -2,7 +2,7 @@
 
 **Fecha:** 2026-02-22
 **Estado:** APROBADO por Pato
-**Plan detallado:** `~/.claude/plans/shiny-prancing-hedgehog.md`
+**Plan detallado:** `~/.codex/plans/shiny-prancing-hedgehog.md`
 
 ---
 

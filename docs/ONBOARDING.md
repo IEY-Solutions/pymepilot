@@ -162,7 +162,7 @@ WHERE slug = 'SLUG';
 ### Error: "test_connection() fallo"
 - Verificar credenciales ERP (client_id, client_secret)
 - Verificar que la API del ERP esta accesible desde el VPS
-- Ver checklist de riesgos en CLAUDE.md (Cloudflare, firewall, etc.)
+- Ver checklist de riesgos en AGENTS.md (Cloudflare, firewall, etc.)
 
 ### El dashboard muestra datos de otro tenant
 - **CRITICO:** Verificar que `app_metadata.tenant_id` del usuario es correcto

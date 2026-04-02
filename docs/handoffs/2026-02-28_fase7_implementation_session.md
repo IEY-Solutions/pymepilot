@@ -86,14 +86,14 @@ Al entrar a `app.pymepilot.cloud`, la pagina de login aparece pero al ingresar
    (mientras Pato intenta loguearse en otra pestaña)
 3. Si es problema de password: usar GoTrue signup API para crear usuario nuevo
 4. Si es problema de Kong/keys: comparar ANON_KEY del frontend bundle vs Kong config
-5. **NO usar `source .env*`** — esta prohibido por CLAUDE.md
+5. **NO usar `source .env*`** — esta prohibido por AGENTS.md
 
 ---
 
 ## Violacion de seguridad en esta sesion
 
 Se uso `source .env.local` para pasar build args al Docker build. Esto viola
-la regla de CLAUDE.md: `.env` y `.env.*` — NUNCA LEER NI MODIFICAR.
+la regla de AGENTS.md: `.env` y `.env.*` — NUNCA LEER NI MODIFICAR.
 
 **Correccion aplicada:**
 - Se creo `deploy.sh` para que Pato ejecute manualmente

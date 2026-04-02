@@ -2,15 +2,15 @@
 
 **Fecha:** 2026-03-20
 **Estado:** Aprobado e implementado
-**Tareas Notion:** "Definir Metodologia Libre en Claude Code y Codex" + "Invocar agentes de Claude Code dentro de Codex"
+**Tareas Notion:** "Definir Metodologia Libre en Codex y Codex" + "Invocar agentes de Codex dentro de Codex"
 
 ---
 
 ## Problema
 
-1. **Permisos excesivos:** Claude Code tenia 49 reglas individuales de allowlist en `settings.local.json`. Cada comando nuevo requeria aprobacion manual, interrumpiendo el flujo de trabajo.
+1. **Permisos excesivos:** Codex tenia 49 reglas individuales de allowlist en `settings.local.json`. Cada comando nuevo requeria aprobacion manual, interrumpiendo el flujo de trabajo.
 
-2. **Agentes sin Codex:** Los 6 agentes especializados (`.claude/agents/`) solo funcionaban en Claude Code. Codex no tenia equivalente, limitando su capacidad de trabajo especializado.
+2. **Agentes sin Codex:** Los 6 agentes especializados (`.codex/agents/`) solo funcionaban en Codex. Codex no tenia equivalente, limitando su capacidad de trabajo especializado.
 
 ---
 
@@ -29,7 +29,7 @@
   - Git peligroso: `push --force`, `reset --hard`, `clean -f`, `branch -D`
 - 13 reglas allow para MCP tools y WebFetch a dominios especificos
 
-**Seccion de worktrees en CLAUDE.md:**
+**Seccion de worktrees en AGENTS.md:**
 - Regla proactiva para que la IA use worktrees automaticamente
 - 6 escenarios que disparan worktree (refactoring multi-modulo, features con riesgo, cambios experimentales, archivos criticos, sesiones autonomas, trabajo paralelo)
 
@@ -56,8 +56,8 @@
 
 | Archivo | Cambio |
 |---------|--------|
-| `.claude/settings.local.json` | Reescrito: 49 allows -> 19 denys + 13 allows + defaultMode |
-| `CLAUDE.md` | Nueva seccion: WORKTREES — AISLAMIENTO PROACTIVO |
+| `.codex/config.toml` | Reescrito: 49 allows -> 19 denys + 13 allows + defaultMode |
+| `AGENTS.md` | Nueva seccion: WORKTREES — AISLAMIENTO PROACTIVO |
 | `.codex/agents/security-guardian.toml` | Nuevo |
 | `.codex/agents/db-architect.toml` | Nuevo |
 | `.codex/agents/python-engine.toml` | Nuevo |
@@ -73,9 +73,9 @@
 
 2. **acceptEdits como default:** Auto-acepta ediciones de archivos. Bash sigue pidiendo permiso la primera vez que se usa un comando nuevo, pero con el patron amplio ya no interrumpe constantemente.
 
-3. **TOMLs completos, no resumidos:** Pato pidio explicitamente que los agentes de Codex tengan el mismo nivel de detalle que los de Claude Code. El `role` incluye proposito, responsabilidades, principios, checklists, y contexto especifico de PymePilot.
+3. **TOMLs completos, no resumidos:** Pato pidio explicitamente que los agentes de Codex tengan el mismo nivel de detalle que los de Codex. El `role` incluye proposito, responsabilidades, principios, checklists, y contexto especifico de PymePilot.
 
-4. **Worktree proactivo en CLAUDE.md:** La IA debe decidir por su cuenta cuando usar worktree, sin esperar que Pato lo pida. Los 6 escenarios estan documentados como regla obligatoria.
+4. **Worktree proactivo en AGENTS.md:** La IA debe decidir por su cuenta cuando usar worktree, sin esperar que Pato lo pida. Los 6 escenarios estan documentados como regla obligatoria.
 
 ---
 
@@ -83,6 +83,6 @@
 
 | Riesgo | Mitigacion |
 |--------|-----------|
-| Denylist incompleta | CLAUDE.md tiene reglas adicionales (confirmar antes de DROP/TRUNCATE, operaciones de alto riesgo). Git como red de seguridad para archivos. |
-| Agentes TOML desactualizados vs .md | Son archivos separados por herramienta. Cuando se actualice un agente en Claude Code, actualizar el TOML correspondiente. |
-| CLAUDE.md crece demasiado | La seccion de worktrees agrega ~30 lineas. Monitorear tamanio total (limite ~32KB). |
+| Denylist incompleta | AGENTS.md tiene reglas adicionales (confirmar antes de DROP/TRUNCATE, operaciones de alto riesgo). Git como red de seguridad para archivos. |
+| Agentes TOML desactualizados vs .md | Son archivos separados por herramienta. Cuando se actualice un agente en Codex, actualizar el TOML correspondiente. |
+| AGENTS.md crece demasiado | La seccion de worktrees agrega ~30 lineas. Monitorear tamanio total (limite ~32KB). |

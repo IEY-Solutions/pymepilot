@@ -140,13 +140,13 @@
 
 ---
 
-## Reglas Madre agregadas a CLAUDE.md (2026-02-25)
+## Reglas Madre agregadas a AGENTS.md (2026-02-25)
 
 Dos reglas nuevas derivadas del analisis de performance de esta sesion:
 
 1. **Regla Madre 1 — NO evaluar si un protocolo aplica:** Si la regla dice "siempre", ejecutar sin evaluar. Las excepciones estan en la regla; si no la lista, no existe.
 
-2. **Regla Madre 2 — CLAUDE.md gana sobre concision:** Ante conflicto entre brevedad y protocolo, el protocolo gana. Pato prefiere rigor a velocidad.
+2. **Regla Madre 2 — AGENTS.md gana sobre concision:** Ante conflicto entre brevedad y protocolo, el protocolo gana. Pato prefiere rigor a velocidad.
 
 ---
 

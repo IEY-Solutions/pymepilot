@@ -304,7 +304,7 @@ python backend/scripts/setup_credentials.py --tenant-slug iey   # Carga credenci
 | **16** | **Pato:** sync_erp.py --limit 5 | Paso 15 OK |
 | **17** | **Pato:** sync_erp.py (full) | Paso 16 OK |
 
-Pasos 1-12: Claude Code implementa. Pasos 13-17: Pato ejecuta manualmente.
+Pasos 1-12: Codex implementa. Pasos 13-17: Pato ejecuta manualmente.
 
 ---
 
@@ -336,7 +336,7 @@ Pasos 1-12: Claude Code implementa. Pasos 13-17: Pato ejecuta manualmente.
 
 ## Riesgos mitigados (44)
 
-Cada riesgo tiene mitigacion documentada y verificable. Lista completa en el plan detallado (`/home/pato/.claude/plans/gentle-riding-dijkstra.md`).
+Cada riesgo tiene mitigacion documentada y verificable. Lista completa en el plan detallado (`/home/pato/~/.codex/plans/gentle-riding-dijkstra.md`).
 
 Riesgos criticos resueltos:
 - Credenciales en texto plano -> Fernet encryption
@@ -362,16 +362,16 @@ Riesgos criticos resueltos:
 ## Estado del proceso de revision
 
 - 13 iteraciones de revision de seguridad
-- CLAUDE.md actualizado con 5 secciones de proceso y calibracion
+- AGENTS.md actualizado con 5 secciones de proceso y calibracion
 - Matriz de seguridad: 35 celdas, 0 riesgos sin mitigar
-- Plan detallado completo en: `/home/pato/.claude/plans/gentle-riding-dijkstra.md`
+- Plan detallado completo en: `/home/pato/~/.codex/plans/gentle-riding-dijkstra.md`
 
 ---
 
 ## Para la sesion de implementacion
 
 1. Leer este documento completo ANTES de cualquier accion
-2. Leer el plan detallado en `.claude/plans/gentle-riding-dijkstra.md` para especificaciones exactas
+2. Leer el plan detallado en `~/.codex/plans/gentle-riding-dijkstra.md` para especificaciones exactas
 3. Seguir el orden de implementacion (pasos 1-12)
 4. Cada archivo debe cumplir los contratos de seguridad documentados en la matriz
 5. Despues de implementar, Pato ejecuta pasos 13-17 manualmente

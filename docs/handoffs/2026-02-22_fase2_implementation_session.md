@@ -25,7 +25,7 @@
 Archivos adicionales modificados:
 - `database/migrations/015_api_usage_table.sql` — tabla global para tracking de costos
 - `backend/config/settings.py` — DAILY_TOKEN_LIMIT, MAX_TOKENS_PER_CALL
-- `CLAUDE.md` — sección "Control de Costos Claude API"
+- `AGENTS.md` — sección "Control de Costos Claude API"
 
 ### Tests end-to-end exitosos
 
@@ -164,5 +164,5 @@ CONTEXTO (no modificados):
 DOCUMENTACIÓN:
   docs/FASE2_PLAN.md                      — Plan aprobado
   docs/ROADMAP.md                         — Roadmap completo (9 fases)
-  CLAUDE.md                               — Reglas de seguridad + costos
+  AGENTS.md                               — Reglas de seguridad + costos
 ```

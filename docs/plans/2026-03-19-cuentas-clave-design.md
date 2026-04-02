@@ -2,7 +2,7 @@
 
 **Fecha:** 2026-03-19
 **Estado:** Aprobado
-**Autor:** Pato + Claude Code (brainstorming colaborativo)
+**Autor:** Pato + Codex (brainstorming colaborativo)
 
 ---
 

@@ -16,7 +16,7 @@ El plan de Fase 1 paso por:
 - 6 fixes de ronda 1 + 9 correcciones de ronda 2 + 9 correcciones de ronda 3 + 2 fixes aritmeticos
 - 20/20 tests de regresion pasaron
 - 2 revisiones globales GATE completadas (la segunda con Check 6 nuevo)
-- CLAUDE.md mejorado con Check 6 (scan de codigo nuevo como reviewer externo)
+- AGENTS.md mejorado con Check 6 (scan de codigo nuevo como reviewer externo)
 
 **Estado del plan: LISTO PARA IMPLEMENTAR.**
 
@@ -120,7 +120,7 @@ El plan de Fase 1 paso por:
 6. Check 6 (nuevo): 0 hallazgos sin resolver (C5b ya capturado en Paso 4)
 7. GATE PASADO
 
-### CLAUDE.md actualizado
+### AGENTS.md actualizado
 
 - Nuevo Check 6 en GATE OBLIGATORIO: proceso de razonamiento general para codigo nuevo
   (cambio de perspectiva autor -> reviewer externo, 3 sub-pasos: reglas, inputs, tests)

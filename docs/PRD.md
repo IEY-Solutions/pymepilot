@@ -3,7 +3,7 @@
 **Version:** 2.0
 **Fecha original:** 2026-02-19
 **Ultima actualizacion:** 2026-03-04
-**Autor:** Pato (fundador) + Claude Code
+**Autor:** Pato (fundador) + Codex
 **Estado:** MVP operativo, en produccion para IEY
 
 ---
