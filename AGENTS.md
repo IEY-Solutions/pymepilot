@@ -99,6 +99,7 @@ Rules:
 - Before touching `config/`, `credentials/`, `secrets/`, `keys/`, or `private/`, confirm the need first.
 - Keep logs and responses free of secrets, tokens, and private URLs.
 - Never propose insecure "temporary" shortcuts for auth, tenant isolation, secret handling, or production safety.
+- Hard command deny lists are enforced through `C:\Users\Admin\.codex\rules\default.rules` globally and `./.codex/rules/default.rules` in this trusted repo. Treat `AGENTS.md` as policy and `.rules` as execution enforcement.
 - Before giving the user manual commands, verify the target environment: machine, OS or shell, working directory, and active venv or container context when relevant.
 
 ## Change gates

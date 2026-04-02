@@ -1,0 +1,114 @@
+# PymePilot repo-local execution deny list
+#
+# This file adds a second layer on top of the global deny list for repo-specific sensitive paths.
+# It intentionally focuses on exact known targets because Windows hooks are not available for path-aware blocking.
+
+def forbid(pattern, justification):
+    prefix_rule(
+        pattern = pattern,
+        decision = "forbidden",
+        justification = justification,
+    )
+
+FILE_OPS = [
+    ["Get-Content"],
+    ["gc"],
+    ["type"],
+    ["cat"],
+    ["Get-ChildItem"],
+    ["dir"],
+    ["ls"],
+    ["Get-Item"],
+    ["gi"],
+    ["Select-String"],
+    ["sls"],
+    ["Copy-Item"],
+    ["cp"],
+    ["Move-Item"],
+    ["mv"],
+    ["Remove-Item"],
+    ["rm"],
+    ["del"],
+    ["Set-Content"],
+    ["Add-Content"],
+    ["Out-File"],
+]
+
+PATH_FLAGS = ["-Path", "-LiteralPath"]
+
+def forbid_exact_target(target, justification):
+    for op in FILE_OPS:
+        forbid(op + [target], justification)
+        for flag in PATH_FLAGS:
+            forbid(op + [flag, target], justification)
+
+# Block repo-sensitive environment files and operational directories.
+for target in [
+    ".env",
+    "./.env",
+    "C:\\Users\\Admin\\Documents\\GitHub\\pymepilot\\.env",
+    ".env.local",
+    "./.env.local",
+    "C:\\Users\\Admin\\Documents\\GitHub\\pymepilot\\.env.local",
+    ".env.development",
+    "./.env.development",
+    "C:\\Users\\Admin\\Documents\\GitHub\\pymepilot\\.env.development",
+    ".env.production",
+    "./.env.production",
+    "C:\\Users\\Admin\\Documents\\GitHub\\pymepilot\\.env.production",
+    ".env.staging",
+    "./.env.staging",
+    "C:\\Users\\Admin\\Documents\\GitHub\\pymepilot\\.env.staging",
+    ".env.test",
+    "./.env.test",
+    "C:\\Users\\Admin\\Documents\\GitHub\\pymepilot\\.env.test",
+    "backend/.env",
+    "./backend/.env",
+    "backend\\.env",
+    ".\\backend\\.env",
+    "C:\\Users\\Admin\\Documents\\GitHub\\pymepilot\\backend\\.env",
+    "frontend/.env.local",
+    "./frontend/.env.local",
+    "frontend\\.env.local",
+    ".\\frontend\\.env.local",
+    "C:\\Users\\Admin\\Documents\\GitHub\\pymepilot\\frontend\\.env.local",
+    "secrets",
+    "./secrets",
+    "C:\\Users\\Admin\\Documents\\GitHub\\pymepilot\\secrets",
+    "credentials",
+    "./credentials",
+    "C:\\Users\\Admin\\Documents\\GitHub\\pymepilot\\credentials",
+    "keys",
+    "./keys",
+    "C:\\Users\\Admin\\Documents\\GitHub\\pymepilot\\keys",
+    "private",
+    "./private",
+    "C:\\Users\\Admin\\Documents\\GitHub\\pymepilot\\private",
+    "backups",
+    "./backups",
+    "C:\\Users\\Admin\\Documents\\GitHub\\pymepilot\\backups",
+    "database/dumps",
+    "./database/dumps",
+    "database\\dumps",
+    ".\\database\\dumps",
+    "C:\\Users\\Admin\\Documents\\GitHub\\pymepilot\\database\\dumps",
+    "database/backups",
+    "./database/backups",
+    "database\\backups",
+    ".\\database\\backups",
+    "C:\\Users\\Admin\\Documents\\GitHub\\pymepilot\\database\\backups",
+]:
+    forbid_exact_target(
+        target,
+        "Repo-sensitive env, credential, key, private, backup, and dump paths are blocked from shell access. Handle them only through explicit user-approved manual workflows.",
+    )
+
+# Block repo-specific database migration shortcuts that can mutate real state.
+for pattern in [
+    ["supabase", "db", "reset"],
+    ["supabase", "db", "push"],
+]:
+    forbid(
+        pattern,
+        "Repo-local DB mutation shortcuts are blocked. Review migrations and have the user run sensitive DB operations manually when appropriate.",
+    )

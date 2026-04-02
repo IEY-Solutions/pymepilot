@@ -10,8 +10,9 @@ spawnear un sub-agente real (delegacion), avisar antes de hacerlo.
 ## Metodologia libre con barandas
 
 La proteccion dura de comandos vive en la configuracion global de Codex
-(`~/.codex/config.toml` + `~/.codex/rules/default.rules`). No duplicar
-esas restricciones como si fueran enforcement en este archivo.
+(`~/.codex/config.toml` + `~/.codex/rules/default.rules`) y en la capa
+repo-local de este proyecto (`./.codex/rules/default.rules`). No
+duplicar esas restricciones como si fueran enforcement en este archivo.
 
 Trabajar con libertad en ediciones normales de codigo y docs, pero
 mantener estas reglas operativas:
