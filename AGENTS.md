@@ -9,6 +9,7 @@ It defines the active operating standard for work in this repo.
 
 Read these sources of truth at the start of any session that touches their area:
 
+- `PYMEPILOT-CORE.md`
 - `docs/PROJECT_STATE.md`
 - `docs/ARCHITECTURE.md`
 - `docs/ROADMAP.md`

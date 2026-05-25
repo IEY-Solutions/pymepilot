@@ -19,6 +19,7 @@ node_modules/
 .next/
 out/
 .turbo/
+.vercel/
 
 # --- Variables de entorno (NUNCA commitear secrets) ---
 .env
@@ -27,6 +28,7 @@ out/
 
 # --- IDEs y editores ---
 .vscode/
+.vs/
 .idea/
 *.swp
 *.swo

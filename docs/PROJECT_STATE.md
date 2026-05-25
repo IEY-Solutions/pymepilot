@@ -3,7 +3,7 @@
 > **Archivo compartido entre sesiones de Codex.**
 > Leer este archivo al iniciar una sesion y actualizarlo al finalizar si
 > hubo cambios relevantes en el estado del proyecto.
-> Ultima actualizacion: 2026-04-02
+> Ultima actualizacion: 2026-05-24
 
 ---
 
@@ -74,6 +74,8 @@ Sistema funciona para IEY sin intervencion manual.
 | Linear MCP first | 2026-04-02 | `AGENTS.md` global y del repo reforzados para que Codex use Linear por MCP como sistema operativo real: buscar y reutilizar issues/proyectos, crear artifacts automaticamente cuando no existan, dejar bundles documentales fijos, leer el `PYM-*` o proyecto antes de trabajar y mantener comentarios o status updates mientras avanza |
 | Anti-overfitting multi-cliente | 2026-04-02 | `AGENTS.md` global, `AGENTS.md` del repo y resources activos de Linear reforzados para prohibir logica acoplada a IEY. IEY queda como tenant de validacion, no como plantilla del producto; cualquier necesidad especifica de cliente debe aislarse en configuracion, mappings, prompts parametrizados o adapters por tenant |
 | Denylist Codex materializada | 2026-04-02 | Se creo enforcement real en `C:\\Users\\Admin\\.codex\\rules\\default.rules` y `C:\\Users\\Admin\\Documents\\GitHub\\pymepilot\\.codex\\rules\\default.rules`. La capa global bloquea wrappers, borrado shell, admin de Docker/DB, exfiltracion y stores sensibles de credenciales/Codex; la capa del repo bloquea `.env*`, credenciales, keys, privados, backups, dumps y shortcuts de `supabase db`. En Windows queda una limitacion explicitada: sin hooks activos, el bloqueo fino por path para ediciones no-shell sigue siendo politica en `AGENTS.md`, no enforcement nativo. |
+| Core de negocio cross-repo | 2026-04-03 | Se creo `PYMEPILOT-CORE.md` como referencia canonica de negocio compartida entre `pymepilot`, `pymepilot-landing` y `pymepilot-landing-v2`, alineada con la pagina madre de Notion y con `docs/PRD.md`, `docs/ARCHITECTURE.md` y `docs/PROJECT_STATE.md`. `AGENTS.md` del repo ahora lo exige en el arranque de sesion |
+| Preparacion Vercel frontend | 2026-05-24 | Dashboard Next.js migrado a convencion `proxy.ts` de Next.js 16, `npm run lint` y `npm run build` verificados sin errores, assets default de Next eliminados, artefactos locales `.vs`, `.next` y `node_modules` limpiados, y runbooks de migracion completados en `docs/migration/`. El deploy recomendado importa `frontend/` como Root Directory y mantiene backend Python, Postgres/RLS, GoTrue/PostgREST, crons y Grafana como servicios externos. |
 | Guia Onboarding | 2026-03-19 | /guia con Remotion Player embebido, 7 composiciones con wrappers visuales + cursor + highlights + text overlay, datos mock "Distribuidora Demo", IntersectionObserver autoplay, selector de modulos escalable |
 | **Auditoria Post-MVP** | **2026-03-20** | **1C + 5H + 12M + 8L corregidos. 5 agentes especializados + 4 rondas revision Codex. Commit 48210ea. Migracion 056 pendiente aplicar en DB.** |
 | Orquestador refresh post-sync | 2026-03-20 | Se agrego suite `backend/tests/test_main_orchestrator.py` y se reordeno `backend/main.py` a 2 fases: sync de todos los tenants primero, refresh unico de vistas materializadas despues, y recien ahi atribucion + verticales + push. Fix permanente para que `/metricas` y `client_rankings` muestren ventas del mismo dia en vez de la foto del dia anterior |

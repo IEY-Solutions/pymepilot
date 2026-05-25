@@ -66,7 +66,7 @@ export function PushBanner() {
       if (!res.ok) {
         // Error guardando suscripcion — silenciado en client-side
       }
-    } catch (err) {
+    } catch {
       // Error en suscripcion push — silenciado en client-side
     } finally {
       setSubscribing(false);

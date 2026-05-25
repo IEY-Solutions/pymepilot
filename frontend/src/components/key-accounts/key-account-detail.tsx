@@ -72,7 +72,7 @@ export function KeyAccountDetail({ account, onClose, onRefresh }: Props) {
   }, [account.id, account.customer_id]);
 
   useEffect(() => {
-    fetchDetails();
+    void Promise.resolve().then(fetchDetails);
   }, [fetchDetails]);
 
   const handleNoteCreated = async (needsFollowup: boolean) => {

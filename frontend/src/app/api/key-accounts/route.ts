@@ -224,7 +224,7 @@ async function handleAdd(
     p_customer_id: customerId,
   });
 
-  const { data: account, error } = await supabase
+  const { error } = await supabase
     .from("key_accounts")
     .insert({
       tenant_id: tenantId,

@@ -40,7 +40,6 @@ export function sanitizeForPrompt(text: string): string {
   let sanitized = text.slice(0, MAX_PROMPT_TEXT_LENGTH);
 
   // Paso 2: eliminar caracteres de control (excepto \t y \n que son validos en notas)
-  // eslint-disable-next-line no-control-regex
   sanitized = sanitized.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "");
 
   // Paso 3: escapar caracteres XML para que el usuario no pueda romper el encapsulado

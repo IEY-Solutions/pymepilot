@@ -58,18 +58,24 @@ const statusLabels: Record<string, string> = {
 type ProductSortBy = "revenue" | "units";
 
 export function ClientDetail({ customerId }: { customerId: string }) {
-  const [products, setProducts] = useState<TopProduct[]>([]);
-  const [monthlyRevenue, setMonthlyRevenue] = useState<MonthlyRevenue[]>([]);
-  const [predictions, setPredictions] = useState<ActivePrediction[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  const [details, setDetails] = useState<{
+    products: TopProduct[];
+    monthlyRevenue: MonthlyRevenue[];
+    predictions: ActivePrediction[];
+    loading: boolean;
+    error: boolean;
+  }>({
+    products: [],
+    monthlyRevenue: [],
+    predictions: [],
+    loading: true,
+    error: false,
+  });
   const [retryCount, setRetryCount] = useState(0);
   const [productSort, setProductSort] = useState<ProductSortBy>("revenue");
 
   useEffect(() => {
     const supabase = createClient();
-    setLoading(true);
-    setError(false);
 
     Promise.all([
       supabase.rpc("get_client_top_products", {
@@ -88,21 +94,31 @@ export function ClientDetail({ customerId }: { customerId: string }) {
         .order("prediction_date", { ascending: false })
         .limit(5),
     ]).then(([productsRes, revenueRes, predictionsRes]) => {
-      // Si alguna RPC retorno error, tratarlo como fallo
       if (productsRes.error || revenueRes.error || predictionsRes.error) {
-        setError(true);
-        setLoading(false);
+        setDetails((current) => ({
+          ...current,
+          loading: false,
+          error: true,
+        }));
         return;
       }
-      setProducts(productsRes.data ?? []);
-      setMonthlyRevenue(revenueRes.data ?? []);
-      setPredictions(predictionsRes.data ?? []);
-      setLoading(false);
+      setDetails({
+        products: productsRes.data ?? [],
+        monthlyRevenue: revenueRes.data ?? [],
+        predictions: predictionsRes.data ?? [],
+        loading: false,
+        error: false,
+      });
     }).catch(() => {
-      setError(true);
-      setLoading(false);
+      setDetails((current) => ({
+        ...current,
+        loading: false,
+        error: true,
+      }));
     });
   }, [customerId, retryCount]);
+
+  const { products, monthlyRevenue, predictions, loading, error } = details;
 
   if (loading) {
     return (
@@ -120,7 +136,14 @@ export function ClientDetail({ customerId }: { customerId: string }) {
         <span className="text-xs text-red-400">Error al cargar detalle.</span>
         {retryCount < maxRetries ? (
           <button
-            onClick={() => setRetryCount((c) => c + 1)}
+            onClick={() => {
+              setDetails((current) => ({
+                ...current,
+                loading: true,
+                error: false,
+              }));
+              setRetryCount((c) => c + 1);
+            }}
             className="text-xs text-[#81b5a1] hover:text-[#a3cabb] underline"
           >
             Reintentar ({maxRetries - retryCount} restantes)

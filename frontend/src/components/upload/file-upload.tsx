@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { Upload, FileSpreadsheet, CheckCircle, XCircle, Loader2, AlertTriangle } from "lucide-react";
+import { Upload, CheckCircle, XCircle, Loader2 } from "lucide-react";
 
 type UploadStatus = "idle" | "uploading" | "processing" | "completed" | "failed";
 
@@ -15,7 +15,6 @@ export function FileUpload() {
   const [error, setError] = useState<string | null>(null);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [dragOver, setDragOver] = useState(false);
-  const [jobId, setJobId] = useState<string | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -116,7 +115,6 @@ export function FileUpload() {
         throw new Error(`Error creando job: ${jobError.message}`);
       }
 
-      setJobId(job.id);
       setStatus("processing");
 
       let pollCount = 0;
@@ -185,7 +183,6 @@ export function FileUpload() {
     setStatus("idle");
     setError(null);
     setSelectedFiles([]);
-    setJobId(null);
     if (pollRef.current) clearInterval(pollRef.current);
   }, []);
 

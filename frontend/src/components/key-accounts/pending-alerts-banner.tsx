@@ -1,25 +1,14 @@
 "use client";
 
-import { Bell, CheckCircle2 } from "lucide-react";
+import { Bell } from "lucide-react";
 import type { KeyAccount } from "@/lib/key-accounts/types";
-
-interface PendingAlert {
-  alertId: string;
-  accountId: string;
-  accountName: string;
-  title: string;
-  triggerDate: string;
-  isOverdue: boolean;
-  isToday: boolean;
-}
 
 interface Props {
   accounts: KeyAccount[];
-  onResolve: (alertId: string) => void;
   onOpenAccount: (accountId: string) => void;
 }
 
-export function PendingAlertsBanner({ accounts, onResolve, onOpenAccount }: Props) {
+export function PendingAlertsBanner({ accounts, onOpenAccount }: Props) {
   // Este componente necesita alertas detalladas que no vienen en el GET principal.
   // Por ahora mostramos un resumen basado en los contadores que ya tenemos.
   // Las alertas con detalle se ven dentro del perfil de cada cuenta.

@@ -158,7 +158,7 @@ export function MetricasContent({
     setShowExport(false);
     try {
       const { exportToExcel } = await import("./exports/export-excel");
-      exportToExcel({ revenue, churn, ticket, value, rankings });
+      await exportToExcel({ revenue, churn, ticket, value, rankings });
     } catch {
       alert("Error al generar el Excel. Intenta de nuevo.");
     } finally {

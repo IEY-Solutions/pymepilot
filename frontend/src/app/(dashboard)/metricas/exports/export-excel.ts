@@ -1,4 +1,4 @@
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
 import type {
   RevenueRow,
   ChurnRow,
@@ -16,10 +16,28 @@ interface ExportData {
   rankings: RankingRow[];
 }
 
-export function exportToExcel(data: ExportData) {
-  const wb = XLSX.utils.book_new();
+function downloadWorkbook(buffer: ExcelJS.Buffer, filename: string) {
+  const blob = new Blob([buffer], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+}
 
-  // Hoja 1: Resumen
+function setColumnWidths(worksheet: ExcelJS.Worksheet, widths: number[]) {
+  worksheet.columns = widths.map((width) => ({ width }));
+}
+
+export async function exportToExcel(data: ExportData) {
+  const wb = new ExcelJS.Workbook();
+  wb.creator = "PymePilot";
+  wb.created = new Date();
+
+  const wsResumen = wb.addWorksheet("Resumen");
   const resumenData = [
     ["Reporte PymePilot", "", ""],
     ["Generado", new Date().toLocaleDateString("es-AR"), ""],
@@ -69,78 +87,83 @@ export function exportToExcel(data: ExportData) {
     `${totalConv} conversiones`,
   ]);
 
-  const wsResumen = XLSX.utils.aoa_to_sheet(resumenData);
-  wsResumen["!cols"] = [{ wch: 20 }, { wch: 20 }, { wch: 40 }];
-  XLSX.utils.book_append_sheet(wb, wsResumen, "Resumen");
+  wsResumen.addRows(resumenData);
+  setColumnWidths(wsResumen, [20, 20, 40]);
 
-  // Hoja 2: Facturacion Mensual
-  const factRows = data.revenue.map((r) => ({
-    Mes: formatMonthLong(r.month),
-    Total: Number(r.total_revenue),
-    Recurrente: Number(r.recurring_revenue),
-    Nueva: Number(r.new_revenue),
-    "% Recurrente": Number(r.recurring_pct),
-  }));
-  const wsFact = XLSX.utils.json_to_sheet(factRows);
-  wsFact["!cols"] = [
-    { wch: 20 },
-    { wch: 15 },
-    { wch: 15 },
-    { wch: 15 },
-    { wch: 15 },
+  const wsFact = wb.addWorksheet("Facturacion");
+  wsFact.columns = [
+    { header: "Mes", key: "month", width: 20 },
+    { header: "Total", key: "total", width: 15 },
+    { header: "Recurrente", key: "recurring", width: 15 },
+    { header: "Nueva", key: "new", width: 15 },
+    { header: "% Recurrente", key: "recurringPct", width: 15 },
   ];
-  XLSX.utils.book_append_sheet(wb, wsFact, "Facturacion");
+  const factRows = data.revenue.map((r) => ({
+    month: formatMonthLong(r.month),
+    total: Number(r.total_revenue),
+    recurring: Number(r.recurring_revenue),
+    new: Number(r.new_revenue),
+    recurringPct: Number(r.recurring_pct),
+  }));
+  wsFact.addRows(factRows);
 
-  // Hoja 3: Churn + Ticket
+  const wsMetrics = wb.addWorksheet("Metricas");
+  wsMetrics.columns = [
+    { header: "Mes", key: "month", width: 20 },
+    { header: "Activos mes ant.", key: "activePrev", width: 18 },
+    { header: "Churned", key: "churned", width: 12 },
+    { header: "Churn %", key: "churnRate", width: 12 },
+    { header: "Ticket prom.", key: "avgTicket", width: 15 },
+    { header: "Ticket rec.", key: "recurringTicket", width: 15 },
+    { header: "Ticket nuevo", key: "newTicket", width: 15 },
+  ];
   const metricsRows = data.churn.map((c, i) => {
     const t = data.ticket[i];
     return {
-      Mes: formatMonthLong(c.month),
-      "Activos mes ant.": c.active_prev,
-      Churned: c.churned,
-      "Churn %": Number(c.churn_rate),
-      "Ticket prom.": t ? Number(t.avg_ticket) : "",
-      "Ticket rec.": t ? Number(t.avg_ticket_recurring || 0) : "",
-      "Ticket nuevo": t ? Number(t.avg_ticket_new || 0) : "",
+      month: formatMonthLong(c.month),
+      activePrev: c.active_prev,
+      churned: c.churned,
+      churnRate: Number(c.churn_rate),
+      avgTicket: t ? Number(t.avg_ticket) : "",
+      recurringTicket: t ? Number(t.avg_ticket_recurring || 0) : "",
+      newTicket: t ? Number(t.avg_ticket_new || 0) : "",
     };
   });
-  const wsMetrics = XLSX.utils.json_to_sheet(metricsRows);
-  XLSX.utils.book_append_sheet(wb, wsMetrics, "Metricas");
+  wsMetrics.addRows(metricsRows);
 
-  // Hoja 4: Clientes
+  const wsClients = wb.addWorksheet("Clientes");
+  wsClients.columns = [
+    { header: "#", key: "ranking", width: 5 },
+    { header: "Cliente", key: "client", width: 30 },
+    { header: "Tendencia", key: "trend", width: 10 },
+    { header: "Facturacion", key: "revenue", width: 15 },
+    { header: "Compras", key: "orders", width: 10 },
+    { header: "Ticket prom.", key: "avgTicket", width: 15 },
+    { header: "Ult. compra", key: "lastPurchase", width: 12 },
+    { header: "Freq. (dias)", key: "frequencyDays", width: 12 },
+  ];
   const trendLabel: Record<string, string> = {
     up: "Sube",
     down: "Baja",
     stable: "Estable",
   };
   const clientRows = data.rankings.map((c) => ({
-    "#": c.ranking,
-    Cliente: c.name,
-    Tendencia: trendLabel[c.trend] ?? "Estable",
-    Facturacion: Number(c.total_revenue),
-    Compras: c.total_orders,
-    "Ticket prom.": Number(c.avg_ticket),
-    "Ult. compra": c.last_purchase,
-    "Freq. (dias)": c.avg_days_between_purchases
+    ranking: c.ranking,
+    client: c.name,
+    trend: trendLabel[c.trend] ?? "Estable",
+    revenue: Number(c.total_revenue),
+    orders: c.total_orders,
+    avgTicket: Number(c.avg_ticket),
+    lastPurchase: c.last_purchase,
+    frequencyDays: c.avg_days_between_purchases
       ? Math.round(Number(c.avg_days_between_purchases))
       : "",
   }));
-  const wsClients = XLSX.utils.json_to_sheet(clientRows);
-  wsClients["!cols"] = [
-    { wch: 5 },
-    { wch: 30 },
-    { wch: 10 },
-    { wch: 15 },
-    { wch: 10 },
-    { wch: 15 },
-    { wch: 12 },
-    { wch: 12 },
-  ];
-  XLSX.utils.book_append_sheet(wb, wsClients, "Clientes");
+  wsClients.addRows(clientRows);
 
-  // Descargar
-  XLSX.writeFile(
-    wb,
+  const buffer = await wb.xlsx.writeBuffer();
+  downloadWorkbook(
+    buffer,
     `pymepilot-reporte-${new Date().toISOString().split("T")[0]}.xlsx`
   );
 }

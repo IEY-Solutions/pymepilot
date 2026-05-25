@@ -92,7 +92,6 @@ export function KeyAccountsGrid({ initialAccounts }: Props) {
       {sortedAccounts.length > 0 && (
         <PendingAlertsBanner
           accounts={sortedAccounts}
-          onResolve={() => refreshAccounts()}
           onOpenAccount={(id) => setSelectedAccountId(id)}
         />
       )}

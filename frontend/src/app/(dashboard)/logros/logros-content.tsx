@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Trophy, DollarSign, Flame, ShoppingBag } from "lucide-react";
+import { Trophy, Flame, ShoppingBag } from "lucide-react";
 import { AchievementCard } from "./components/achievement-card";
 import { VerticalFilter } from "@/components/predictions/vertical-filter";
 import { formatCurrency } from "@/lib/format";

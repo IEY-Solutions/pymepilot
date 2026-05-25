@@ -2,7 +2,6 @@
 
 import { useState, useMemo } from "react";
 import { ChevronDown, ChevronRight, TrendingUp, TrendingDown, Package } from "lucide-react";
-import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { createClient } from "@/lib/supabase/client";
 
 // ============================================================

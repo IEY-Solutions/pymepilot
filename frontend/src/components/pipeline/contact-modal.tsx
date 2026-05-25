@@ -15,7 +15,7 @@ import type {
   ColumnName,
   ContactNote,
 } from "@/lib/pipeline/types";
-import { VERTICAL_STYLES, COLUMN_LABELS, STAGE_TIMERS } from "@/lib/pipeline/types";
+import { VERTICAL_STYLES, COLUMN_LABELS } from "@/lib/pipeline/types";
 
 // =============================================================================
 // Props

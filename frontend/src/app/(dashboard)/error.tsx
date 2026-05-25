@@ -17,7 +17,6 @@
  * funcionan como Client Components en Next.js App Router.
  */
 export default function DashboardError({
-  error,
   reset,
 }: {
   error: Error & { digest?: string };

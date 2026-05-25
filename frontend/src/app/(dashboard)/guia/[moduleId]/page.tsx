@@ -8,13 +8,13 @@ import { SectionBlock } from "@/components/guide/section-block";
 
 export default function GuiaModulePage() {
   const { moduleId } = useParams<{ moduleId: string }>();
-  const module = getModuleById(moduleId);
+  const guideModule = getModuleById(moduleId);
 
-  if (!module || !module.available) {
+  if (!guideModule || !guideModule.available) {
     notFound();
   }
 
-  const Icon = module.icon;
+  const Icon = guideModule.icon;
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
@@ -33,16 +33,16 @@ export default function GuiaModulePage() {
           <Icon className="h-7 w-7 text-[#81b5a1]" />
         </div>
         <h1 className="text-2xl font-bold text-white mb-2">
-          Modulo {module.name}
+          Modulo {guideModule.name}
         </h1>
         <p className="text-white/50 max-w-lg mx-auto">
-          {module.description}
+          {guideModule.description}
         </p>
       </div>
 
       {/* Secciones video + texto */}
       <div className="space-y-20 lg:space-y-28">
-        {module.sections.map((section, index) => (
+        {guideModule.sections.map((section, index) => (
           <SectionBlock
             key={section.id}
             section={section}

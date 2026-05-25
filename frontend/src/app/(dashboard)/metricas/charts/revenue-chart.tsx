@@ -23,7 +23,7 @@ function CustomTooltip({ active, payload, label }: TooltipContentProps<ValueType
       <p className="text-xs font-medium text-white/40 uppercase tracking-wider mb-2">
         {label}
       </p>
-      {payload.map((entry: any) => (
+      {payload.map((entry) => (
         <div key={entry.dataKey} className="flex items-center gap-2 py-0.5">
           <span
             className="w-2.5 h-2.5 rounded-full shrink-0"

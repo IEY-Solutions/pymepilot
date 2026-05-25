@@ -67,6 +67,27 @@ export function PipelineBoard({ initialCards }: Props) {
     return grouped;
   }, [cards]);
 
+  const refreshBoard = useCallback(async () => {
+    setIsRefreshing(true);
+    try {
+      const res = await fetch("/api/pipeline");
+      if (res.ok) {
+        const data = await res.json();
+        setCards(data.cards ?? []);
+        if (data.notifications?.length > 0) {
+          setNotifications((prev) => {
+            const existingIds = new Set(prev.map((n) => n.id));
+            const newNotifs = (data.notifications as FollowupNotification[]).filter((n) => !existingIds.has(n.id));
+            return [...prev, ...newNotifs];
+          });
+        }
+      }
+    } catch {
+      // Error silenciado en client-side (no exponer detalles al usuario)
+    }
+    setIsRefreshing(false);
+  }, []);
+
   const handleDragStart = useCallback(
     (event: DragStartEvent) => {
       const card = cards.find((c) => c.id === event.active.id);
@@ -129,7 +150,7 @@ export function PipelineBoard({ initialCards }: Props) {
         });
       }
     },
-    [cards]
+    [cards, refreshBoard]
   );
 
   // Abrir modal: funciona en TODAS las etapas
@@ -173,35 +194,11 @@ export function PipelineBoard({ initialCards }: Props) {
     setModalNotes([]);
   }, []);
 
-  // Refresh completo del board
-  const refreshBoard = useCallback(async () => {
-    setIsRefreshing(true);
-    try {
-      const res = await fetch("/api/pipeline");
-      if (res.ok) {
-        const data = await res.json();
-        setCards(data.cards ?? []);
-        if (data.notifications?.length > 0) {
-          setNotifications((prev) => {
-            // Evitar duplicados por id
-            const existingIds = new Set(prev.map((n) => n.id));
-            const newNotifs = (data.notifications as FollowupNotification[]).filter((n) => !existingIds.has(n.id));
-            return [...prev, ...newNotifs];
-          });
-        }
-      }
-    } catch (err) {
-      // Error silenciado en client-side (no exponer detalles al usuario)
-    }
-    setIsRefreshing(false);
-  }, []);
-
   // Sync al montar: ejecuta las mutaciones (sync RPC, expiracion, auto-move)
   // a traves del GET /api/pipeline en vez de hacerlo en el Server Component
   useEffect(() => {
     refreshBoard();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [refreshBoard]);
 
   // Accion genérica: llama API, refresca board, cierra modal
   const apiAction = useCallback(
@@ -219,7 +216,7 @@ export function PipelineBoard({ initialCards }: Props) {
         if (res.ok) {
           await refreshBoard();
         }
-      } catch (err) {
+      } catch {
         // Error silenciado en client-side
       } finally {
         if (cardId) {
