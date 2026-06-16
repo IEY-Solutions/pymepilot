@@ -1,85 +1,46 @@
-import { createClient } from "@/lib/supabase/server";
+import { Suspense } from "react";
 import { PipelineBoard } from "@/components/pipeline/pipeline-board";
-import type { PipelineCard } from "@/lib/pipeline/types";
+import { getCurrentUser } from "@/lib/data/dashboard";
+import { getPipelineCards } from "@/lib/data/pipeline";
 
-export default async function PipelinePage() {
-  const supabase = await createClient();
+async function PipelineBoardData() {
+  const user = await getCurrentUser();
+  const tenantId = (user?.user_metadata?.tenant_id as string) ?? "anonymous";
 
-  // NOTA: Las mutaciones (sync RPC + expiracion + auto-move) se ejecutan
-  // SOLO en GET /api/pipeline (route.ts), NO aqui. Un Server Component
-  // se renderiza en cada navegacion y prefetch — no debe tener side effects.
-  // El client component (PipelineBoard) llama refreshBoard() al montar,
-  // que dispara el GET y ejecuta las mutaciones una sola vez.
-
-  // 1. Fetch cards con relaciones (read-only)
-  const { data: rawCards, error } = await supabase
-    .from("pipeline_cards")
-    .select(
-      `id, tenant_id, prediction_id, customer_id, column_name, vertical,
-       priority, is_expired, stage_messages, stage_deadline, created_at, updated_at,
-       customer:customers!inner(name, phone, email),
-       prediction:predictions(message_text, confidence_score, next_reposition_estimate, metadata)`
-    )
-    .order("is_expired", { ascending: true })
-    .order("priority", { ascending: true })
-    .order("created_at", { ascending: false });
-
-  if (error) {
+  try {
+    const cards = await getPipelineCards(tenantId);
+    return <PipelineBoard initialCards={cards} />;
+  } catch {
     return (
-      <div>
-        <h1 className="text-2xl font-bold text-white mb-4">Pipeline</h1>
-        <p className="text-red-400 bg-red-500/15 p-4 rounded-lg">
-          Error al cargar el pipeline. Intenta recargar la pagina.
-        </p>
-      </div>
+      <p className="text-red-400 bg-red-500/15 p-4 rounded-lg">
+        Error al cargar el pipeline. Intenta recargar la pagina.
+      </p>
     );
   }
+}
 
-  const cardIds = (rawCards ?? []).map((c) => c.id);
+function PipelineSkeleton() {
+  return (
+    <div className="space-y-3">
+      <div className="flex gap-3 overflow-x-auto pb-2">
+        {[1, 2, 3, 4].map((i) => (
+          <div
+            key={i}
+            className="min-w-[260px] h-[400px] rounded-xl bg-white/5 animate-pulse"
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
 
-  // 4. Fetch followups y notas en paralelo
-  const [followupsRes, notesRes] = cardIds.length > 0
-    ? await Promise.all([
-        supabase
-          .from("followups")
-          .select("id, card_id, sequence_number, scheduled_date, status, completed_at, origin_stage")
-          .in("card_id", cardIds)
-          .order("sequence_number", { ascending: true }),
-        supabase
-          .from("contact_notes")
-          .select("id, card_id, result, note_text, followup_id, created_at")
-          .in("card_id", cardIds)
-          .order("created_at", { ascending: false }),
-      ])
-    : [{ data: [] }, { data: [] }];
-
-  // 5. Agrupar por card_id
-  const followupsByCard = new Map<string, typeof followupsRes.data>();
-  for (const f of followupsRes.data ?? []) {
-    const list = followupsByCard.get(f.card_id) ?? [];
-    list.push(f);
-    followupsByCard.set(f.card_id, list);
-  }
-
-  const latestNoteByCard = new Map<string, NonNullable<typeof notesRes.data>[number]>();
-  for (const n of notesRes.data ?? []) {
-    if (!latestNoteByCard.has(n.card_id)) {
-      latestNoteByCard.set(n.card_id, n);
-    }
-  }
-
-  // 6. Ensamblar cards
-  const cards: PipelineCard[] = (rawCards ?? []).map((c) => ({
-    ...c,
-    customer: Array.isArray(c.customer)
-      ? (c.customer as unknown as { name: string; phone: string | null; email: string | null }[])[0]
-      : c.customer as { name: string; phone: string | null; email: string | null },
-    prediction: Array.isArray(c.prediction)
-      ? (c.prediction as unknown as PipelineCard["prediction"][])[0] ?? null
-      : c.prediction as PipelineCard["prediction"],
-    followups: (followupsByCard.get(c.id) ?? []) as PipelineCard["followups"],
-    latest_note: (latestNoteByCard.get(c.id) ?? null) as PipelineCard["latest_note"],
-  }));
-
-  return <PipelineBoard initialCards={cards} />;
+export default function PipelinePage() {
+  return (
+    <div>
+      <h1 className="text-2xl font-bold text-white mb-4">Pipeline</h1>
+      <Suspense fallback={<PipelineSkeleton />}>
+        <PipelineBoardData />
+      </Suspense>
+    </div>
+  );
 }

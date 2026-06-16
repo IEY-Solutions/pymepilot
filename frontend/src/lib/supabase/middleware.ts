@@ -1,5 +1,9 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import {
+  recordAuthValidationDuration,
+  recordRscPrefetch,
+} from "@/lib/observability/metrics";
 
 /**
  * Limpia todas las cookies de sesion de Supabase del response.
@@ -28,6 +32,20 @@ function clearSupabaseCookies(
   return response;
 }
 
+/**
+ * Detecta requests de prefetch de RSC/Server Actions.
+ * En estos casos evitamos la validacion completa contra GoTrue para
+ * reducir latencia y cargas innecesarias durante la navegacion.
+ */
+function isPrefetchRequest(request: NextRequest): boolean {
+  const purpose = request.headers.get("Purpose");
+  return (
+    request.headers.get("Next-Router-Prefetch") === "1" ||
+    request.headers.get("Next-Action") !== null ||
+    purpose === "prefetch"
+  );
+}
+
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
@@ -54,11 +72,32 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  // getUser() valida el JWT contra GoTrue (no solo lee la session local)
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
+  // Prefetch: validacion local de la cookie de sesion, sin round-trip a GoTrue.
+  // Navegacion completa: getUser() valida el JWT contra GoTrue.
+  const prefetch = isPrefetchRequest(request);
+  let user = null;
+  let error = null;
+  const authStart = Date.now();
+
+  if (prefetch) {
+    const {
+      data: { session },
+      error: sessionError,
+    } = await supabase.auth.getSession();
+    user = session?.user ?? null;
+    error = sessionError;
+  } else {
+    const result = await supabase.auth.getUser();
+    user = result.data.user;
+    error = result.error;
+  }
+
+  const authDurationMs = Date.now() - authStart;
+  recordAuthValidationDuration(prefetch ? "prefetch" : "full", authDurationMs / 1000);
+
+  if (prefetch) {
+    recordRscPrefetch(request.nextUrl.pathname, error ? "error" : "success", authDurationMs / 1000);
+  }
 
   // Si no hay usuario autenticado y no estamos en /login, redirigir
   if (!user && !request.nextUrl.pathname.startsWith("/login")) {

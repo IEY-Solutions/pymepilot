@@ -23,4 +23,7 @@ export interface ChatResponse {
 export interface ChatErrorResponse {
   error: string;
   limit?: number;
+  retry_after?: number;
 }
+
+export type ChatErrorType = 'timeout' | 'rate_limit' | 'circuit_open' | 'network' | 'unknown';

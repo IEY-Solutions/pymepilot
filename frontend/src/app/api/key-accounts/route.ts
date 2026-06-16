@@ -5,33 +5,95 @@ import type {
   KeyAccountsErrorResponse,
   KeyAccountsActionResponse,
 } from "@/lib/key-accounts/types";
+import { filterResponse } from "@/lib/response-filter";
+import { recordApiDataExposure } from "@/lib/observability/metrics";
+import { getLogger } from "@/lib/observability/logger";
+import { emitAudit } from "@/lib/audit";
+import {
+  getSessionTenantId,
+  getRequestTenantId,
+  getBodyTenantId,
+  createTenantProbeEvent,
+  createAccessDeniedEvent,
+  getClientIp,
+} from "@/lib/api-security";
+import type { AuditEvent } from "@/lib/audit";
+import type { SupabaseClient as SupabaseAuthClient } from "@supabase/supabase-js";
 
 // ============================================================
 // GET /api/key-accounts — Obtener todas las cuentas clave activas
 // POST /api/key-accounts — Acciones: add, archive, update_health_override, restore_auto_health
 // ============================================================
 
+// Allowlist de campos publicos para GET /api/key-accounts
+const KEY_ACCOUNTS_ALLOWLIST = [
+  "accounts.id",
+  "accounts.health_score",
+  "accounts.health_override",
+  "accounts.notes_count",
+  "accounts.pending_actions_count",
+  "accounts.last_note_date",
+  "accounts.last_note_type",
+  "accounts.active_alerts_count",
+  "accounts.has_future_alert",
+  "accounts.customer.name",
+  "accounts.customer.total_purchases_amount",
+  "accounts.customer.last_purchase_date",
+];
+
+async function safeEmitAudit(
+  client: SupabaseAuthClient,
+  event: AuditEvent
+): Promise<void> {
+  try {
+    await emitAudit(client, event);
+  } catch (err) {
+    getLogger().warn(
+      {
+        event: "audit.emit_failed",
+        action: event.action,
+        error: err instanceof Error ? err.message : String(err),
+      },
+      "Failed to emit audit event"
+    );
+  }
+}
+
 // ------------------------------------------------------------
 // GET: Fetch cuentas clave con datos enriquecidos
 // ------------------------------------------------------------
-export async function GET(): Promise<Response> {
+export async function GET(request: Request): Promise<Response> {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
+  const correlationId = request.headers.get("x-correlation-id");
+
   if (!user) {
+    await safeEmitAudit(
+      supabase as unknown as SupabaseAuthClient,
+      createAccessDeniedEvent("/api/key-accounts", correlationId, getClientIp(request))
+    );
     return Response.json(
       { error: "No autenticado" } satisfies KeyAccountsErrorResponse,
       { status: 401 }
     );
   }
 
-  const tenantId = user.app_metadata?.tenant_id as string | undefined;
+  const tenantId = getSessionTenantId(user);
   if (!tenantId) {
     return Response.json(
       { error: "tenant_id no encontrado en el perfil" } satisfies KeyAccountsErrorResponse,
       { status: 400 }
+    );
+  }
+
+  const requestedTenantId = getRequestTenantId(request);
+  if (requestedTenantId && requestedTenantId !== tenantId) {
+    await safeEmitAudit(
+      supabase as unknown as SupabaseAuthClient,
+      createTenantProbeEvent(user, requestedTenantId, "/api/key-accounts", correlationId)
     );
   }
 
@@ -138,7 +200,22 @@ export async function GET(): Promise<Response> {
     };
   });
 
-  return Response.json({ accounts: enrichedAccounts });
+  let strippedCount = 0;
+  const filtered = filterResponse(
+    { accounts: enrichedAccounts },
+    KEY_ACCOUNTS_ALLOWLIST,
+    {
+      onStripped: () => {
+        strippedCount++;
+      },
+    }
+  );
+
+  if (strippedCount > 0 && tenantId) {
+    recordApiDataExposure(tenantId, "/api/key-accounts");
+  }
+
+  return Response.json(filtered);
 }
 
 // ------------------------------------------------------------
@@ -150,14 +227,20 @@ export async function POST(request: Request): Promise<Response> {
     data: { user },
   } = await supabase.auth.getUser();
 
+  const postCorrelationId = request.headers.get("x-correlation-id");
+
   if (!user) {
+    await safeEmitAudit(
+      supabase as unknown as SupabaseAuthClient,
+      createAccessDeniedEvent("/api/key-accounts", postCorrelationId, getClientIp(request))
+    );
     return Response.json(
       { error: "No autenticado" } satisfies KeyAccountsErrorResponse,
       { status: 401 }
     );
   }
 
-  const tenantId = user.app_metadata?.tenant_id;
+  const tenantId = getSessionTenantId(user);
   if (!tenantId) {
     return Response.json(
       { error: "tenant_id no encontrado" } satisfies KeyAccountsErrorResponse,
@@ -172,6 +255,14 @@ export async function POST(request: Request): Promise<Response> {
     return Response.json(
       { error: "JSON invalido" } satisfies KeyAccountsErrorResponse,
       { status: 400 }
+    );
+  }
+
+  const bodyTenantId = getBodyTenantId(body);
+  if (bodyTenantId && bodyTenantId !== tenantId) {
+    await safeEmitAudit(
+      supabase as unknown as SupabaseAuthClient,
+      createTenantProbeEvent(user, bodyTenantId, "/api/key-accounts", postCorrelationId)
     );
   }
 
