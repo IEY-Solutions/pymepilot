@@ -1,0 +1,45 @@
+name: Orquestador diario PymePilot
+
+# Corre el motor (sync ERP -> atribucion -> predicciones con Claude)
+# contra Supabase Cloud. Reemplaza al cron que vivia en el VPS de Contabo.
+
+on:
+  schedule:
+    # 08:00 UTC = 05:00 Argentina (UTC-3). Todos los dias.
+    - cron: '0 8 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry-run (no llama a Claude, no gasta tokens)'
+        type: boolean
+        default: true
+
+jobs:
+  orquestador:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Instalar dependencias
+        run: pip install -r backend/requirements.txt
+
+      - name: Correr orquestador
+        env:
+          DATABASE_HOST: ${{ secrets.DATABASE_HOST }}
+          DATABASE_PORT: ${{ secrets.DATABASE_PORT }}
+          DATABASE_NAME: ${{ secrets.DATABASE_NAME }}
+          DATABASE_USER: ${{ secrets.DATABASE_USER }}
+          DATABASE_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ERP_ENCRYPTION_KEY: ${{ secrets.ERP_ENCRYPTION_KEY }}
+          CONTABILIUM_API_URL: ${{ secrets.CONTABILIUM_API_URL }}
+          PGSSLMODE: require
+          ENVIRONMENT: production
+        run: python backend/main.py ${{ (github.event_name == 'workflow_dispatch' && inputs.dry_run) && '--dry-run' || '' }}
