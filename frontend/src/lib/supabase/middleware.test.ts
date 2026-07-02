@@ -50,44 +50,44 @@ describe('updateSession prefetch detection', () => {
     vi.clearAllMocks();
   });
 
-  it('uses local session on RSC prefetch instead of getUser', async () => {
-    getSessionMock.mockResolvedValue({
-      data: { session: { user: { id: 'u1' } } },
+  it('uses getUser on RSC prefetch for protected-route auth decisions', async () => {
+    getUserMock.mockResolvedValue({
+      data: { user: { id: 'u1' } },
       error: null,
     });
     const request = createRequest('/dashboard', { 'Next-Router-Prefetch': '1' });
 
     const response = await updateSession(request);
 
-    expect(getUserMock).not.toHaveBeenCalled();
-    expect(getSessionMock).toHaveBeenCalled();
+    expect(getUserMock).toHaveBeenCalled();
+    expect(getSessionMock).not.toHaveBeenCalled();
     expect(response).toBe(nextResponseMock);
   });
 
-  it('detects Next-Action as a prefetch request', async () => {
-    getSessionMock.mockResolvedValue({
-      data: { session: { user: { id: 'u1' } } },
+  it('detects Next-Action as a request that still validates via getUser', async () => {
+    getUserMock.mockResolvedValue({
+      data: { user: { id: 'u1' } },
       error: null,
     });
     const request = createRequest('/dashboard', { 'Next-Action': 'action-id' });
 
     await updateSession(request);
 
-    expect(getUserMock).not.toHaveBeenCalled();
-    expect(getSessionMock).toHaveBeenCalled();
+    expect(getUserMock).toHaveBeenCalled();
+    expect(getSessionMock).not.toHaveBeenCalled();
   });
 
-  it('detects Purpose: prefetch as a prefetch request', async () => {
-    getSessionMock.mockResolvedValue({
-      data: { session: { user: { id: 'u1' } } },
+  it('detects Purpose: prefetch as a request that still validates via getUser', async () => {
+    getUserMock.mockResolvedValue({
+      data: { user: { id: 'u1' } },
       error: null,
     });
     const request = createRequest('/dashboard', { Purpose: 'prefetch' });
 
     await updateSession(request);
 
-    expect(getUserMock).not.toHaveBeenCalled();
-    expect(getSessionMock).toHaveBeenCalled();
+    expect(getUserMock).toHaveBeenCalled();
+    expect(getSessionMock).not.toHaveBeenCalled();
   });
 
   it('calls getUser on full navigation', async () => {
@@ -104,8 +104,8 @@ describe('updateSession prefetch detection', () => {
   });
 
   it('redirects unauthenticated prefetch to login', async () => {
-    getSessionMock.mockResolvedValue({
-      data: { session: null },
+    getUserMock.mockResolvedValue({
+      data: { user: null },
       error: null,
     });
     const request = createRequest('/dashboard', { 'Next-Router-Prefetch': '1' });
@@ -113,5 +113,71 @@ describe('updateSession prefetch detection', () => {
     const response = await updateSession(request);
 
     expect(response).toBe(redirectResponseMock);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Public auth routes (forgot/reset password)
+// ---------------------------------------------------------------------------
+describe('updateSession public auth routes (Fase 1)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getUserMock.mockReset();
+    getSessionMock.mockReset();
+    getSessionMock.mockImplementation(() => {
+      throw new Error('getSession should not be called in updateSession');
+    });
+  });
+
+  it('allows /forgot-password without authentication (full navigation)', async () => {
+    getUserMock.mockResolvedValue({
+      data: { user: null },
+      error: null,
+    });
+    const request = createRequest('/forgot-password');
+
+    const response = await updateSession(request);
+
+    expect(response).toBe(nextResponseMock);
+  });
+
+  it('allows /reset-password without authentication (full navigation)', async () => {
+    getUserMock.mockResolvedValue({
+      data: { user: null },
+      error: null,
+    });
+    const request = createRequest('/reset-password');
+
+    const response = await updateSession(request);
+
+    expect(response).toBe(nextResponseMock);
+  });
+
+  it('allows /forgot-password without authentication (prefetch)', async () => {
+    getUserMock.mockResolvedValue({
+      data: { user: null },
+      error: null,
+    });
+    const request = createRequest('/forgot-password', {
+      'Next-Router-Prefetch': '1',
+    });
+
+    const response = await updateSession(request);
+
+    expect(response).toBe(nextResponseMock);
+  });
+
+  it('allows /reset-password without authentication (prefetch)', async () => {
+    getUserMock.mockResolvedValue({
+      data: { user: null },
+      error: null,
+    });
+    const request = createRequest('/reset-password', {
+      'Next-Router-Prefetch': '1',
+    });
+
+    const response = await updateSession(request);
+
+    expect(response).toBe(nextResponseMock);
   });
 });

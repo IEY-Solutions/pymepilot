@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
+import { updateSession } from '@/lib/supabase/middleware';
 import { apiRateLimiter } from '@/lib/rate-limit';
 import { recordRateLimitRequest } from '@/lib/observability/metrics';
 import { getLogger } from '@/lib/observability/logger';
@@ -82,9 +83,13 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
         }
       );
     }
+
+    const response = NextResponse.next({ request });
+    response.headers.set(CORRELATION_HEADER, correlationId);
+    return response;
   }
 
-  const response = NextResponse.next({ request });
+  const response = await updateSession(request);
   response.headers.set(CORRELATION_HEADER, correlationId);
 
   return response;

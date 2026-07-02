@@ -5,6 +5,8 @@ import {
   recordRscPrefetch,
 } from "@/lib/observability/metrics";
 
+const PUBLIC_AUTH_PATHS = new Set(["/login", "/forgot-password", "/reset-password", "/auth/callback"]);
+
 /**
  * Limpia todas las cookies de sesion de Supabase del response.
  * Cuando una sesion esta corrupta (tokens viejos, refresh fallido),
@@ -72,25 +74,14 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  // Prefetch: validacion local de la cookie de sesion, sin round-trip a GoTrue.
-  // Navegacion completa: getUser() valida el JWT contra GoTrue.
   const prefetch = isPrefetchRequest(request);
   let user = null;
   let error = null;
   const authStart = Date.now();
 
-  if (prefetch) {
-    const {
-      data: { session },
-      error: sessionError,
-    } = await supabase.auth.getSession();
-    user = session?.user ?? null;
-    error = sessionError;
-  } else {
-    const result = await supabase.auth.getUser();
-    user = result.data.user;
-    error = result.error;
-  }
+  const result = await supabase.auth.getUser();
+  user = result.data.user;
+  error = result.error;
 
   const authDurationMs = Date.now() - authStart;
   recordAuthValidationDuration(prefetch ? "prefetch" : "full", authDurationMs / 1000);
@@ -99,8 +90,8 @@ export async function updateSession(request: NextRequest) {
     recordRscPrefetch(request.nextUrl.pathname, error ? "error" : "success", authDurationMs / 1000);
   }
 
-  // Si no hay usuario autenticado y no estamos en /login, redirigir
-  if (!user && !request.nextUrl.pathname.startsWith("/login")) {
+  // Si no hay usuario autenticado y no estamos en una ruta pública de auth, redirigir
+  if (!user && !PUBLIC_AUTH_PATHS.has(request.nextUrl.pathname)) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     const redirect = NextResponse.redirect(url);
