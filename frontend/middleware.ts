@@ -3,7 +3,7 @@ import type { NextRequest } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { updateSession } from '@/lib/supabase/middleware';
 import { apiRateLimiter } from '@/lib/rate-limit';
-import { recordRateLimitRequest } from '@/lib/observability/metrics';
+import { recordRateLimitRequest } from '@/lib/observability/metrics.edge';
 import { getLogger } from '@/lib/observability/logger';
 import { emitAudit } from '@/lib/audit';
 import { getSessionTenantId, ANONYMOUS_TENANT_ID } from '@/lib/api-security';
@@ -17,8 +17,8 @@ function isValidUuidV4(value: string): boolean {
 export async function middleware(request: NextRequest): Promise<NextResponse> {
   const existing = request.headers.get(CORRELATION_HEADER.toLowerCase()) ?? request.headers.get(CORRELATION_HEADER);
   const correlationId = existing && isValidUuidV4(existing) ? existing : crypto.randomUUID();
-
-  request.headers.set(CORRELATION_HEADER, correlationId);
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set(CORRELATION_HEADER, correlationId);
 
   const pathname = request.nextUrl?.pathname ?? '';
   if (pathname.startsWith('/api/')) {
@@ -84,12 +84,12 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
       );
     }
 
-    const response = NextResponse.next({ request });
+    const response = NextResponse.next({ request: { headers: requestHeaders } });
     response.headers.set(CORRELATION_HEADER, correlationId);
     return response;
   }
 
-  const response = await updateSession(request);
+  const response = await updateSession(request, requestHeaders);
   response.headers.set(CORRELATION_HEADER, correlationId);
 
   return response;

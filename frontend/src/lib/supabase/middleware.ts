@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import {
   recordAuthValidationDuration,
   recordRscPrefetch,
-} from "@/lib/observability/metrics";
+} from "@/lib/observability/metrics.edge";
 
 const PUBLIC_AUTH_PATHS = new Set(["/login", "/forgot-password", "/reset-password", "/auth/callback"]);
 
@@ -48,8 +48,12 @@ function isPrefetchRequest(request: NextRequest): boolean {
   );
 }
 
-export async function updateSession(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({ request });
+function createSupabaseResponse(request: NextRequest, requestHeaders?: Headers): NextResponse {
+  return NextResponse.next({ request: { headers: requestHeaders ?? request.headers } });
+}
+
+export async function updateSession(request: NextRequest, requestHeaders?: Headers) {
+  let supabaseResponse = createSupabaseResponse(request, requestHeaders);
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -65,7 +69,7 @@ export async function updateSession(request: NextRequest) {
             request.cookies.set(name, value)
           );
           // Setear cookies en el response (para que el browser las guarde)
-          supabaseResponse = NextResponse.next({ request });
+          supabaseResponse = createSupabaseResponse(request, requestHeaders);
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options)
           );

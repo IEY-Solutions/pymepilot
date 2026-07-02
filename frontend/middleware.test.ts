@@ -5,12 +5,7 @@ const rateLimitCheckMock = vi.fn();
 const getUserMock = vi.fn();
 
 function createHeaders() {
-  const headers = new Map<string, string>();
-
-  return {
-    set: (key: string, value: string) => headers.set(key.toLowerCase(), value),
-    get: (key: string) => headers.get(key.toLowerCase()) ?? null,
-  };
+  return new Headers();
 }
 
 function createResponse() {
@@ -38,7 +33,7 @@ vi.mock('@supabase/ssr', () => ({
   })),
 }));
 
-vi.mock('@/lib/observability/metrics', () => ({
+vi.mock('@/lib/observability/metrics.edge', () => ({
   recordRateLimitRequest: vi.fn(),
 }));
 
@@ -74,10 +69,7 @@ function createRequest(pathname: string, correlationId?: string) {
   }
 
   return {
-    headers: {
-      get: headers.get,
-      set: headers.set,
-    },
+    headers,
     nextUrl: {
       pathname,
       clone: vi.fn(() => ({ pathname })),
@@ -102,10 +94,11 @@ describe('frontend middleware auth gate and correlation id', () => {
 
     const response = await middleware(request);
 
-    expect(updateSessionMock).toHaveBeenCalledWith(request);
+    expect(updateSessionMock).toHaveBeenCalledWith(request, expect.any(Headers));
     expect(response.headers.get('x-correlation-id')).toMatch(
       /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
     );
+    expect(request.headers.get('x-correlation-id')).toBeNull();
   });
 
   it('delegates public auth pages to updateSession instead of redirecting away', async () => {
@@ -114,7 +107,7 @@ describe('frontend middleware auth gate and correlation id', () => {
 
     await middleware(request);
 
-    expect(updateSessionMock).toHaveBeenCalledWith(request);
+    expect(updateSessionMock).toHaveBeenCalledWith(request, expect.any(Headers));
   });
 
   it('keeps /api/* outside the redirect gate and does not call updateSession', async () => {
@@ -137,7 +130,7 @@ describe('frontend middleware auth gate and correlation id', () => {
 
     await middleware(request);
 
-    expect(updateSessionMock).toHaveBeenCalledWith(request);
+    expect(updateSessionMock).toHaveBeenCalledWith(request, expect.any(Headers));
     expect(request.headers.get('x-correlation-id')).toBe(existingId);
   });
 });
