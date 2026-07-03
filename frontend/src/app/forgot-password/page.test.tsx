@@ -113,6 +113,29 @@ describe('ForgotPasswordPage (Fase 1)', () => {
     });
   });
 
+  it('shows a rate-limit message when Supabase returns over_email_send_rate_limit', async () => {
+    mockResetPasswordForEmail.mockResolvedValue({
+      error: { code: 'over_email_send_rate_limit', status: 429 },
+    });
+    render(<ForgotPasswordPage />);
+
+    const input = screen.getByLabelText(/email|correo/i);
+    await act(async () => {
+      fireEvent.change(input, { target: { value: 'user@example.com' } });
+    });
+    await act(async () => {
+      screen
+        .getByRole('button', { name: /enviar|recuperar|restablecer/i })
+        .click();
+    });
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(/pediste un enlace de recuperación hace poco/i),
+      ).toBeInTheDocument();
+    });
+  });
+
   // ── Navigation back ───────────────────────────────────────────────────
   it('renders a link back to /login', () => {
     render(<ForgotPasswordPage />);

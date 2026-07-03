@@ -20,9 +20,9 @@ export function withRequestDedup<T, Args extends unknown[]>(
 }
 
 /**
- * Adds cross-request SWR caching. The cache key is composed of the
- * prefix plus all function arguments, so passing `tenantId` as the
- * first argument scopes the cache per tenant. Default revalidation: 60s.
+ * Adds cross-request SWR caching for request-independent data only.
+ * Do not wrap functions that call cookies(), headers(), or createClient()
+ * from next/headers/Supabase server helpers. Default revalidation: 60s.
  */
 export function withSwrCache<T, Args extends unknown[]>(
   keyPrefix: string,
@@ -35,7 +35,7 @@ export function withSwrCache<T, Args extends unknown[]>(
 
 /**
  * Combines React.cache (in-request dedup) with unstable_cache
- * (cross-request SWR) for the highest hit rate on hot data.
+ * (cross-request SWR) for request-independent hot data.
  */
 export function withCachedData<T, Args extends unknown[]>(
   keyPrefix: string,

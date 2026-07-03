@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { withRequestDedup, withSwrCache } from "@/lib/cache";
+import { withRequestDedup } from "@/lib/cache";
 
 export const getCurrentUser = withRequestDedup(async () => {
   const supabase = await createClient();
@@ -7,8 +7,7 @@ export const getCurrentUser = withRequestDedup(async () => {
   return user;
 });
 
-export const getUnreadNotificationsCount = withSwrCache(
-  "notifications:unread-count",
+export const getUnreadNotificationsCount = withRequestDedup(
   async (_tenantId: string) => {
     const supabase = await createClient();
     const { count } = await supabase
@@ -16,8 +15,7 @@ export const getUnreadNotificationsCount = withSwrCache(
       .select("id", { count: "exact", head: true })
       .eq("read", false);
     return count ?? 0;
-  },
-  { revalidate: 60, tags: ["notifications"] }
+  }
 );
 
 export const getPendingPredictionsCount = withRequestDedup(async () => {

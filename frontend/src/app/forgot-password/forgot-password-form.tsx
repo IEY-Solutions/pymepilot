@@ -7,6 +7,9 @@ import { createClient } from "@/lib/supabase/client";
 const INPUT_CLASS_NAME =
   "w-full px-3 py-2 bg-white/[0.06] border border-[rgba(129,181,161,0.2)] rounded-lg text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-[#81b5a1] focus:border-transparent transition-colors";
 
+const RECOVERY_RATE_LIMIT_MESSAGE =
+  "Ya pediste un enlace de recuperación hace poco. Esperá unos minutos e intentá de nuevo.";
+
 function buildRedirectTo(): string {
   if (typeof window === "undefined") {
     return "/auth/callback";
@@ -59,6 +62,11 @@ export default function ForgotPasswordForm({
       );
 
       if (resetError) {
+        if (resetError.code === "over_email_send_rate_limit" || resetError.status === 429) {
+          setError(RECOVERY_RATE_LIMIT_MESSAGE);
+          return;
+        }
+
         setError("Hubo un problema. Intentá de nuevo.");
         return;
       }

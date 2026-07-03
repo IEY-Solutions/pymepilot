@@ -1,9 +1,50 @@
+import { cache as reactCache } from "react";
 import { createClient } from "@/lib/supabase/server";
-import { withCachedData } from "@/lib/cache";
-import type { PipelineCard } from "@/lib/pipeline/types";
+import type { Followup, ContactNote, PipelineCard } from "@/lib/pipeline/types";
 
-export const getPipelineCards = withCachedData(
-  "pipeline:cards",
+type PipelineCardRow = Omit<
+  PipelineCard,
+  "customer" | "prediction" | "followups" | "latest_note"
+> & {
+  customer:
+    | PipelineCard["customer"]
+    | PipelineCard["customer"][];
+  prediction:
+    | NonNullable<PipelineCard["prediction"]>
+    | NonNullable<PipelineCard["prediction"]>[];
+};
+
+const buildPipelineCards = async (
+  rawCards: PipelineCardRow[],
+  followups: Followup[],
+  notes: ContactNote[]
+): Promise<PipelineCard[]> => {
+  const followupsByCard = new Map<string, Followup[]>();
+  for (const followup of followups) {
+    const list = followupsByCard.get(followup.card_id) ?? [];
+    list.push(followup);
+    followupsByCard.set(followup.card_id, list);
+  }
+
+  const latestNoteByCard = new Map<string, ContactNote>();
+  for (const note of notes) {
+    if (!latestNoteByCard.has(note.card_id)) {
+      latestNoteByCard.set(note.card_id, note);
+    }
+  }
+
+  return rawCards.map((card) => ({
+    ...card,
+    customer: Array.isArray(card.customer) ? card.customer[0] : card.customer,
+    prediction: Array.isArray(card.prediction)
+      ? card.prediction[0] ?? null
+      : card.prediction,
+    followups: followupsByCard.get(card.id) ?? [],
+    latest_note: latestNoteByCard.get(card.id) ?? null,
+  }));
+};
+
+export const getPipelineCards = reactCache(
   async (_tenantId: string): Promise<PipelineCard[]> => {
     const supabase = await createClient();
 
@@ -24,7 +65,7 @@ export const getPipelineCards = withCachedData(
       throw new Error(`Pipeline fetch failed: ${error.message}`);
     }
 
-    const cardIds = (rawCards ?? []).map((c) => c.id);
+    const cardIds = (rawCards ?? []).map((card) => card.id);
 
     // 2. Fetch followups y notas en paralelo
     const [followupsRes, notesRes] =
@@ -45,48 +86,10 @@ export const getPipelineCards = withCachedData(
           ])
         : [{ data: [] }, { data: [] }];
 
-    // 3. Agrupar por card_id
-    const followupsByCard = new Map<string, typeof followupsRes.data>();
-    for (const f of followupsRes.data ?? []) {
-      const list = followupsByCard.get(f.card_id) ?? [];
-      list.push(f);
-      followupsByCard.set(f.card_id, list);
-    }
-
-    const latestNoteByCard = new Map<
-      string,
-      NonNullable<typeof notesRes.data>[number]
-    >();
-    for (const n of notesRes.data ?? []) {
-      if (!latestNoteByCard.has(n.card_id)) {
-        latestNoteByCard.set(n.card_id, n);
-      }
-    }
-
-    // 4. Ensamblar cards
-    return (rawCards ?? []).map((c) => ({
-      ...c,
-      customer: Array.isArray(c.customer)
-        ? (
-            c.customer as unknown as {
-              name: string;
-              phone: string | null;
-              email: string | null;
-            }[]
-          )[0]
-        : (c.customer as {
-            name: string;
-            phone: string | null;
-            email: string | null;
-          }),
-      prediction: Array.isArray(c.prediction)
-        ? (
-            c.prediction as unknown as PipelineCard["prediction"][]
-          )[0] ?? null
-        : (c.prediction as PipelineCard["prediction"]),
-      followups: (followupsByCard.get(c.id) ?? []) as PipelineCard["followups"],
-      latest_note: (latestNoteByCard.get(c.id) ?? null) as PipelineCard["latest_note"],
-    }));
-  },
-  { revalidate: 60, tags: ["pipeline"] }
+    return buildPipelineCards(
+      (rawCards ?? []) as PipelineCardRow[],
+      (followupsRes.data ?? []) as Followup[],
+      (notesRes.data ?? []) as ContactNote[]
+    );
+  }
 );

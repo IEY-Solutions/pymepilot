@@ -12,7 +12,7 @@
 | Task | Descripción | Accept. | Gate |
 |------|------------|---------|------|
 | T-000 | Verificar y corregir `GOTRUE_SITE_URL` en docker-compose de Supabase (`/opt/orion-stack/`). Debe ser `https://app.pymepilot.cloud`. | Manual: solicitar reset y verificar que el link en el email apunta a `app.pymepilot.cloud`, no a `localhost`. | Architect + DB-auditor |
-| T-001 | Verificar y corregir `GOTRUE_URI_ALLOW_LIST`. Debe incluir `https://app.pymepilot.cloud` y `https://app.pymepilot.cloud/reset-password`. | Manual: GoTrue no rechaza el redirect. | Architect |
+| T-001 | Verificar y corregir `GOTRUE_URI_ALLOW_LIST`. Debe incluir `https://app.pymepilot.cloud` y `https://app.pymepilot.cloud/auth/callback`. | Manual: GoTrue no rechaza el redirect. | Architect |
 | T-002 | Verificar que GoTrue tiene un email provider configurado y funcional (`GOTRUE_SMTP_*` o `GOTRUE_EXTERNAL_*`). Enviar un email de prueba. | Manual: email de prueba llega a una bandeja real. | Architect |
 | T-003 | Verificar `GOTRUE_MAILER_AUTOCONFIRM=true` (o el valor actual no rompe el flujo). | Manual: usuarios existentes pueden solicitar reset sin confirmación extra. | DB-auditor |
 | T-004 | Confirmar que `@supabase/ssr` en el frontend soporta `resetPasswordForEmail()` con `redirectTo` en self-hosted. | Revisión de versión del paquete y docs. | Architect |
@@ -30,7 +30,7 @@
 | Task | Descripción | Accept. | Gate |
 |------|------------|---------|------|
 | T-201 | Crear `frontend/src/app/forgot-password/page.tsx`: formulario con campo email + botón "Enviar". | AC-F1-01, AC-F1-03 | Architect |
-| T-202 | Implementar lógica de submit: validar email no vacío, llamar a `supabase.auth.resetPasswordForEmail()` con `redirectTo: `${window.location.origin}/reset-password``, mostrar mensaje genérico de éxito. | AC-F1-01, AC-F1-02 | Architect |
+| T-202 | Implementar lógica de submit: validar email no vacío, llamar a `supabase.auth.resetPasswordForEmail()` con `redirectTo: `${window.location.origin}/auth/callback``, mostrar mensaje genérico de éxito. | AC-F1-01, AC-F1-02 | Architect |
 | T-203 | Agregar estado de carga (botón disabled + texto "Enviando...") durante la llamada. | AC-F1-09 (loading, Fase 2 parcial) | Architect |
 | T-204 | Estilizar con `glass-dark` consistente con login (misma paleta, mismos componentes de input/botón). | AC-F2-10 | Frontend-engineer |
 

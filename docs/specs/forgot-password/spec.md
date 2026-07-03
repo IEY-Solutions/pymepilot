@@ -53,15 +53,15 @@ mínimo código y riesgo posible. Se usa el flujo nativo de Supabase GoTrue sin 
 
 | Ruta | Qué hace | Quién accede |
 |------|---------|-------------|
-| `/forgot-password` | Formulario: solo campo email + botón "Enviar". Al submit, invoca `supabase.auth.resetPasswordForEmail()` con `redirectTo: '/reset-password'`. Muestra confirmación genérica: "Si el email existe en el sistema, recibirás un enlace de recuperación." | Público (sin sesión) |
-| `/reset-password` | Formulario: campo "Nueva contraseña" + "Confirmar contraseña" + botón "Cambiar contraseña". Valida que coincidan y mínimo 6 caracteres. Al submit, invoca `supabase.auth.updateUser({ password })`. En éxito, redirige a `/login`. En error, muestra mensaje en español. | Requiere sesión temporal de recovery (GoTrue la establece al validar el token). |
-| `/auth/callback` | Ruta manejada por el paquete `@supabase/ssr` para intercambiar el token de recovery por una sesión. El middleware debe dejarla pasar sin requerir autenticación. | Público |
+| `/forgot-password` | Formulario: solo campo email + botón "Enviar". Al submit, invoca `supabase.auth.resetPasswordForEmail()` con `redirectTo: '/auth/callback'`. Muestra confirmación genérica: "Si el email existe en el sistema, recibirás un enlace de recuperación." | Público (sin sesión) |
+| `/auth/callback` | Página pública que completa el recovery real de Supabase: acepta `?code=` cuando exista y también el redirect con tokens en fragment (`#access_token`, `#refresh_token`), guarda la sesión temporal y luego redirige a `/reset-password`. El middleware debe dejarla pasar sin requerir autenticación. | Público |
+| `/reset-password` | Formulario: campo "Nueva contraseña" + "Confirmar contraseña" + botón "Cambiar contraseña". Valida que coincidan y mínimo 6 caracteres. Al submit, invoca `supabase.auth.updateUser({ password })`. En éxito, redirige a `/login`. En error, muestra mensaje en español. | Requiere sesión temporal de recovery (GoTrue la establece tras `/auth/callback`). |
 
-**Nota sobre `/reset-password` y la sesión:** cuando GoTrue valida el token del link de
-recuperación, redirige al `redirectTo` configurado (`/reset-password`). En ese momento el
-cliente Supabase ya tiene una sesión temporal (`user.aud === 'authenticated'` con factor de
-recovery). Esa sesión permite llamar a `updateUser()`. Si la sesión expiró o el token es
-inválido, GoTrue redirige sin sesión y el usuario ve un error.
+**Nota sobre `/auth/callback`, `/reset-password` y la sesión:** cuando GoTrue valida el token
+del link de recuperación, puede volver a `/auth/callback` con `?code=` o con la sesión en el
+fragmento de URL. La página completa ese estado en el cliente, guarda la sesión temporal y deja
+al usuario en `/reset-password`. Esa sesión permite llamar a `updateUser()`. Si la sesión expiró
+o el token es inválido, el usuario vuelve a `/forgot-password` con un motivo de error.
 
 #### 5.1.2 Cambios en login existente
 
@@ -73,7 +73,7 @@ Agregar un link "¿Olvidaste tu contraseña?" debajo del botón "Ingresar" que n
 | Parámetro | Valor requerido | Motivo |
 |-----------|----------------|--------|
 | `GOTRUE_SITE_URL` | `https://app.pymepilot.cloud` | Base URL para construir links de recovery. Sin esto, GoTrue usa `localhost` o la IP interna y los links no funcionan. |
-| `GOTRUE_URI_ALLOW_LIST` | Debe incluir `https://app.pymepilot.cloud` y `https://app.pymepilot.cloud/reset-password` | GoTrue rechaza redirects a dominios no listeados. |
+| `GOTRUE_URI_ALLOW_LIST` | Debe incluir `https://app.pymepilot.cloud` y `https://app.pymepilot.cloud/auth/callback` | GoTrue rechaza redirects a dominios no listeados. |
 | `GOTRUE_MAILER_AUTOCONFIRM` | `true` (valor actual, verificar que no se haya cambiado) | Los usuarios ya están creados por admin; no debe pedir confirmación extra. |
 | `GOTRUE_MAILER_URLPATHS_RECOVERY` | `/auth/v1/verify` (default de GoTrue, verificar) | Path que GoTrue usa en el link de recovery. Si está mal configurado, los links apuntan a una URL rota. |
 | SMTP / email provider | Debe estar configurado y funcional | GoTrue necesita poder enviar emails. Si nunca se usó este feature, puede que el mailer esté caído. Ver `GOTRUE_SMTP_*` o `GOTRUE_EXTERNAL_*` en el docker-compose de Supabase. |
@@ -242,8 +242,8 @@ customización vale la pena en Fase 2 o se difiere.
 - **R5 vs flujo `/reset-password`:** R5 dice que la sesión vieja se invalida al cambiar
   contraseña. Esto lo maneja GoTrue automáticamente. No hay conflicto.
 - **I4 vs auth-redirect del middleware:** si el middleware redirige a `/login` para rutas no
-  autenticadas, debe excluir explícitamente `/forgot-password`, `/reset-password` y
-  `/auth/callback`. Si no hay auth-redirect actual, I4 se cumple por defecto. VERIFICADO:
+  autenticadas, debe excluir explícitamente `/forgot-password`, `/auth/callback` y
+  `/reset-password`. Si no hay auth-redirect actual, I4 se cumple por defecto. VERIFICADO:
   pendiente confirmar si existe auth-redirect en el middleware actual. Marcado UNVERIFIED.
 
 ### UNVERIFIED assumptions (must be confirmed by architecture)
@@ -251,7 +251,7 @@ customización vale la pena en Fase 2 o se difiere.
    hace en otro archivo, ese archivo debe modificarse.
 2. `supabase.auth.resetPasswordForEmail()` de `@supabase/ssr` funciona idéntico en self-hosted
    vs cloud (misma API, mismo comportamiento del lado cliente).
-3. GoTrue self-hosted soporta el parámetro `redirectTo` en `resetPasswordForEmail()`.
+3. `resetPasswordForEmail()` usa `redirectTo: '/auth/callback'` y GoTrue self-hosted lo respeta.
 4. La ruta `/auth/callback` es manejada automáticamente por `@supabase/ssr` o requiere un
    `route.ts` explícito.
 5. El email provider de GoTrue está configurado y funcional.

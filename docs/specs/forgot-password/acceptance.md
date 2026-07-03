@@ -13,7 +13,7 @@
 **Then**
 - Se muestra el mensaje: "Si el email existe en el sistema, recibirás un enlace de recuperación."
 - El botón queda disabled durante la llamada y muestra "Enviando..."
-- Se llama a `supabase.auth.resetPasswordForEmail()` con `redirectTo` apuntando a `/reset-password`
+- Se llama a `supabase.auth.resetPasswordForEmail()` con `redirectTo` apuntando a `/auth/callback`
 - GoTrue envía un email al usuario con un link de recuperación
 
 **Fixture que engañaría este test:** dar por válido el test con solo revisar que el mensaje se
@@ -111,11 +111,11 @@ de recovery (sin sesión temporal)
 ---
 
 ### AC-F1-11: Ruta `/auth/callback` funcional
-**Given** GoTrue redirige al usuario a `https://app.pymepilot.cloud/auth/callback?code=...`
+**Given** GoTrue redirige al usuario a `https://app.pymepilot.cloud/auth/callback`
 después de validar el token de recovery
-**When** el navegador carga esa URL
+**When** el navegador carga esa URL con `?code=...` o con sesión en el fragmento
 **Then**
-- `@supabase/ssr` intercambia el `code` por una sesión (vía middleware o route handler)
+- La página completa el recovery usando Supabase client-side
 - El usuario termina en `/reset-password` con sesión temporal activa
 - Puede completar el formulario de nueva contraseña
 
