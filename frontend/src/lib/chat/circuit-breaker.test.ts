@@ -1,10 +1,23 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { getCircuitBreaker, getCircuitBreakerState, resetCircuitBreakerCache } from './circuit-breaker';
-import type CircuitBreaker from 'opossum';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { getCircuitBreaker, getCircuitBreakerState, resetCircuitBreakerCache, setCircuitBreakerCorrelationId } from './circuit-breaker';
+import CircuitBreaker from 'opossum';
+
+const { warnMock, infoMock } = vi.hoisted(() => ({
+  warnMock: vi.fn(),
+  infoMock: vi.fn(),
+}));
+
+vi.mock('@/lib/observability/logger', () => ({
+  getLogger: vi.fn(() => ({
+    warn: warnMock,
+    info: infoMock,
+  })),
+}));
 
 describe('chat circuit breaker', () => {
   beforeEach(() => {
     resetCircuitBreakerCache();
+    vi.clearAllMocks();
   });
 
   it('returns a circuit breaker for a tenant', () => {
@@ -96,5 +109,42 @@ describe('chat circuit breaker', () => {
     const cb = getCircuitBreaker('tenant-1') as CircuitBreaker;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     expect((cb as any).options.resetTimeout).toBe(60000);
+  });
+
+  it('bounds correlation ids to the configured tenant cache size', () => {
+    const cb = getCircuitBreaker('tenant-1') as CircuitBreaker;
+
+    for (let i = 0; i < 1001; i++) {
+      const tenantId = i === 0 ? 'tenant-1' : `tenant-${i + 1}`;
+      const correlationId = `corr-${i + 1}`;
+      setCircuitBreakerCorrelationId(tenantId, correlationId);
+    }
+
+    cb.emit('open');
+
+    expect(warnMock).toHaveBeenCalled();
+    expect(warnMock.mock.calls[0][0]).toMatchObject({
+      tenant_id: 'tenant-1',
+      event: 'circuit_breaker.opened',
+    });
+    expect(warnMock.mock.calls[0][0].correlation_id).toBeUndefined();
+  });
+
+  it('shuts down evicted breakers when the tenant cache exceeds the max size', () => {
+    const shutdownSpy = vi.spyOn(CircuitBreaker.prototype, 'shutdown').mockImplementation(function () {
+      return undefined as never;
+    });
+
+    try {
+      getCircuitBreaker('tenant-1');
+
+      for (let i = 2; i <= 1001; i++) {
+        getCircuitBreaker(`tenant-${i}`);
+      }
+
+      expect(shutdownSpy).toHaveBeenCalledTimes(1);
+    } finally {
+      shutdownSpy.mockRestore();
+    }
   });
 });

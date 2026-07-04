@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { createAuditServiceClient } from './supabase/service';
 
 export interface AuditActor {
   user_id: string;
@@ -36,7 +37,7 @@ export async function hashIp(ip: string, salt: string): Promise<string> {
 }
 
 export async function emitAudit(
-  client: SupabaseClient,
+  _client: SupabaseClient,
   event: AuditEvent,
   options: EmitOptions = {}
 ): Promise<void> {
@@ -46,7 +47,7 @@ export async function emitAudit(
   }
 
   const row = {
-    actor_user_id: event.actor.user_id,
+    actor_user_id: event.actor.user_id === 'anonymous' ? null : event.actor.user_id,
     actor_tenant_id: event.actor.tenant_id,
     action: event.action,
     resource: event.resource,
@@ -57,7 +58,18 @@ export async function emitAudit(
     details: event.details ?? {},
   };
 
-  const { error } = await client.from('audit_log').insert(row);
+  const serviceClient = createAuditServiceClient();
+  const { error } = await serviceClient.rpc('record_audit_log', {
+    p_actor_user_id: row.actor_user_id,
+    p_actor_tenant_id: row.actor_tenant_id,
+    p_action: row.action,
+    p_resource: row.resource,
+    p_result: row.result,
+    p_correlation_id: row.correlation_id,
+    p_severity: row.severity,
+    p_ip_hash: row.ip_hash,
+    p_details: row.details,
+  });
   if (error) {
     throw new Error(`Failed to emit audit event: ${error.message}`);
   }

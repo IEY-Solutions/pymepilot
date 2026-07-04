@@ -16,6 +16,7 @@ describe('GET /api/health', () => {
     expect(data.llm_upstream).toBeDefined();
     expect(data.llm_upstream.status).toMatch(/healthy|degraded|unhealthy/);
     expect(data.timestamp).toBeDefined();
+    expect(data.circuits).toBeUndefined();
   });
 
   it('marks llm_upstream unhealthy when circuit is OPEN', async () => {
@@ -36,11 +37,10 @@ describe('GET /api/health', () => {
     const data = await response.json();
 
     expect(data.llm_upstream.status).toBe('unhealthy');
-    expect(data.llm_upstream.circuit_state).toBe('OPEN');
-    expect(data.llm_upstream.failures).toBeGreaterThanOrEqual(5);
+    expect(data.circuits).toBeUndefined();
   });
 
-  it('includes tenant circuit states', async () => {
+  it('does not expose tenant circuit states', async () => {
     const cb = getCircuitBreaker('tenant-open');
     const failingFn = async () => {
       throw new Error('fail');
@@ -57,11 +57,6 @@ describe('GET /api/health', () => {
     const response = await GET();
     const data = await response.json();
 
-    expect(data.circuits).toBeInstanceOf(Array);
-    const tenantCircuit = data.circuits.find(
-      (c: { tenant_id: string }) => c.tenant_id === 'tenant-open'
-    );
-    expect(tenantCircuit).toBeDefined();
-    expect(tenantCircuit.state).toBe('OPEN');
+    expect(data.circuits).toBeUndefined();
   });
 });

@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const updateSessionMock = vi.fn();
 const rateLimitCheckMock = vi.fn();
 const getUserMock = vi.fn();
+const emitAuditMock = vi.fn();
 
 function createHeaders() {
   return new Headers();
@@ -42,7 +43,7 @@ vi.mock('@/lib/observability/logger', () => ({
 }));
 
 vi.mock('@/lib/audit', () => ({
-  emitAudit: vi.fn(),
+  emitAudit: emitAuditMock,
 }));
 
 vi.mock('@/lib/api-security', () => ({
@@ -52,8 +53,14 @@ vi.mock('@/lib/api-security', () => ({
 
 vi.mock('next/server', () => ({
   NextResponse: {
-    next: vi.fn(() => createResponse()),
-    json: vi.fn(() => createResponse()),
+    next: vi.fn(() => ({ ...createResponse(), status: 200 })),
+    json: vi.fn((_body, init) => {
+      const response = { ...createResponse(), status: init?.status };
+      if (init?.headers) {
+        new Headers(init.headers).forEach((value, key) => response.headers.set(key, value));
+      }
+      return response;
+    }),
   },
 }));
 
@@ -121,6 +128,22 @@ describe('frontend middleware auth gate and correlation id', () => {
     expect(response.headers.get('x-correlation-id')).toMatch(
       /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
     );
+  });
+
+  it('preserves 429 when best-effort audit emission fails', async () => {
+    emitAuditMock.mockRejectedValueOnce(new Error('audit write failed'));
+    rateLimitCheckMock.mockReturnValue({ allowed: false, limit: 10, windowMs: 60000, retryAfterSeconds: 30 });
+
+    const middleware = await loadMiddleware();
+    const request = createRequest('/api/chat');
+    const waitUntil = vi.fn();
+
+    const response = await middleware(request, { waitUntil } as never);
+
+    expect(response.status).toBe(429);
+    expect(response.headers.get('Retry-After')).toBe('30');
+    expect(waitUntil).toHaveBeenCalledTimes(1);
+    await expect(waitUntil.mock.calls[0][0]).resolves.toBeUndefined();
   });
 
   it('preserves an incoming correlation id', async () => {

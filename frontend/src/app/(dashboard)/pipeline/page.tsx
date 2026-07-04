@@ -7,16 +7,9 @@ async function PipelineBoardData() {
   const user = await getCurrentUser();
   const tenantId = (user?.user_metadata?.tenant_id as string) ?? "anonymous";
 
-  try {
-    const cards = await getPipelineCards(tenantId);
-    return <PipelineBoard initialCards={cards} />;
-  } catch {
-    return (
-      <p className="text-red-400 bg-red-500/15 p-4 rounded-lg">
-        Error al cargar el pipeline. Intenta recargar la pagina.
-      </p>
-    );
-  }
+  const cards = await getPipelineCards(tenantId);
+
+  return <PipelineBoard initialCards={cards} />;
 }
 
 function PipelineSkeleton() {

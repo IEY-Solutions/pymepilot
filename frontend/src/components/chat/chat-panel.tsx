@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useChat } from "@/contexts/chat-context";
 import { ChatMessageBubble } from "./chat-message";
 import { ChatInput } from "./chat-input";
@@ -14,6 +14,17 @@ interface Props {
 export function ChatPanel({ showWelcome = true, className = "" }: Props) {
   const { messages, isLoading, error, errorType, canRetry, retryAfter, usage, sendMessage, retry } = useChat();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const retryAtLabel = useMemo(() => {
+    if (errorType !== "rate_limit" || retryAfter === null) {
+      return null;
+    }
+
+    if (retryAfter < 60) {
+      return `${retryAfter} segundos`;
+    }
+
+    return `${Math.ceil(retryAfter / 60)} minutos`;
+  }, [errorType, retryAfter]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -88,13 +99,9 @@ export function ChatPanel({ showWelcome = true, className = "" }: Props) {
                 Reintentar
               </button>
             )}
-            {errorType === "rate_limit" && retryAfter !== null && (
+            {errorType === "rate_limit" && retryAfter !== null && retryAtLabel && (
               <div className="text-xs text-amber-400">
-                Disponible a las{" "}
-                {new Date(Date.now() + retryAfter * 1000).toLocaleTimeString("es-AR", {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
+                Disponible en {retryAtLabel}
               </div>
             )}
           </div>

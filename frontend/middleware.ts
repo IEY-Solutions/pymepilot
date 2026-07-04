@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import type { NextFetchEvent, NextRequest } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { updateSession } from '@/lib/supabase/middleware';
 import { apiRateLimiter } from '@/lib/rate-limit';
@@ -14,7 +14,7 @@ function isValidUuidV4(value: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 }
 
-export async function middleware(request: NextRequest): Promise<NextResponse> {
+export async function middleware(request: NextRequest, event?: NextFetchEvent): Promise<NextResponse> {
   const existing = request.headers.get(CORRELATION_HEADER.toLowerCase()) ?? request.headers.get(CORRELATION_HEADER);
   const correlationId = existing && isValidUuidV4(existing) ? existing : crypto.randomUUID();
   const requestHeaders = new Headers(request.headers);
@@ -44,7 +44,8 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     recordRateLimitRequest(tenantId, pathname, result.allowed ? 'allowed' : 'blocked');
 
     if (!result.allowed) {
-      getLogger().warn(
+      const logger = getLogger();
+      logger.warn(
         {
           event: 'rate_limit.exceeded',
           tenant_id: tenantId,
@@ -56,7 +57,7 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
         'Rate limit exceeded'
       );
 
-      await emitAudit(supabase, {
+      const auditPromise = emitAudit(supabase, {
         actor: {
           user_id: user?.id ?? 'anonymous',
           tenant_id: getSessionTenantId(user) ?? ANONYMOUS_TENANT_ID,
@@ -67,7 +68,22 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
         severity: 'WARNING',
         correlation_id: correlationId,
         ip: requestIp,
+      }).catch((error: unknown) => {
+        logger.warn(
+          {
+            event: 'audit.emit_failed',
+            tenant_id: tenantId,
+            endpoint: pathname,
+            correlation_id: correlationId,
+            error: error instanceof Error ? error.message : 'unknown error',
+          },
+          'Failed to emit rate limit audit event'
+        );
       });
+
+      if (event?.waitUntil) {
+        event.waitUntil(auditPromise);
+      }
 
       return NextResponse.json(
         {

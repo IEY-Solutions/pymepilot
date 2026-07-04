@@ -66,7 +66,7 @@ describe('ChatPanel retry button', () => {
     });
 
     render(<ChatPanel />);
-    expect(screen.getByText(/disponible a las/i)).toBeInTheDocument();
+    expect(screen.getByText(/disponible en/i)).toBeInTheDocument();
   });
 
   it('calls retry callback when retry button is clicked', () => {

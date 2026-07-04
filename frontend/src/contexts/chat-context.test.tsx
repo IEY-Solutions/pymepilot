@@ -31,8 +31,8 @@ describe('ChatContext', () => {
 
   it('parses timeout errors as retryable', async () => {
     mockFetch.mockResolvedValueOnce({
-      ok: true,
-      status: 200,
+      ok: false,
+      status: 503,
       json: async () =>
         ({
           error: 'El asesor no está disponible en este momento. Intentá de nuevo en unos minutos.',
@@ -84,12 +84,12 @@ describe('ChatContext', () => {
   it('retries the last user message when retry is invoked', async () => {
     mockFetch
       .mockResolvedValueOnce({
-        ok: true,
-        status: 200,
+        ok: false,
+        status: 503,
         json: async () =>
           ({
             error: 'El asesor no está disponible en este momento. Intentá de nuevo en unos minutos.',
-          } as ChatErrorResponse),
+        } as ChatErrorResponse),
       })
       .mockResolvedValueOnce({
         ok: true,

@@ -26,9 +26,14 @@ const CB_STATE_TO_NUMBER: Record<CircuitBreakerState, number> = {
 
 const circuitBreakers = new LRUCache<string, CircuitBreaker>({
   max: MAX_TENANTS,
+  dispose: (breaker) => {
+    void breaker.shutdown();
+  },
 });
 
-const circuitBreakerCorrelationIds = new Map<string, string>();
+const circuitBreakerCorrelationIds = new LRUCache<string, string>({
+  max: MAX_TENANTS,
+});
 
 function attachCircuitBreakerListeners(
   tenantId: string,
@@ -102,9 +107,6 @@ export function getCircuitBreakerState(tenantId: string): CircuitBreakerState {
 }
 
 export function resetCircuitBreakerCache(): void {
-  for (const breaker of circuitBreakers.values()) {
-    breaker.shutdown();
-  }
   circuitBreakers.clear();
   circuitBreakerCorrelationIds.clear();
 }

@@ -21,6 +21,10 @@ vi.mock('@/lib/supabase/client', () => ({
 // ---------------------------------------------------------------------------
 
 describe('ForgotPasswordPage (Fase 1)', () => {
+  async function renderPage(searchParams?: Promise<{ reason?: string | string[] }> | { reason?: string | string[] }) {
+    render(await ForgotPasswordPage({ searchParams }));
+  }
+
   beforeEach(() => {
     vi.clearAllMocks();
     vi.stubEnv('NEXT_PUBLIC_AUTH_REDIRECT_BASE_URL', 'http://localhost:3000');
@@ -31,8 +35,8 @@ describe('ForgotPasswordPage (Fase 1)', () => {
   });
 
   // ── Presence ──────────────────────────────────────────────────────────
-  it('renders an email input and a submit button', () => {
-    render(<ForgotPasswordPage />);
+  it('renders an email input and a submit button', async () => {
+    await renderPage();
 
     expect(
       screen.getByLabelText(/email|correo/i),
@@ -45,7 +49,7 @@ describe('ForgotPasswordPage (Fase 1)', () => {
   // ── Happy path ────────────────────────────────────────────────────────
   it('calls resetPasswordForEmail with the entered email on submit', async () => {
     mockResetPasswordForEmail.mockResolvedValue({ error: null });
-    render(<ForgotPasswordPage />);
+    await renderPage();
 
     const input = screen.getByLabelText(/email|correo/i);
     await act(async () => {
@@ -67,7 +71,7 @@ describe('ForgotPasswordPage (Fase 1)', () => {
   it('shows the generic error and does not submit if the redirect base env is missing', async () => {
     vi.unstubAllEnvs();
     mockResetPasswordForEmail.mockResolvedValue({ error: null });
-    render(<ForgotPasswordPage />);
+    await renderPage();
 
     const input = screen.getByLabelText(/email|correo/i);
     await act(async () => {
@@ -89,7 +93,7 @@ describe('ForgotPasswordPage (Fase 1)', () => {
   // ── Generic success message (anti-enumeration) ────────────────────────
   it('shows a generic success message that does not reveal whether the email exists', async () => {
     mockResetPasswordForEmail.mockResolvedValue({ error: null });
-    render(<ForgotPasswordPage />);
+    await renderPage();
 
     const input = screen.getByLabelText(/email|correo/i);
     await act(async () => {
@@ -113,7 +117,7 @@ describe('ForgotPasswordPage (Fase 1)', () => {
   // ── Error handling (generic, anti-enumeration) ────────────────────────
   it('shows a generic error message when the API call fails', async () => {
     mockResetPasswordForEmail.mockRejectedValue(new Error('Network error'));
-    render(<ForgotPasswordPage />);
+    await renderPage();
 
     const input = screen.getByLabelText(/email|correo/i);
     await act(async () => {
@@ -139,7 +143,7 @@ describe('ForgotPasswordPage (Fase 1)', () => {
     mockResetPasswordForEmail.mockResolvedValue({
       error: { code: 'over_email_send_rate_limit', status: 429 },
     });
-    render(<ForgotPasswordPage />);
+    await renderPage();
 
     const input = screen.getByLabelText(/email|correo/i);
     await act(async () => {
@@ -159,8 +163,8 @@ describe('ForgotPasswordPage (Fase 1)', () => {
   });
 
   // ── Navigation back ───────────────────────────────────────────────────
-  it('renders a link back to /login', () => {
-    render(<ForgotPasswordPage />);
+  it('renders a link back to /login', async () => {
+    await renderPage();
 
     const backLink = screen.getByRole('link', {
       name: /volver|login|iniciar sesión/i,
@@ -168,8 +172,8 @@ describe('ForgotPasswordPage (Fase 1)', () => {
     expect(backLink).toHaveAttribute('href', '/login');
   });
 
-  it('shows a recovery hint when the callback sends the user back here', () => {
-    render(<ForgotPasswordPage searchParams={{ reason: 'recovery-invalid' }} />);
+  it('shows a recovery hint when the callback sends the user back here', async () => {
+    await renderPage(Promise.resolve({ reason: 'recovery-invalid' }));
 
     expect(
       screen.getByText(/enlace de recuperación no es válido o expiró/i),
@@ -180,7 +184,7 @@ describe('ForgotPasswordPage (Fase 1)', () => {
   it('disables the submit button while loading', async () => {
     // Keep the promise pending so loading stays true.
     mockResetPasswordForEmail.mockReturnValue(new Promise(() => {}));
-    render(<ForgotPasswordPage />);
+    await renderPage();
 
     const input = screen.getByLabelText(/email|correo/i);
     await act(async () => {

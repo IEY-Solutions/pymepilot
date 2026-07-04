@@ -380,7 +380,7 @@ export async function POST(request: Request): Promise<Response> {
         {
           error: "El asesor no está disponible en este momento. Intentá de nuevo en unos minutos.",
         } satisfies ChatErrorResponse,
-        { status: 200 }
+        { status: 503 }
       );
     }
 
