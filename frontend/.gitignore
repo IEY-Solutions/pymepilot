@@ -17,6 +17,9 @@
 /.next/
 /out/
 
+# supabase local temp
+/supabase/.temp/
+
 # production
 /build
 
@@ -32,6 +35,9 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+
+# local one-off auth scripts
+reset-user-password.local.mjs
 
 # vercel
 .vercel

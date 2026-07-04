@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useChat } from "@/contexts/chat-context";
 import { ChatMessageBubble } from "./chat-message";
 import { ChatInput } from "./chat-input";
-import { Bot, Loader2 } from "lucide-react";
+import { Bot, Loader2, RotateCcw } from "lucide-react";
 
 interface Props {
   showWelcome?: boolean;
@@ -12,8 +12,19 @@ interface Props {
 }
 
 export function ChatPanel({ showWelcome = true, className = "" }: Props) {
-  const { messages, isLoading, error, usage, sendMessage } = useChat();
+  const { messages, isLoading, error, errorType, canRetry, retryAfter, usage, sendMessage, retry } = useChat();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const retryAtLabel = useMemo(() => {
+    if (errorType !== "rate_limit" || retryAfter === null) {
+      return null;
+    }
+
+    if (retryAfter < 60) {
+      return `${retryAfter} segundos`;
+    }
+
+    return `${Math.ceil(retryAfter / 60)} minutos`;
+  }, [errorType, retryAfter]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -74,10 +85,25 @@ export function ChatPanel({ showWelcome = true, className = "" }: Props) {
 
         {/* Error */}
         {error && (
-          <div className="flex justify-center">
+          <div className="flex flex-col items-center gap-2">
             <div className="rounded-lg bg-red-500/15 border border-red-500/30 px-3 py-2 text-sm text-red-400">
               {error}
             </div>
+            {canRetry && (
+              <button
+                onClick={retry}
+                className="flex items-center gap-1.5 rounded-md bg-[#81b5a1]/15 px-3 py-1.5 text-sm text-[#81b5a1] hover:bg-[#81b5a1]/25 transition-colors"
+                aria-label="Reintentar"
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+                Reintentar
+              </button>
+            )}
+            {errorType === "rate_limit" && retryAfter !== null && retryAtLabel && (
+              <div className="text-xs text-amber-400">
+                Disponible en {retryAtLabel}
+              </div>
+            )}
           </div>
         )}
 

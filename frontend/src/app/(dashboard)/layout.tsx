@@ -3,25 +3,26 @@ import { Sidebar } from "@/components/layout/sidebar";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { PushBanner } from "@/components/push/push-banner";
 import { ChatWrapper } from "@/components/chat/chat-wrapper";
-import { createClient } from "@/lib/supabase/server";
+import {
+  getCurrentUser,
+  getUnreadNotificationsCount,
+} from "@/lib/data/dashboard";
+
+// Limites de ejecucion para funciones serverless del dashboard.
+// maxDuration/regions no son opciones de next.config.ts en App Router;
+// se configuran via Route Segment Config en el layout que agrupa las rutas.
+export const maxDuration = 30;
+export const preferredRegion = "gru1";
 
 export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createClient();
-  const [{ data: { user } }, notificationsRes] = await Promise.all([
-    supabase.auth.getUser(),
-    supabase
-      .from("notifications")
-      .select("id", { count: "exact", head: true })
-      .eq("read", false),
-  ]);
-
-  // Obtener nombre del tenant desde app_metadata del JWT
-  const tenantName = user?.user_metadata?.full_name ?? "PymePilot";
-  const unreadCount = notificationsRes.count ?? 0;
+  const user = await getCurrentUser();
+  const tenantId = (user?.user_metadata?.tenant_id as string) ?? "anonymous";
+  const tenantName = (user?.user_metadata?.full_name as string) ?? "PymePilot";
+  const unreadCount = await getUnreadNotificationsCount(tenantId);
 
   return (
     <ChatWrapper>

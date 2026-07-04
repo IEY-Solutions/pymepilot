@@ -12,6 +12,20 @@ import {
   type PipelineErrorResponse,
 } from "@/lib/pipeline/types";
 import { sanitizeForPrompt } from "@/lib/sanitize";
+import { filterResponse } from "@/lib/response-filter";
+import { recordApiDataExposure } from "@/lib/observability/metrics";
+import { getLogger } from "@/lib/observability/logger";
+import { emitAudit } from "@/lib/audit";
+import {
+  getSessionTenantId,
+  getRequestTenantId,
+  getBodyTenantId,
+  createTenantProbeEvent,
+  createAccessDeniedEvent,
+  getClientIp,
+} from "@/lib/api-security";
+import type { AuditEvent } from "@/lib/audit";
+import type { SupabaseClient as SupabaseAuthClient } from "@supabase/supabase-js";
 
 // ============================================================
 // GET /api/pipeline — Obtener todas las cards del pipeline
@@ -22,19 +36,82 @@ import { sanitizeForPrompt } from "@/lib/sanitize";
 const COST_PER_INPUT_TOKEN = 0.000003;
 const COST_PER_OUTPUT_TOKEN = 0.000015;
 
+// Allowlist de campos publicos para GET /api/pipeline
+const PIPELINE_CARD_ALLOWLIST = [
+  "id",
+  "column_name",
+  "vertical",
+  "priority",
+  "is_expired",
+  "stage_deadline",
+  "stage_messages",
+  "created_at",
+  "updated_at",
+  "customer.name",
+  "customer.phone",
+  "customer.email",
+  "prediction.message_text",
+  "prediction.metadata.stock_alert.products_without_stock",
+  "prediction.metadata.stock_alert.products_with_stock",
+  "followups",
+  "latest_note.id",
+  "latest_note.result",
+  "latest_note.note_text",
+  "latest_note.followup_id",
+  "latest_note.created_at",
+];
+
+const PIPELINE_GET_ALLOWLIST = [
+  ...PIPELINE_CARD_ALLOWLIST.map((field) => `cards.${field}`),
+  "notifications",
+];
+
+async function safeEmitAudit(
+  client: SupabaseAuthClient,
+  event: AuditEvent
+): Promise<void> {
+  try {
+    await emitAudit(client, event);
+  } catch (err) {
+    getLogger().warn(
+      {
+        event: "audit.emit_failed",
+        action: event.action,
+        error: err instanceof Error ? err.message : String(err),
+      },
+      "Failed to emit audit event"
+    );
+  }
+}
+
 // ------------------------------------------------------------
 // GET: Fetch completo del board
 // ------------------------------------------------------------
-export async function GET(): Promise<Response> {
+export async function GET(request: Request): Promise<Response> {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
+  const correlationId = request.headers.get("x-correlation-id");
+
   if (!user) {
+    await safeEmitAudit(
+      supabase as unknown as SupabaseAuthClient,
+      createAccessDeniedEvent("/api/pipeline", correlationId, getClientIp(request))
+    );
     return Response.json(
       { error: "No autenticado" } satisfies PipelineErrorResponse,
       { status: 401 }
+    );
+  }
+
+  const sessionTenantId = getSessionTenantId(user);
+  const requestedTenantId = getRequestTenantId(request);
+  if (requestedTenantId && requestedTenantId !== sessionTenantId) {
+    await safeEmitAudit(
+      supabase as unknown as SupabaseAuthClient,
+      createTenantProbeEvent(user, requestedTenantId, "/api/pipeline", correlationId)
     );
   }
 
@@ -256,7 +333,22 @@ export async function GET(): Promise<Response> {
     }
   }
 
-  return Response.json({ cards: enrichedCards, notifications });
+  let strippedCount = 0;
+  const filtered = filterResponse(
+    { cards: enrichedCards, notifications },
+    PIPELINE_GET_ALLOWLIST,
+    {
+      onStripped: () => {
+        strippedCount++;
+      },
+    }
+  );
+
+  if (strippedCount > 0 && sessionTenantId) {
+    recordApiDataExposure(sessionTenantId, "/api/pipeline");
+  }
+
+  return Response.json(filtered);
 }
 
 // ------------------------------------------------------------
@@ -268,14 +360,20 @@ export async function POST(request: Request): Promise<Response> {
     data: { user },
   } = await supabase.auth.getUser();
 
+  const postCorrelationId = request.headers.get("x-correlation-id");
+
   if (!user) {
+    await safeEmitAudit(
+      supabase as unknown as SupabaseAuthClient,
+      createAccessDeniedEvent("/api/pipeline", postCorrelationId, getClientIp(request))
+    );
     return Response.json(
       { error: "No autenticado" } satisfies PipelineErrorResponse,
       { status: 401 }
     );
   }
 
-  const tenantId = user.app_metadata?.tenant_id;
+  const tenantId = getSessionTenantId(user);
   if (!tenantId) {
     return Response.json(
       { error: "tenant_id no encontrado" } satisfies PipelineErrorResponse,
@@ -290,6 +388,14 @@ export async function POST(request: Request): Promise<Response> {
     return Response.json(
       { error: "JSON invalido" } satisfies PipelineErrorResponse,
       { status: 400 }
+    );
+  }
+
+  const bodyTenantId = getBodyTenantId(body);
+  if (bodyTenantId && bodyTenantId !== tenantId) {
+    await safeEmitAudit(
+      supabase as unknown as SupabaseAuthClient,
+      createTenantProbeEvent(user, bodyTenantId, "/api/pipeline", postCorrelationId)
     );
   }
 

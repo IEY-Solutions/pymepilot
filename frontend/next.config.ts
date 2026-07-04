@@ -1,5 +1,8 @@
 import type { NextConfig } from "next";
 
+// Nota: maxDuration y regions se configuran via Route Segment Config
+// en `src/app/(dashboard)/layout.tsx` porque App Router no expone estas
+// opciones en next.config.ts. Dashboard routes: maxDuration=30s, region=gru1.
 const nextConfig: NextConfig = {
   output: "standalone",
   transpilePackages: ["remotion", "@remotion/player"],

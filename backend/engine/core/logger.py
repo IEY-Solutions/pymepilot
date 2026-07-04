@@ -20,9 +20,11 @@ que NO deberian estar ahi. Si el SanitizingFormatter funciono bien,
 siempre retorna 0.
 """
 
+import json
 import logging
 import os
 import re
+from datetime import timezone
 from logging.handlers import TimedRotatingFileHandler
 from pathlib import Path
 
@@ -126,6 +128,49 @@ class SanitizingFormatter(logging.Formatter):
         variables en el log."""
         result = super().formatStack(stack_info)
         return self._sanitize(result)
+
+
+class JSONFormatter(SanitizingFormatter):
+    """Formatter JSON estructurado que hereda la sanitizacion de secretos.
+
+    Emite una linea JSON con los campos requeridos por la especificacion de
+    observabilidad: timestamp, level, logger, message, correlation_id,
+    tenant_id, event y contexto aplanado. Cualquier valor sensible es
+    reemplazado por ***REDACTED*** antes de serializar.
+    """
+
+    def format(self, record: logging.LogRecord) -> str:
+        # Reutiliza la sanitizacion de SanitizingFormatter sin formatear a string.
+        msg = record.getMessage()
+        msg = self._sanitize(msg)
+        record.msg = msg
+        record.args = None
+
+        if record.exc_text:
+            record.exc_text = self._sanitize(record.exc_text)
+
+        payload: dict = {
+            'timestamp': self._format_timestamp(record),
+            'level': record.levelname,
+            'logger': record.name,
+            'message': record.msg,
+            'correlation_id': getattr(record, 'correlation_id', None),
+            'tenant_id': getattr(record, 'tenant_id', None),
+            'event': getattr(record, 'event', None),
+        }
+
+        context = getattr(record, 'context', None)
+        if isinstance(context, dict):
+            for key, value in context.items():
+                if key not in payload:
+                    payload[key] = value
+
+        return json.dumps(payload, ensure_ascii=False, default=str)
+
+    @staticmethod
+    def _format_timestamp(record: logging.LogRecord) -> str:
+        from datetime import datetime
+        return datetime.fromtimestamp(record.created, tz=timezone.utc).isoformat()
 
 
 # --- Configuracion del logger ---

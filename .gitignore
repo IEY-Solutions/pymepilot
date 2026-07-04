@@ -58,8 +58,14 @@ credentials/
 # --- Archivos temporales ---
 tmp/
 temp/
+supabase/.temp/
 *.tmp
+
+# --- SDD / Agent registry ---
+.atl/
 
 # --- Codex local context ---
 .codex/memories/
 .codex/plans/
+.vercel
+.env*

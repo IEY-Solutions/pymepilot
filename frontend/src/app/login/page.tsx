@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { BrandLockup } from "@/components/layout/brand-lockup";
 import { createClient } from "@/lib/supabase/client";
@@ -81,7 +82,10 @@ export default function LoginPage() {
           </div>
 
           {error && (
-            <p className="text-sm text-red-400 bg-red-500/15 p-3 rounded-lg border border-red-500/30">
+            <p
+              aria-live="polite"
+              className="text-sm text-red-400 bg-red-500/15 p-3 rounded-lg border border-red-500/30"
+            >
               {error}
             </p>
           )}
@@ -93,6 +97,15 @@ export default function LoginPage() {
           >
             {loading ? "Ingresando..." : "Ingresar"}
           </button>
+
+          <div className="text-center">
+            <Link
+              href="/forgot-password"
+              className="text-sm text-white/55 underline-offset-4 transition-colors hover:text-white hover:underline focus:outline-none focus:ring-2 focus:ring-[#81b5a1] focus:ring-offset-2 focus:ring-offset-transparent"
+            >
+              ¿Olvidaste tu contraseña?
+            </Link>
+          </div>
         </form>
       </div>
     </div>

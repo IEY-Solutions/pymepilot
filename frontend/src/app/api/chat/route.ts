@@ -1,6 +1,13 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@/lib/supabase/server";
 import { CHAT_TOOLS, executeTool } from "@/lib/chat/tools";
+import { withResilience, type ResilientError } from "@/lib/chat/resilience";
+import { getLogger } from "@/lib/observability/logger";
+import {
+  recordChatRequest,
+  recordChatRequestDuration,
+  recordChatError,
+} from "@/lib/observability/metrics";
 import type { ChatRequest, ChatResponse, ChatErrorResponse } from "@/lib/chat/types";
 
 // ============================================================
@@ -18,6 +25,9 @@ import type { ChatRequest, ChatResponse, ChatErrorResponse } from "@/lib/chat/ty
 
 // Limite de iteraciones tool use para evitar loops infinitos
 const MAX_TOOL_ITERATIONS = 5;
+
+// Deadline para respuestas del LLM
+const DEFAULT_TIMEOUT_MS = 30000;
 
 // Limites de input para controlar costos y prevenir abuso
 const MAX_MESSAGE_LENGTH = 5000; // caracteres por mensaje
@@ -213,10 +223,11 @@ export async function POST(request: Request): Promise<Response> {
     content: `[Pregunta del usuario de ${tenantName}]: ${sanitizedMessage}`,
   });
 
-  // ---- 5. Llamar a Claude con tools ----
+  // ---- 5. Llamar a Claude con tools (con resiliencia) ----
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
-    console.error("ANTHROPIC_API_KEY no configurada en el entorno");
+    getLogger().error({ message: "ANTHROPIC_API_KEY no configurada en el entorno" });
+    recordChatError(tenantId, "missing_api_key");
     return Response.json(
       { error: "Servicio de IA no disponible" } satisfies ChatErrorResponse,
       { status: 503 }
@@ -226,36 +237,35 @@ export async function POST(request: Request): Promise<Response> {
   const anthropic = new Anthropic({ apiKey });
   const model = process.env.CHAT_MODEL || "claude-sonnet-4-20250514";
   const maxTokens = parseInt(process.env.CHAT_MAX_TOKENS || "1000", 10);
+  const startTime = Date.now();
 
-  let totalInputTokens = 0;
-  let totalOutputTokens = 0;
+  async function callAnthropic(signal: AbortSignal): Promise<{
+    responseText: string;
+    totalInputTokens: number;
+    totalOutputTokens: number;
+  }> {
+    let response = await anthropic.messages.create(
+      {
+        model,
+        max_tokens: maxTokens,
+        system: systemPrompt,
+        messages: claudeMessages,
+        tools: CHAT_TOOLS as Anthropic.Tool[],
+      },
+      { signal }
+    );
 
-  try {
-    let response = await anthropic.messages.create({
-      model,
-      max_tokens: maxTokens,
-      system: systemPrompt,
-      messages: claudeMessages,
-      tools: CHAT_TOOLS as Anthropic.Tool[],
-    });
+    let totalInputTokens = response.usage.input_tokens;
+    let totalOutputTokens = response.usage.output_tokens;
 
-    totalInputTokens += response.usage.input_tokens;
-    totalOutputTokens += response.usage.output_tokens;
-
-    // ---- 6. Loop de tool use ----
-    // Claude puede pedir datos multiples veces antes de responder.
-    // Limitamos a MAX_TOOL_ITERATIONS para evitar loops infinitos.
     let iterations = 0;
-
     while (response.stop_reason === "tool_use" && iterations < MAX_TOOL_ITERATIONS) {
-      // Encontrar todos los tool_use blocks en la respuesta
       const toolUseBlocks = response.content.filter(
         (block): block is Anthropic.ToolUseBlock => block.type === "tool_use"
       );
 
       if (toolUseBlocks.length === 0) break;
 
-      // Ejecutar cada tool y armar los resultados
       const toolResults: Anthropic.ToolResultBlockParam[] = [];
       for (const toolUse of toolUseBlocks) {
         const result = await executeTool(
@@ -270,7 +280,6 @@ export async function POST(request: Request): Promise<Response> {
         });
       }
 
-      // Agregar la respuesta de Claude (con tool_use) y nuestros resultados
       claudeMessages.push({
         role: "assistant",
         content: response.content as Anthropic.ContentBlock[],
@@ -280,28 +289,41 @@ export async function POST(request: Request): Promise<Response> {
         content: toolResults,
       });
 
-      // Siguiente llamada a Claude con los resultados
-      response = await anthropic.messages.create({
-        model,
-        max_tokens: maxTokens,
-        system: systemPrompt,
-        messages: claudeMessages,
-        tools: CHAT_TOOLS as Anthropic.Tool[],
-      });
+      response = await anthropic.messages.create(
+        {
+          model,
+          max_tokens: maxTokens,
+          system: systemPrompt,
+          messages: claudeMessages,
+          tools: CHAT_TOOLS as Anthropic.Tool[],
+        },
+        { signal }
+      );
 
       totalInputTokens += response.usage.input_tokens;
       totalOutputTokens += response.usage.output_tokens;
       iterations++;
     }
 
-    // ---- 7. Extraer respuesta de texto ----
     const textBlock = response.content.find(
       (block): block is Anthropic.TextBlock => block.type === "text"
     );
     const responseText =
       textBlock?.text ?? "No pude generar una respuesta. Intenta reformular la pregunta.";
 
-    // ---- 8. Registrar uso en chat_usage ----
+    return { responseText, totalInputTokens, totalOutputTokens };
+  }
+
+  try {
+    const correlationId =
+      request.headers.get("x-correlation-id") ?? crypto.randomUUID();
+
+    const { responseText, totalInputTokens, totalOutputTokens } = await withResilience(
+      tenantId,
+      (signal) => callAnthropic(signal),
+      { timeoutMs: DEFAULT_TIMEOUT_MS, correlationId }
+    );
+
     const totalTokens = totalInputTokens + totalOutputTokens;
     const costUsd =
       totalInputTokens * COST_PER_INPUT_TOKEN +
@@ -316,7 +338,9 @@ export async function POST(request: Request): Promise<Response> {
       cost_usd: costUsd,
     });
 
-    // ---- 9. Retornar respuesta ----
+    recordChatRequest(tenantId, "success");
+    recordChatRequestDuration(tenantId, "success", (Date.now() - startTime) / 1000);
+
     return Response.json({
       response: responseText,
       usage: {
@@ -325,33 +349,48 @@ export async function POST(request: Request): Promise<Response> {
       },
     } satisfies ChatResponse);
   } catch (error) {
-    // M-02: Loguear solo info no sensible (sin el objeto de error completo
-    // que puede incluir request headers, API keys en contexto, etc.)
-    if (error instanceof Anthropic.APIError) {
-      console.error("Error Anthropic API:", {
-        status: error.status,
-        code: (error as { code?: string }).code ?? "unknown",
-        message: error.message,
-      });
-      if (error.status === 429) {
-        return Response.json(
-          { error: "El servicio de IA esta temporalmente sobrecargado. Intenta en unos minutos." } satisfies ChatErrorResponse,
-          { status: 429 }
-        );
-      }
+    const resilientError = error as ResilientError;
+    const errorType = resilientError.type ?? "unknown";
+
+    getLogger().error({
+      message: "Error en chat API",
+      tenant_id: tenantId,
+      error_type: errorType,
+      status_code: resilientError.status ?? 503,
+      correlation_id: resilientError.correlationId,
+    });
+    recordChatError(tenantId, errorType);
+
+    if (errorType === "rate_limit" || resilientError.status === 429) {
+      recordChatRequest(tenantId, "rate_limited");
+      recordChatRequestDuration(tenantId, "rate_limited", (Date.now() - startTime) / 1000);
       return Response.json(
-        { error: "Error al comunicarse con el servicio de IA" } satisfies ChatErrorResponse,
-        { status: 502 }
+        {
+          error: "Límite de consultas alcanzado. Probá más tarde.",
+          retry_after: resilientError.retryAfter ?? 60,
+        } satisfies ChatErrorResponse,
+        { status: 429 }
       );
     }
 
-    // Error generico: loguear solo el mensaje, no el stack ni el objeto completo
-    const errorMessage = error instanceof Error ? error.message : "Error desconocido";
-    console.error("Error en chat API:", errorMessage);
+    if (errorType === "timeout") {
+      recordChatRequest(tenantId, "degraded");
+      recordChatRequestDuration(tenantId, "degraded", (Date.now() - startTime) / 1000);
+      return Response.json(
+        {
+          error: "El asesor no está disponible en este momento. Intentá de nuevo en unos minutos.",
+        } satisfies ChatErrorResponse,
+        { status: 503 }
+      );
+    }
 
+    recordChatRequest(tenantId, "error");
+    recordChatRequestDuration(tenantId, "error", (Date.now() - startTime) / 1000);
     return Response.json(
-      { error: "Error interno del servidor" } satisfies ChatErrorResponse,
-      { status: 500 }
+      {
+        error: "El asesor no está disponible en este momento. Intentá de nuevo en unos minutos.",
+      } satisfies ChatErrorResponse,
+      { status: 503 }
     );
   }
 }

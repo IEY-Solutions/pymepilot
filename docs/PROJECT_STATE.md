@@ -3,7 +3,7 @@
 > **Archivo compartido entre sesiones de Codex.**
 > Leer este archivo al iniciar una sesion y actualizarlo al finalizar si
 > hubo cambios relevantes en el estado del proyecto.
-> Ultima actualizacion: 2026-05-24
+> Ultima actualizacion: 2026-07-04
 
 ---
 
@@ -77,7 +77,7 @@ Sistema funciona para IEY sin intervencion manual.
 | Core de negocio cross-repo | 2026-04-03 | Se creo `PYMEPILOT-CORE.md` como referencia canonica de negocio compartida entre `pymepilot`, `pymepilot-landing` y `pymepilot-landing-v2`, alineada con la pagina madre de Notion y con `docs/PRD.md`, `docs/ARCHITECTURE.md` y `docs/PROJECT_STATE.md`. `AGENTS.md` del repo ahora lo exige en el arranque de sesion |
 | Preparacion Vercel frontend | 2026-05-24 | Dashboard Next.js migrado a convencion `proxy.ts` de Next.js 16, `npm run lint` y `npm run build` verificados sin errores, assets default de Next eliminados, artefactos locales `.vs`, `.next` y `node_modules` limpiados, y runbooks de migracion completados en `docs/migration/`. El deploy recomendado importa `frontend/` como Root Directory y mantiene backend Python, Postgres/RLS, GoTrue/PostgREST, crons y Grafana como servicios externos. |
 | Guia Onboarding | 2026-03-19 | /guia con Remotion Player embebido, 7 composiciones con wrappers visuales + cursor + highlights + text overlay, datos mock "Distribuidora Demo", IntersectionObserver autoplay, selector de modulos escalable |
-| **Auditoria Post-MVP** | **2026-03-20** | **1C + 5H + 12M + 8L corregidos. 5 agentes especializados + 4 rondas revision Codex. Commit 48210ea. Migracion 056 pendiente aplicar en DB.** |
+| **Auditoria Post-MVP** | **2026-03-20** | **1C + 5H + 12M + 8L corregidos. 5 agentes especializados + 4 rondas revision Codex. Commit 48210ea. Los faltantes de migracion 056 se aplicaron directamente en Supabase produccion via break-glass SQL/CLI y se re-verificaron grants/RPCs clave.** |
 | Orquestador refresh post-sync | 2026-03-20 | Se agrego suite `backend/tests/test_main_orchestrator.py` y se reordeno `backend/main.py` a 2 fases: sync de todos los tenants primero, refresh unico de vistas materializadas despues, y recien ahi atribucion + verticales + push. Fix permanente para que `/metricas` y `client_rankings` muestren ventas del mismo dia en vez de la foto del dia anterior |
 | Reestructuracion multi-modulo verificada | 2026-03-21 | Renombre `backend/engine/verticales/` → `backend/engine/seguimiento/` verificado sin referencias viejas. Se corrigio bug de atribucion en `backend/engine/db/queries.py` agregando casts explicitos para `jsonb_build_object()` compatibles con psycopg 3, con test de regresion `backend/tests/test_db_queries.py`. Migracion `057_platform_modules.sql` corregida para PostgreSQL real y aplicada en produccion: `tenants.segment='mayorista'`, `tenants.active_modules={'seguimiento'}` y constraints creados OK |
 | Estructura modular minima | 2026-03-21 | Prompts del modulo `seguimiento` reorganizados en `backend/config/prompts/seguimiento/` con fallback legacy en `VerticalBase`. Navegacion del frontend extraida a `frontend/src/lib/products/` para representar `PymePilot Mayoristas` como producto actual. Documentacion nueva: `docs/modules/` y plan de evolucion por segmentos en `docs/plans/2026-03-21-estructura-modular-segmentos-design.md` |
@@ -87,6 +87,7 @@ Sistema funciona para IEY sin intervencion manual.
 ## En curso / pendiente
 
 ### Operativo
+- **Auth frontend hardening:** el middleware activo ya valida rutas protegidas con `getUser()` también en prefetch/actions; el recovery flow real de Supabase quedó en `/forgot-password` → `/auth/callback` (cliente, soporta `?code=` o fragmento con sesión) → `/reset-password`, con `redirectTo` derivado de `NEXT_PUBLIC_AUTH_REDIRECT_BASE_URL` por entorno, sin cookie recovery custom, y la política mínima de password quedó alineada a 6 caracteres con tests y docs consistentes.
 - **Cambio de credenciales login IEY:** el 2026-03-18 se detecto que
   `create_tenant.py` fallaba con `401 Invalid authentication credentials`
   via `Kong` en `/auth/v1/admin/users`, aunque el mismo service-role JWT
@@ -140,14 +141,10 @@ Reactivacion pendiente (ticket Contabilium).
 - retryCount sin limite maximo en client-detail.tsx
 - (Los items "Rate delay ausente", "formatMonth duplicada", "Import export-pdf" fueron resueltos en auditoria 2026-03-20)
 
-### Accion pendiente — CRITICA
-- **Aplicar migración 056 en DB de producción:**
-  ```bash
-  docker cp database/migrations/056_audit_security_fixes.sql orion-menteax_postgres:/tmp/
-  docker exec orion-menteax_postgres psql -U postgres -d orion_db -f /tmp/056_audit_security_fixes.sql
-  ```
-  Esta migración corrige el CRITICAL C-01 (tenant isolation en KPI RPCs).
-  Sin ella, el código está en main pero la DB sigue vulnerable.
+### Seguimiento operativo
+- **Migracion 056:** los faltantes ya fueron aplicados directamente en Supabase produccion via break-glass SQL/CLI.
+- **Verificacion:** se re-chequearon grants/RPCs clave en prod.
+- **Pendiente:** reconciliacion de bookkeeping/proceso de la migracion, no una vulnerabilidad activa en produccion.
 
 ---
 

@@ -1,5 +1,11 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import {
+  recordAuthValidationDuration,
+  recordRscPrefetch,
+} from "@/lib/observability/metrics.edge";
+
+const PUBLIC_AUTH_PATHS = new Set(["/login", "/forgot-password", "/reset-password", "/auth/callback"]);
 
 /**
  * Limpia todas las cookies de sesion de Supabase del response.
@@ -28,8 +34,26 @@ function clearSupabaseCookies(
   return response;
 }
 
-export async function updateSession(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({ request });
+/**
+ * Detecta requests de prefetch de RSC/Server Actions.
+ * En estos casos evitamos la validacion completa contra GoTrue para
+ * reducir latencia y cargas innecesarias durante la navegacion.
+ */
+function isPrefetchRequest(request: NextRequest): boolean {
+  const purpose = request.headers.get("Purpose");
+  return (
+    request.headers.get("Next-Router-Prefetch") === "1" ||
+    request.headers.get("Next-Action") !== null ||
+    purpose === "prefetch"
+  );
+}
+
+function createSupabaseResponse(request: NextRequest, requestHeaders?: Headers): NextResponse {
+  return NextResponse.next({ request: { headers: requestHeaders ?? request.headers } });
+}
+
+export async function updateSession(request: NextRequest, requestHeaders?: Headers) {
+  let supabaseResponse = createSupabaseResponse(request, requestHeaders);
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -45,7 +69,7 @@ export async function updateSession(request: NextRequest) {
             request.cookies.set(name, value)
           );
           // Setear cookies en el response (para que el browser las guarde)
-          supabaseResponse = NextResponse.next({ request });
+          supabaseResponse = createSupabaseResponse(request, requestHeaders);
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options)
           );
@@ -54,14 +78,24 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  // getUser() valida el JWT contra GoTrue (no solo lee la session local)
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
+  const prefetch = isPrefetchRequest(request);
+  let user = null;
+  let error = null;
+  const authStart = Date.now();
 
-  // Si no hay usuario autenticado y no estamos en /login, redirigir
-  if (!user && !request.nextUrl.pathname.startsWith("/login")) {
+  const result = await supabase.auth.getUser();
+  user = result.data.user;
+  error = result.error;
+
+  const authDurationMs = Date.now() - authStart;
+  recordAuthValidationDuration(prefetch ? "prefetch" : "full", authDurationMs / 1000);
+
+  if (prefetch) {
+    recordRscPrefetch(request.nextUrl.pathname, error ? "error" : "success", authDurationMs / 1000);
+  }
+
+  // Si no hay usuario autenticado y no estamos en una ruta pública de auth, redirigir
+  if (!user && !PUBLIC_AUTH_PATHS.has(request.nextUrl.pathname)) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     const redirect = NextResponse.redirect(url);

@@ -1,4 +1,34 @@
 import { createClient } from "@/lib/supabase/server";
+import { truncateText, redactPii, NOTE_PREVIEW_MAX_LENGTH } from "@/lib/pii";
+import { getLogger } from "@/lib/observability/logger";
+import { emitAudit } from "@/lib/audit";
+import {
+  getSessionTenantId,
+  getRequestTenantId,
+  createTenantProbeEvent,
+  createAccessDeniedEvent,
+  getClientIp,
+} from "@/lib/api-security";
+import type { AuditEvent } from "@/lib/audit";
+import type { SupabaseClient as SupabaseAuthClient } from "@supabase/supabase-js";
+
+async function safeEmitAudit(
+  client: SupabaseAuthClient,
+  event: AuditEvent
+): Promise<void> {
+  try {
+    await emitAudit(client, event);
+  } catch (err) {
+    getLogger().warn(
+      {
+        event: "audit.emit_failed",
+        action: event.action,
+        error: err instanceof Error ? err.message : String(err),
+      },
+      "Failed to emit audit event"
+    );
+  }
+}
 
 // DELETE /api/pipeline/notes — DESHABILITADO
 // contact_notes es append-only por diseño (migration 056 revocó GRANT DELETE).
@@ -18,8 +48,23 @@ export async function GET(request: Request): Promise<Response> {
     data: { user },
   } = await supabase.auth.getUser();
 
+  const correlationId = request.headers.get("x-correlation-id");
+
   if (!user) {
+    await safeEmitAudit(
+      supabase as unknown as SupabaseAuthClient,
+      createAccessDeniedEvent("/api/pipeline/notes", correlationId, getClientIp(request))
+    );
     return Response.json({ error: "No autenticado" }, { status: 401 });
+  }
+
+  const sessionTenantId = getSessionTenantId(user);
+  const requestedTenantId = getRequestTenantId(request);
+  if (requestedTenantId && requestedTenantId !== sessionTenantId) {
+    await safeEmitAudit(
+      supabase as unknown as SupabaseAuthClient,
+      createTenantProbeEvent(user, requestedTenantId, "/api/pipeline/notes", correlationId)
+    );
   }
 
   const url = new URL(request.url);
@@ -40,5 +85,10 @@ export async function GET(request: Request): Promise<Response> {
     return Response.json({ error: "Error al cargar notas" }, { status: 500 });
   }
 
-  return Response.json({ notes: notes ?? [] });
+  const sanitizedNotes = (notes ?? []).map((note) => ({
+    ...note,
+    note_text: redactPii(truncateText(note.note_text, NOTE_PREVIEW_MAX_LENGTH)),
+  }));
+
+  return Response.json({ notes: sanitizedNotes });
 }
