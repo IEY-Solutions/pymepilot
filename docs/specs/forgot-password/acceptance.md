@@ -13,7 +13,7 @@
 **Then**
 - Se muestra el mensaje: "Si el email existe en el sistema, recibirás un enlace de recuperación."
 - El botón queda disabled durante la llamada y muestra "Enviando..."
-- Se llama a `supabase.auth.resetPasswordForEmail()` con `redirectTo` apuntando a `/auth/callback`
+- Se llama a `supabase.auth.resetPasswordForEmail()` con `redirectTo` derivado de `NEXT_PUBLIC_AUTH_REDIRECT_BASE_URL` y apuntando a `/auth/callback`
 - GoTrue envía un email al usuario con un link de recuperación
 
 **Fixture que engañaría este test:** dar por válido el test con solo revisar que el mensaje se

@@ -53,7 +53,7 @@ mínimo código y riesgo posible. Se usa el flujo nativo de Supabase GoTrue sin 
 
 | Ruta | Qué hace | Quién accede |
 |------|---------|-------------|
-| `/forgot-password` | Formulario: solo campo email + botón "Enviar". Al submit, invoca `supabase.auth.resetPasswordForEmail()` con `redirectTo: '/auth/callback'`. Muestra confirmación genérica: "Si el email existe en el sistema, recibirás un enlace de recuperación." | Público (sin sesión) |
+| `/forgot-password` | Formulario: solo campo email + botón "Enviar". Al submit, invoca `supabase.auth.resetPasswordForEmail()` con `redirectTo` derivado de `NEXT_PUBLIC_AUTH_REDIRECT_BASE_URL` y apuntando a `/auth/callback`. Muestra confirmación genérica: "Si el email existe en el sistema, recibirás un enlace de recuperación." | Público (sin sesión) |
 | `/auth/callback` | Página pública que completa el recovery real de Supabase: acepta `?code=` cuando exista y también el redirect con tokens en fragment (`#access_token`, `#refresh_token`), guarda la sesión temporal y luego redirige a `/reset-password`. El middleware debe dejarla pasar sin requerir autenticación. | Público |
 | `/reset-password` | Formulario: campo "Nueva contraseña" + "Confirmar contraseña" + botón "Cambiar contraseña". Valida que coincidan y mínimo 6 caracteres. Al submit, invoca `supabase.auth.updateUser({ password })`. En éxito, redirige a `/login`. En error, muestra mensaje en español. | Requiere sesión temporal de recovery (GoTrue la establece tras `/auth/callback`). |
 
@@ -72,8 +72,9 @@ Agregar un link "¿Olvidaste tu contraseña?" debajo del botón "Ingresar" que n
 
 | Parámetro | Valor requerido | Motivo |
 |-----------|----------------|--------|
+| `NEXT_PUBLIC_AUTH_REDIRECT_BASE_URL` | `https://app.pymepilot.cloud` en prod, `https://dev.pymepilot.cloud` en staging, `http://localhost:3000` en local | Base pública estable para derivar `/auth/callback` sin depender del origen efímero del navegador. |
 | `GOTRUE_SITE_URL` | `https://app.pymepilot.cloud` | Base URL para construir links de recovery. Sin esto, GoTrue usa `localhost` o la IP interna y los links no funcionan. |
-| `GOTRUE_URI_ALLOW_LIST` | Debe incluir `https://app.pymepilot.cloud` y `https://app.pymepilot.cloud/auth/callback` | GoTrue rechaza redirects a dominios no listeados. |
+| `GOTRUE_URI_ALLOW_LIST` | Debe incluir `https://app.pymepilot.cloud/auth/callback`, `https://dev.pymepilot.cloud/auth/callback` y `http://localhost:3000/auth/callback` | GoTrue rechaza redirects a dominios no listeados. |
 | `GOTRUE_MAILER_AUTOCONFIRM` | `true` (valor actual, verificar que no se haya cambiado) | Los usuarios ya están creados por admin; no debe pedir confirmación extra. |
 | `GOTRUE_MAILER_URLPATHS_RECOVERY` | `/auth/v1/verify` (default de GoTrue, verificar) | Path que GoTrue usa en el link de recovery. Si está mal configurado, los links apuntan a una URL rota. |
 | SMTP / email provider | Debe estar configurado y funcional | GoTrue necesita poder enviar emails. Si nunca se usó este feature, puede que el mailer esté caído. Ver `GOTRUE_SMTP_*` o `GOTRUE_EXTERNAL_*` en el docker-compose de Supabase. |

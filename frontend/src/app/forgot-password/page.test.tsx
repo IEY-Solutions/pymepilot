@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import '@testing-library/jest-dom';
 import { render, screen, waitFor, act, fireEvent } from '@testing-library/react';
 import ForgotPasswordPage from './page';
@@ -23,11 +23,11 @@ vi.mock('@/lib/supabase/client', () => ({
 describe('ForgotPasswordPage (Fase 1)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.stubEnv('NEXT_PUBLIC_AUTH_REDIRECT_BASE_URL', 'http://localhost:3000');
+  });
 
-    Object.defineProperty(window, 'location', {
-      writable: true,
-      value: { origin: 'http://localhost:3000' },
-    });
+  afterEach(() => {
+    vi.unstubAllEnvs();
   });
 
   // ── Presence ──────────────────────────────────────────────────────────
@@ -62,6 +62,28 @@ describe('ForgotPasswordPage (Fase 1)', () => {
       'user@example.com',
       { redirectTo: 'http://localhost:3000/auth/callback' },
     );
+  });
+
+  it('shows the generic error and does not submit if the redirect base env is missing', async () => {
+    vi.unstubAllEnvs();
+    mockResetPasswordForEmail.mockResolvedValue({ error: null });
+    render(<ForgotPasswordPage />);
+
+    const input = screen.getByLabelText(/email|correo/i);
+    await act(async () => {
+      fireEvent.change(input, { target: { value: 'user@example.com' } });
+    });
+
+    await act(async () => {
+      screen
+        .getByRole('button', { name: /enviar|recuperar|restablecer/i })
+        .click();
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText(/hubo un problema|intentá de nuevo/i)).toBeInTheDocument();
+    });
+    expect(mockResetPasswordForEmail).not.toHaveBeenCalled();
   });
 
   // ── Generic success message (anti-enumeration) ────────────────────────

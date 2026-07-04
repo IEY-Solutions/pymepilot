@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 const INPUT_CLASS_NAME =
@@ -10,12 +10,16 @@ const INPUT_CLASS_NAME =
 const RECOVERY_RATE_LIMIT_MESSAGE =
   "Ya pediste un enlace de recuperación hace poco. Esperá unos minutos e intentá de nuevo.";
 
+const AUTH_CALLBACK_PATH = "/auth/callback";
+
 function buildRedirectTo(): string {
-  if (typeof window === "undefined") {
-    return "/auth/callback";
+  const baseUrl = process.env.NEXT_PUBLIC_AUTH_REDIRECT_BASE_URL;
+
+  if (!baseUrl) {
+    throw new Error("NEXT_PUBLIC_AUTH_REDIRECT_BASE_URL is not set.");
   }
 
-  return new URL("/auth/callback", window.location.origin).toString();
+  return new URL(AUTH_CALLBACK_PATH, baseUrl).toString();
 }
 
 export default function ForgotPasswordForm({
@@ -27,8 +31,6 @@ export default function ForgotPasswordForm({
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-
-  const redirectTo = useMemo(() => buildRedirectTo(), []);
   const recoveryNotice =
     recoveryReason === null
       ? null
@@ -56,6 +58,7 @@ export default function ForgotPasswordForm({
 
     const supabase = createClient();
     try {
+      const redirectTo = buildRedirectTo();
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(
         trimmedEmail,
         { redirectTo },

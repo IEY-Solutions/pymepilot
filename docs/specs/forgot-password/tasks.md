@@ -30,7 +30,7 @@
 | Task | Descripción | Accept. | Gate |
 |------|------------|---------|------|
 | T-201 | Crear `frontend/src/app/forgot-password/page.tsx`: formulario con campo email + botón "Enviar". | AC-F1-01, AC-F1-03 | Architect |
-| T-202 | Implementar lógica de submit: validar email no vacío, llamar a `supabase.auth.resetPasswordForEmail()` con `redirectTo: `${window.location.origin}/auth/callback``, mostrar mensaje genérico de éxito. | AC-F1-01, AC-F1-02 | Architect |
+| T-202 | Implementar lógica de submit: validar email no vacío, llamar a `supabase.auth.resetPasswordForEmail()` con `redirectTo` derivado de `NEXT_PUBLIC_AUTH_REDIRECT_BASE_URL` + `/auth/callback`, mostrar mensaje genérico de éxito. | AC-F1-01, AC-F1-02 | Architect |
 | T-203 | Agregar estado de carga (botón disabled + texto "Enviando...") durante la llamada. | AC-F1-09 (loading, Fase 2 parcial) | Architect |
 | T-204 | Estilizar con `glass-dark` consistente con login (misma paleta, mismos componentes de input/botón). | AC-F2-10 | Frontend-engineer |
 

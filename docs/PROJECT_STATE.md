@@ -87,7 +87,7 @@ Sistema funciona para IEY sin intervencion manual.
 ## En curso / pendiente
 
 ### Operativo
-- **Auth frontend hardening:** el middleware activo ya valida rutas protegidas con `getUser()` también en prefetch/actions; el recovery flow real de Supabase quedó en `/forgot-password` → `/auth/callback` (cliente, soporta `?code=` o fragmento con sesión) → `/reset-password`, sin cookie recovery custom, y la política mínima de password quedó alineada a 6 caracteres con tests y docs consistentes.
+- **Auth frontend hardening:** el middleware activo ya valida rutas protegidas con `getUser()` también en prefetch/actions; el recovery flow real de Supabase quedó en `/forgot-password` → `/auth/callback` (cliente, soporta `?code=` o fragmento con sesión) → `/reset-password`, con `redirectTo` derivado de `NEXT_PUBLIC_AUTH_REDIRECT_BASE_URL` por entorno, sin cookie recovery custom, y la política mínima de password quedó alineada a 6 caracteres con tests y docs consistentes.
 - **Cambio de credenciales login IEY:** el 2026-03-18 se detecto que
   `create_tenant.py` fallaba con `401 Invalid authentication credentials`
   via `Kong` en `/auth/v1/admin/users`, aunque el mismo service-role JWT
