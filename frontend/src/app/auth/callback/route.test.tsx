@@ -1,131 +1,109 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import '@testing-library/jest-dom';
-import { render, waitFor } from '@testing-library/react';
-import AuthCallbackPage from './page';
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { GET } from "./route";
 
 const mockExchangeCodeForSession = vi.fn();
-const mockSetSession = vi.fn();
-const mockReplace = vi.fn();
+const mockVerifyOtp = vi.fn();
 
-vi.mock('@/lib/supabase/server', () => ({
-  createClient: vi.fn(),
-}));
-
-vi.mock('@/lib/supabase/client', () => ({
-  createClient: vi.fn(() => ({
+vi.mock("@/lib/supabase/server", () => ({
+  createClient: vi.fn(async () => ({
     auth: {
       exchangeCodeForSession: mockExchangeCodeForSession,
-      setSession: mockSetSession,
+      verifyOtp: mockVerifyOtp,
     },
   })),
 }));
 
-vi.mock('next/navigation', () => ({
-  useRouter: vi.fn(() => ({ replace: mockReplace })),
-}));
-
-function setUrl(url: string) {
-  const parsed = new URL(url);
-  window.history.pushState({}, '', `${parsed.pathname}${parsed.search}${parsed.hash}`);
+function get(url: string, headers?: Record<string, string>) {
+  return GET(new Request(url, { headers }));
 }
 
-describe('/auth/callback password recovery', () => {
+function locationOf(response: Response): string {
+  const location = response.headers.get("location");
+  if (!location) {
+    throw new Error("expected a redirect Location header");
+  }
+  // Devolvemos pathname+search para asertar sin acoplarnos al host.
+  const parsed = new URL(location);
+  return `${parsed.pathname}${parsed.search}`;
+}
+
+describe("/auth/callback recovery route", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('redirects to forgot-password when neither code nor recovery tokens are provided', async () => {
-    setUrl('http://localhost/auth/callback');
-
-    render(<AuthCallbackPage />);
-
-    await waitFor(() => {
-      expect(mockReplace).toHaveBeenCalledWith(
-        '/forgot-password?reason=recovery-missing-code',
-      );
-    });
-
-    expect(mockExchangeCodeForSession).not.toHaveBeenCalled();
-    expect(mockSetSession).not.toHaveBeenCalled();
-  });
-
-  it('exchanges the code for a recovery session and redirects to /reset-password', async () => {
+  it("exchanges the code server-side and redirects to /reset-password", async () => {
     mockExchangeCodeForSession.mockResolvedValue({ error: null });
-    setUrl('http://localhost/auth/callback?code=recovery-code-123');
 
-    render(<AuthCallbackPage />);
+    const response = await get("https://app.test/auth/callback?code=recovery-code-123");
 
-    await waitFor(() => {
-      expect(mockReplace).toHaveBeenCalledWith('/reset-password');
-    });
-
-    expect(mockExchangeCodeForSession).toHaveBeenCalledWith('recovery-code-123');
-    expect(mockSetSession).not.toHaveBeenCalled();
+    expect(mockExchangeCodeForSession).toHaveBeenCalledWith("recovery-code-123");
+    expect(mockVerifyOtp).not.toHaveBeenCalled();
+    expect(locationOf(response)).toBe("/reset-password");
   });
 
-  it('sets the recovery session from the redirect hash and then opens /reset-password', async () => {
-    mockSetSession.mockResolvedValue({ error: null });
-    setUrl('http://localhost/auth/callback#access_token=access-123&refresh_token=refresh-456');
-
-    render(<AuthCallbackPage />);
-
-    await waitFor(() => {
-      expect(mockReplace).toHaveBeenCalledWith('/reset-password');
-    });
-
-    expect(mockSetSession).toHaveBeenCalledWith({
-      access_token: 'access-123',
-      refresh_token: 'refresh-456',
-    });
-    expect(mockExchangeCodeForSession).not.toHaveBeenCalled();
-  });
-
-  it('redirects to forgot-password when the hash session is invalid', async () => {
-    mockSetSession.mockResolvedValue({
-      error: { message: 'Invalid recovery session' },
-    });
-    setUrl('http://localhost/auth/callback#access_token=access-123&refresh_token=refresh-456');
-
-    render(<AuthCallbackPage />);
-
-    await waitFor(() => {
-      expect(mockReplace).toHaveBeenCalledWith(
-        '/forgot-password?reason=recovery-invalid',
-      );
-    });
-
-    expect(mockSetSession).toHaveBeenCalledWith({
-      access_token: 'access-123',
-      refresh_token: 'refresh-456',
-    });
-    expect(mockExchangeCodeForSession).not.toHaveBeenCalled();
-  });
-
-  it('redirects to forgot-password when the code exchange fails', async () => {
+  it("redirects to forgot-password when the code exchange fails", async () => {
     mockExchangeCodeForSession.mockResolvedValue({
-      error: { message: 'Invalid or expired code' },
+      error: { message: "Invalid or expired code" },
     });
-    setUrl('http://localhost/auth/callback?code=bad-code');
 
-    render(<AuthCallbackPage />);
+    const response = await get("https://app.test/auth/callback?code=bad-code");
 
-    await waitFor(() => {
-      expect(mockReplace).toHaveBeenCalledWith(
-        '/forgot-password?reason=recovery-invalid',
-      );
-    });
+    expect(locationOf(response)).toBe("/forgot-password?reason=recovery-invalid");
   });
 
-  it('does not leak the recovery code in the redirect target', async () => {
-    mockExchangeCodeForSession.mockResolvedValue({ error: null });
-    setUrl('http://localhost/auth/callback?code=secret-code');
+  it("verifies token_hash via verifyOtp and redirects to /reset-password", async () => {
+    mockVerifyOtp.mockResolvedValue({ error: null });
 
-    render(<AuthCallbackPage />);
+    const response = await get(
+      "https://app.test/auth/callback?token_hash=hash-abc&type=recovery",
+    );
 
-    await waitFor(() => {
-      expect(mockReplace).toHaveBeenCalledWith('/reset-password');
+    expect(mockVerifyOtp).toHaveBeenCalledWith({
+      type: "recovery",
+      token_hash: "hash-abc",
+    });
+    expect(mockExchangeCodeForSession).not.toHaveBeenCalled();
+    expect(locationOf(response)).toBe("/reset-password");
+  });
+
+  it("redirects to forgot-password when verifyOtp fails", async () => {
+    mockVerifyOtp.mockResolvedValue({
+      error: { message: "Invalid recovery token" },
     });
 
-    expect(mockReplace).not.toHaveBeenCalledWith(expect.stringContaining('secret-code'));
+    const response = await get(
+      "https://app.test/auth/callback?token_hash=bad&type=recovery",
+    );
+
+    expect(locationOf(response)).toBe("/forgot-password?reason=recovery-invalid");
+  });
+
+  it("redirects to forgot-password when neither code nor token_hash are provided", async () => {
+    const response = await get("https://app.test/auth/callback");
+
+    expect(mockExchangeCodeForSession).not.toHaveBeenCalled();
+    expect(mockVerifyOtp).not.toHaveBeenCalled();
+    expect(locationOf(response)).toBe("/forgot-password?reason=recovery-missing-code");
+  });
+
+  it("honors x-forwarded-host for the redirect origin", async () => {
+    mockExchangeCodeForSession.mockResolvedValue({ error: null });
+
+    const response = await get("https://internal.vercel/auth/callback?code=abc", {
+      "x-forwarded-host": "pymepilot-hazel.vercel.app",
+      "x-forwarded-proto": "https",
+    });
+
+    const location = response.headers.get("location") ?? "";
+    expect(location).toBe("https://pymepilot-hazel.vercel.app/reset-password");
+  });
+
+  it("does not leak the recovery code in the redirect target", async () => {
+    mockExchangeCodeForSession.mockResolvedValue({ error: null });
+
+    const response = await get("https://app.test/auth/callback?code=secret-code");
+
+    expect(response.headers.get("location") ?? "").not.toContain("secret-code");
   });
 });
