@@ -27,6 +27,13 @@ import {
 import type { AuditEvent } from "@/lib/audit";
 import type { SupabaseClient as SupabaseAuthClient } from "@supabase/supabase-js";
 
+// Limites de ejecucion para la funcion serverless de este endpoint.
+// Las rutas bajo app/api no heredan el maxDuration del (dashboard)/layout.tsx,
+// asi que sin esto una generacion de copy lenta de Claude se corta (502).
+// Alineado con la region del dashboard (gru1).
+export const maxDuration = 30;
+export const preferredRegion = "gru1";
+
 // ============================================================
 // GET /api/pipeline — Obtener todas las cards del pipeline
 // POST /api/pipeline — Acciones: sync, move, contact, complete_followup, discard
@@ -852,7 +859,10 @@ Reglas:
   try {
     const anthropic = new Anthropic({ apiKey });
     const response = await anthropic.messages.create({
-      model: process.env.CHAT_MODEL || "claude-sonnet-4-20250514",
+      model: process.env.CHAT_MODEL || "claude-sonnet-5",
+      // Sonnet 5 activa adaptive thinking por defecto; lo desactivamos para no
+      // consumir el presupuesto corto de max_tokens en el razonamiento.
+      thinking: { type: "disabled" },
       max_tokens: 200,
       messages: [{ role: "user", content: prompt }],
     });
@@ -999,7 +1009,10 @@ Genera SOLO el mensaje (sin comillas, sin explicacion, sin "Hola" duplicado). 2-
   try {
     const anthropic = new Anthropic({ apiKey });
     const response = await anthropic.messages.create({
-      model: process.env.CHAT_MODEL || "claude-sonnet-4-20250514",
+      model: process.env.CHAT_MODEL || "claude-sonnet-5",
+      // Sonnet 5 activa adaptive thinking por defecto; lo desactivamos para no
+      // consumir el presupuesto corto de max_tokens en el razonamiento.
+      thinking: { type: "disabled" },
       max_tokens: 300,
       messages: [{ role: "user", content: prompt }],
     });
