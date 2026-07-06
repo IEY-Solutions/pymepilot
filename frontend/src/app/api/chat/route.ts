@@ -10,6 +10,13 @@ import {
 } from "@/lib/observability/metrics";
 import type { ChatRequest, ChatResponse, ChatErrorResponse } from "@/lib/chat/types";
 
+// Limites de ejecucion para la funcion serverless de este endpoint.
+// Las rutas bajo app/api no heredan el maxDuration del (dashboard)/layout.tsx,
+// asi que sin esto una llamada lenta de Claude se corta a nivel plataforma (502).
+// Alineado con DEFAULT_TIMEOUT_MS = 30000 y la region del dashboard (gru1).
+export const maxDuration = 30;
+export const preferredRegion = "gru1";
+
 // ============================================================
 // POST /api/chat — Endpoint del chatbot PymePilot Asesor
 // ============================================================
@@ -235,7 +242,7 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   const anthropic = new Anthropic({ apiKey });
-  const model = process.env.CHAT_MODEL || "claude-sonnet-4-20250514";
+  const model = process.env.CHAT_MODEL || "claude-sonnet-5";
   const maxTokens = parseInt(process.env.CHAT_MAX_TOKENS || "1000", 10);
   const startTime = Date.now();
 
@@ -247,6 +254,9 @@ export async function POST(request: Request): Promise<Response> {
     let response = await anthropic.messages.create(
       {
         model,
+        // Sonnet 5 activa adaptive thinking por defecto; lo desactivamos para
+        // preservar el comportamiento previo (salidas cortas dentro de max_tokens).
+        thinking: { type: "disabled" },
         max_tokens: maxTokens,
         system: systemPrompt,
         messages: claudeMessages,
@@ -292,6 +302,7 @@ export async function POST(request: Request): Promise<Response> {
       response = await anthropic.messages.create(
         {
           model,
+          thinking: { type: "disabled" },
           max_tokens: maxTokens,
           system: systemPrompt,
           messages: claudeMessages,
